@@ -11,46 +11,125 @@ export function Navigation() {
   if (!session) return null
 
   return (
-    <nav className="border-b bg-background">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-8">
-            <Link href="/" className="text-xl font-bold text-primary">
+    <nav style={{
+      borderBottom: '1px solid #e5e7eb',
+      background: 'white',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+    }}>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '0 1rem'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: '4rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2rem'
+          }}>
+            <Link href="/" style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textDecoration: 'none'
+            }}>
               HabitTracker
             </Link>
-            <div className="flex space-x-4">
+            <div style={{ display: 'flex', gap: '1rem' }}>
               <Link
                 href="/"
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  color: '#667eea',
+                  textDecoration: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  transition: 'all 0.2s ease'
+                }}
               >
                 <Home className="w-4 h-4" />
                 <span>Dashboard</span>
               </Link>
               <Link
                 href="/habits"
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  textDecoration: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease'
+                }}
               >
                 <Calendar className="w-4 h-4" />
                 <span>Habits</span>
               </Link>
               <Link
                 href="/groups"
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  textDecoration: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease'
+                }}
               >
                 <Users className="w-4 h-4" />
                 <span>Groups</span>
               </Link>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem'
+          }}>
+            <span style={{
+              fontSize: '0.9rem',
+              color: '#6b7280',
+              fontWeight: '500'
+            }}>
               Welcome, {session.user?.name || session.user?.email}
             </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => signOut()}
-              className="flex items-center space-x-2"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'transparent',
+                border: 'none',
+                color: '#6b7280',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
             >
               <LogOut className="w-4 h-4" />
               <span>Sign Out</span>

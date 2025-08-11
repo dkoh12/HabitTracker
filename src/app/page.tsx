@@ -80,10 +80,29 @@ export default function Home() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            border: '4px solid rgba(255, 255, 255, 0.3)',
+            borderTop: '4px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }}></div>
+          <p style={{ 
+            marginTop: '1rem', 
+            color: 'white',
+            fontSize: '1.1rem',
+            fontWeight: '500'
+          }}>Loading your dashboard...</p>
         </div>
       </div>
     )
@@ -92,22 +111,60 @@ export default function Home() {
   if (!session) return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+    }}>
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '2rem 1rem'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '2rem',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Track your daily habits and build consistency</p>
+            <h1 style={{
+              fontSize: '2.5rem',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              marginBottom: '0.5rem'
+            }}>Dashboard</h1>
+            <p style={{
+              color: '#6b7280',
+              fontSize: '1.1rem'
+            }}>Track your daily habits and build consistency</p>
           </div>
-          <Button onClick={() => setShowHabitForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => setShowHabitForm(true)} style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '12px',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+            transition: 'all 0.3s ease'
+          }}>
+            <Plus className="w-4 h-4" />
             New Habit
           </Button>
         </div>
 
         {showHabitForm && (
-          <div className="mb-8">
+          <div style={{ marginBottom: '2rem' }}>
             <HabitForm
               onSubmit={createHabit}
               onCancel={() => setShowHabitForm(false)}
@@ -115,39 +172,100 @@ export default function Home() {
           </div>
         )}
 
-        <div className="space-y-8">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <HabitSpreadsheet
             habits={habits}
             onUpdateEntry={updateHabitEntry}
           />
 
           {habits.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Habits</CardTitle>
+            <Card style={{
+              background: 'white',
+              borderRadius: '16px',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            }}>
+              <CardHeader style={{
+                padding: '1.5rem',
+                borderBottom: '1px solid #f3f4f6'
+              }}>
+                <CardTitle style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '600',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>Your Habits Overview</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <CardContent style={{ padding: '1.5rem' }}>
+                <div style={{
+                  display: 'grid',
+                  gap: '1rem',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'
+                }}>
                   {habits.map(habit => (
                     <div
                       key={habit.id}
-                      className="p-4 border rounded-lg"
+                      style={{
+                        padding: '1.25rem',
+                        border: '2px solid #f3f4f6',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+                      }}
                     >
-                      <div className="flex items-center space-x-2 mb-2">
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        marginBottom: '0.75rem'
+                      }}>
                         <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: habit.color }}
+                          style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: habit.color,
+                            boxShadow: `0 0 0 3px ${habit.color}20`
+                          }}
                         />
-                        <h3 className="font-medium">{habit.name}</h3>
+                        <h3 style={{
+                          fontWeight: '600',
+                          fontSize: '1.1rem',
+                          color: '#1f2937'
+                        }}>{habit.name}</h3>
                       </div>
                       {habit.description && (
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <p style={{
+                          fontSize: '0.9rem',
+                          color: '#6b7280',
+                          marginBottom: '0.75rem',
+                          lineHeight: '1.4'
+                        }}>
                           {habit.description}
                         </p>
                       )}
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>{habit.frequency}</span>
-                        <span>Target: {habit.target}{habit.unit && ` ${habit.unit}`}</span>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.85rem',
+                        color: '#6b7280',
+                        fontWeight: '500'
+                      }}>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                          borderRadius: '20px',
+                          color: '#2563eb',
+                          textTransform: 'capitalize'
+                        }}>{habit.frequency}</span>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                          borderRadius: '20px',
+                          color: '#059669'
+                        }}>Target: {habit.target}{habit.unit && ` ${habit.unit}`}</span>
                       </div>
                     </div>
                   ))}
@@ -157,6 +275,13 @@ export default function Home() {
           )}
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
