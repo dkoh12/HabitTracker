@@ -5,7 +5,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSa
 import { HabitWithEntries } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Grid3X3, LayoutGrid } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Calendar1, CalendarDays } from 'lucide-react'
 
 interface HabitSpreadsheetProps {
   habits: HabitWithEntries[]
@@ -392,7 +392,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                   gap: '0.5rem'
                 }}
               >
-                <Grid3X3 className="w-4 h-4" />
+                <Calendar1 className="w-4 h-4" />
                 Week
               </button>
               <button
@@ -414,7 +414,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                   gap: '0.5rem'
                 }}
               >
-                <LayoutGrid className="w-4 h-4" />
+                <CalendarDays className="w-4 h-4" />
                 Month
               </button>
             </div>
