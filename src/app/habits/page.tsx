@@ -15,6 +15,7 @@ export default function Habits() {
   const router = useRouter()
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
+  const [editingHabit, setEditingHabit] = useState<HabitWithEntries | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -56,6 +57,64 @@ export default function Habits() {
       }
     } catch (error) {
       console.error('Error creating habit:', error)
+    }
+  }
+
+  const updateHabit = async (habitData: HabitFormData) => {
+    if (!editingHabit) return
+    
+    try {
+      const response = await fetch(`/api/habits/${editingHabit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(habitData)
+      })
+
+      if (response.ok) {
+        setEditingHabit(null)
+        setShowHabitForm(false)
+        fetchHabits()
+      }
+    } catch (error) {
+      console.error('Error updating habit:', error)
+    }
+  }
+
+  const deleteHabit = async (habitId: string) => {
+    if (!confirm('Are you sure you want to delete this habit? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/habits/${habitId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        fetchHabits()
+      }
+    } catch (error) {
+      console.error('Error deleting habit:', error)
+    }
+  }
+
+  const handleEditHabit = (habit: HabitWithEntries) => {
+    setEditingHabit(habit)
+    setShowHabitForm(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingHabit(null)
+    setShowHabitForm(false)
+  }
+
+  const handleFormSubmit = (habitData: HabitFormData) => {
+    if (editingHabit) {
+      updateHabit(habitData)
+    } else {
+      createHabit(habitData)
     }
   }
 
@@ -184,8 +243,10 @@ export default function Habits() {
         {showHabitForm && (
           <div style={{ marginBottom: '2rem' }}>
             <HabitForm
-              onSubmit={createHabit}
-              onCancel={() => setShowHabitForm(false)}
+              onSubmit={handleFormSubmit}
+              onCancel={handleCancelEdit}
+              habit={editingHabit || undefined}
+              isEditing={!!editingHabit}
             />
           </div>
         )}
@@ -237,26 +298,52 @@ export default function Habits() {
                       <span>{habit.name}</span>
                     </CardTitle>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <Button size="sm" variant="ghost" style={{
-                        background: 'transparent',
-                        border: 'none',
-                        padding: '0.5rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        color: '#6b7280',
-                        transition: 'all 0.2s ease'
-                      }}>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleEditHabit(habit)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: '0.5rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          color: '#6b7280',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#f3f4f6'
+                          e.currentTarget.style.color = '#374151'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent'
+                          e.currentTarget.style.color = '#6b7280'
+                        }}
+                      >
                         <Edit3 className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" style={{
-                        background: 'transparent',
-                        border: 'none',
-                        padding: '0.5rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        color: '#6b7280',
-                        transition: 'all 0.2s ease'
-                      }}>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => deleteHabit(habit.id)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          padding: '0.5rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          color: '#6b7280',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#fef2f2'
+                          e.currentTarget.style.color = '#dc2626'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent'
+                          e.currentTarget.style.color = '#6b7280'
+                        }}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

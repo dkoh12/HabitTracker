@@ -1,12 +1,37 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Calendar, Users, Home, LogOut } from 'lucide-react'
 
 export function Navigation() {
   const { data: session } = useSession()
+  const pathname = usePathname()
+
+  if (!session) return null
+
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return pathname === '/'
+    }
+    return pathname.startsWith(path)
+  }
+
+  const getLinkStyle = (path: string) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    color: isActive(path) ? '#667eea' : '#6b7280',
+    textDecoration: 'none',
+    padding: '0.5rem 1rem',
+    borderRadius: '8px',
+    background: isActive(path) ? 'rgba(102, 126, 234, 0.1)' : 'transparent',
+    transition: 'all 0.2s ease'
+  })
 
   if (!session) return null
 
@@ -45,55 +70,21 @@ export function Navigation() {
             <div style={{ display: 'flex', gap: '1rem' }}>
               <Link
                 href="/"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  color: '#6b7280',
-                  textDecoration: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  transition: 'all 0.2s ease'
-                }}
+                style={getLinkStyle('/')}
               >
                 <Home className="w-4 h-4" />
                 <span>Dashboard</span>
               </Link>
               <Link
                 href="/habits"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  color: '#6b7280',
-                  textDecoration: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  transition: 'all 0.2s ease'
-                }}
+                style={getLinkStyle('/habits')}
               >
                 <Calendar className="w-4 h-4" />
                 <span>Habits</span>
               </Link>
               <Link
                 href="/groups"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  color: '#667eea',
-                  textDecoration: 'none',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  background: 'rgba(102, 126, 234, 0.1)',
-                  transition: 'all 0.2s ease'
-                }}
+                style={getLinkStyle('/groups')}
               >
                 <Users className="w-4 h-4" />
                 <span>Groups</span>

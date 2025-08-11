@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { HabitFormData } from '@/types'
+import { HabitFormData, HabitWithEntries } from '@/types'
 
 interface HabitFormProps {
   onSubmit: (data: HabitFormData) => void
   onCancel?: () => void
+  habit?: HabitWithEntries // For editing mode
+  isEditing?: boolean
 }
 
 const colors = [
@@ -22,7 +24,7 @@ const colors = [
   '#84CC16', // Lime
 ]
 
-export function HabitForm({ onSubmit, onCancel }: HabitFormProps) {
+export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: HabitFormProps) {
   const [formData, setFormData] = useState<HabitFormData>({
     name: '',
     description: '',
@@ -31,6 +33,20 @@ export function HabitForm({ onSubmit, onCancel }: HabitFormProps) {
     target: 1,
     unit: ''
   })
+
+  // Populate form data when editing
+  useEffect(() => {
+    if (isEditing && habit) {
+      setFormData({
+        name: habit.name,
+        description: habit.description || '',
+        color: habit.color,
+        frequency: habit.frequency as 'daily' | 'weekly' | 'monthly',
+        target: habit.target,
+        unit: habit.unit || ''
+      })
+    }
+  }, [isEditing, habit])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +70,7 @@ export function HabitForm({ onSubmit, onCancel }: HabitFormProps) {
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
-        }}>Create New Habit</CardTitle>
+        }}>{isEditing ? 'Edit Habit' : 'Create New Habit'}</CardTitle>
       </CardHeader>
       <CardContent style={{ padding: '1.5rem' }}>
         <form onSubmit={handleSubmit} style={{
@@ -272,7 +288,7 @@ export function HabitForm({ onSubmit, onCancel }: HabitFormProps) {
               boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
               transition: 'all 0.3s ease'
             }}>
-              Create Habit
+              {isEditing ? 'Update Habit' : 'Create Habit'}
             </Button>
           </div>
         </form>
