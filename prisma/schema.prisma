@@ -1,0 +1,106 @@
+// This is your Prisma schema file.
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  habits       Habit[]
+  habitEntries HabitEntry[]
+  groupMembers GroupMember[]
+  groupsOwned  Group[]       @relation("GroupOwner")
+}
+
+model Habit {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  frequency   String   @default("daily") // daily, weekly, monthly
+  target      Int      @default(1)       // target count per frequency period
+  unit        String?  // e.g., "minutes", "glasses", "pages"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitEntries HabitEntry[]
+  groupHabits  GroupHabit[]
+}
+
+model HabitEntry {
+  id        String   @id @default(cuid())
+  date      DateTime
+  value     Int      @default(1) // How many times completed
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId  String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitId String
+  habit   Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, habitId, date])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  ownerId      String
+  owner        User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      GroupMember[]
+  groupHabits  GroupHabit[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  role     String   @default("member") // member, admin
+  joinedAt DateTime @default(now())
+
+  // Relations
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model GroupHabit {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Relations
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  habitId String
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, habitId])
+}
