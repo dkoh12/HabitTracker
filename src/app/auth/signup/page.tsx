@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Mail, Lock, User, ArrowRight, Calendar, Sparkles, Shield, Zap } from 'lucide-react'
 
 export default function SignUp() {
@@ -48,194 +47,390 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex">
-      {/* Left side - Hero */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 p-12 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative z-10 flex flex-col justify-between w-full">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '900px',
+        display: 'flex',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        overflow: 'hidden'
+      }}>
+        {/* Left side - Hero */}
+        <div style={{
+          width: '50%',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          padding: '48px',
+          color: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }} className="hidden lg:flex">
           <div>
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Calendar className="w-6 h-6" />
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '12px'
+              }}>
+                <Calendar size={24} />
               </div>
-              <h1 className="text-2xl font-bold">HabitTracker</h1>
+              <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>HabitTracker</h1>
             </div>
             
-            <div className="space-y-6 max-w-md">
-              <h2 className="text-4xl font-bold leading-tight">
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ 
+                fontSize: '36px', 
+                fontWeight: 'bold', 
+                lineHeight: '1.1', 
+                marginBottom: '16px',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+              }}>
                 Start Your Journey to Better Habits
               </h2>
-              <p className="text-xl text-white/90 leading-relaxed">
+              <p style={{ 
+                fontSize: '18px', 
+                opacity: 0.9, 
+                lineHeight: '1.6'
+              }}>
                 Join thousands of users who are building consistent habits and achieving their goals.
               </p>
             </div>
           </div>
 
-          <div className="space-y-6 mt-12">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Sparkles className="w-5 h-5" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Sparkles size={24} />
               </div>
               <div>
-                <div className="font-semibold">Beautiful Interface</div>
-                <div className="text-sm text-white/80">Clean, intuitive design that motivates</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Beautiful Interface</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>Clean, intuitive design that motivates</div>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Shield className="w-5 h-5" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Shield size={24} />
               </div>
               <div>
-                <div className="font-semibold">Secure & Private</div>
-                <div className="text-sm text-white/80">Your data is encrypted and protected</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Secure & Private</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>Your data is encrypted and protected</div>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Zap className="w-5 h-5" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Zap size={24} />
               </div>
               <div>
-                <div className="font-semibold">Lightning Fast</div>
-                <div className="text-sm text-white/80">Quick logging keeps you consistent</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Lightning Fast</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>Quick logging keeps you consistent</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Right side - Sign Up Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-white" />
+        {/* Right side - Sign Up Form */}
+        <div style={{
+          flex: 1,
+          padding: '48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{ width: '100%', maxWidth: '400px' }}>
+            {/* Mobile logo */}
+            <div style={{ textAlign: 'center', marginBottom: '32px' }} className="lg:hidden">
+              <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '12px'
+                }}>
+                  <Calendar size={24} color="white" />
+                </div>
+                <h1 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  margin: 0
+                }}>
+                  HabitTracker
+                </h1>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                HabitTracker
-              </h1>
             </div>
-          </div>
 
-          <Card className="border-0 shadow-2xl shadow-purple-500/10">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-2xl font-bold text-gray-900 mb-2">Create your account</CardTitle>
-              <p className="text-gray-600">Start building better habits today</p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="pl-11 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
-                      placeholder="Enter your full name"
-                    />
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                Create your account
+              </h2>
+              <p style={{ color: '#6b7280', margin: 0, fontSize: '16px' }}>Start building better habits today</p>
+            </div>
+            
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Full Name
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <User style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    width: '20px',
+                    height: '20px'
+                  }} />
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    style={{
+                      paddingLeft: '44px',
+                      height: '48px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      backgroundColor: '#ffffff'
+                    }}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Username <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <User style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    width: '20px',
+                    height: '20px'
+                  }} />
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    style={{
+                      paddingLeft: '44px',
+                      height: '48px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      backgroundColor: '#ffffff'
+                    }}
+                    placeholder="Choose a username"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Email address <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Mail style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    width: '20px',
+                    height: '20px'
+                  }} />
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    style={{
+                      paddingLeft: '44px',
+                      height: '48px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      backgroundColor: '#ffffff'
+                    }}
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                  Password <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Lock style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    width: '20px',
+                    height: '20px'
+                  }} />
+                  <Input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    style={{
+                      paddingLeft: '44px',
+                      height: '48px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '12px',
+                      fontSize: '16px',
+                      backgroundColor: '#ffffff'
+                    }}
+                    placeholder="Create a strong password"
+                    required
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '12px',
+                  padding: '12px'
+                }}>
+                  <div style={{ color: '#991b1b', fontSize: '14px', textAlign: 'center', fontWeight: '500' }}>
+                    {error}
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">
-                    Username <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="pl-11 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
-                      placeholder="Choose a username"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">
-                    Email address <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="pl-11 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <Input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="pl-11 h-12 border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
-                      placeholder="Create a strong password"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                    <div className="text-red-800 text-sm text-center font-medium">
-                      {error}
-                    </div>
-                  </div>
+              <Button 
+                type="submit" 
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  fontWeight: '600',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 10px 15px -3px rgba(102, 126, 234, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid rgba(255, 255, 255, 0.3)',
+                      borderTop: '2px solid white',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <span>Creating account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight size={16} />
+                  </>
                 )}
+              </Button>
+            </form>
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30" 
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Creating account...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <span>Create Account</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  )}
-                </Button>
-              </form>
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <p style={{ color: '#6b7280', margin: 0, lineHeight: '1.6' }}>
+                Already have an account?
+              </p>
+              <Link 
+                href="/auth/signin" 
+                style={{ 
+                  fontWeight: '600', 
+                  color: '#667eea', 
+                  textDecoration: 'none',
+                  fontSize: '16px',
+                  display: 'inline-block',
+                  marginTop: '4px'
+                }}
+              >
+                Sign in instead
+              </Link>
+            </div>
 
-              <div className="mt-6 text-center">
-                <p className="text-gray-600">
-                  Already have an account?{' '}
-                  <Link 
-                    href="/auth/signin" 
-                    className="font-semibold text-purple-600 hover:text-purple-700 transition-colors"
-                  >
-                    Sign in instead
-                  </Link>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <p className="text-center text-xs text-gray-500 mt-6">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
-          </p>
+            <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '24px' }}>
+              By creating an account, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 1024px) {
+          .lg\\:hidden {
+            display: none !important;
+          }
+          .hidden {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }
