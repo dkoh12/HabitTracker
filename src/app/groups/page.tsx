@@ -408,14 +408,27 @@ export default function Groups() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))'
         }}>
           {groups.map(group => (
-            <Card key={group.id} style={{
-              background: 'white',
-              borderRadius: '16px',
-              border: '1px solid #e5e7eb',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-              transition: 'all 0.3s ease',
-              overflow: 'hidden'
-            }}>
+            <Card 
+              key={group.id} 
+              onClick={() => router.push(`/groups/${group.id}`)}
+              style={{
+                background: 'white',
+                borderRadius: '16px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                overflow: 'hidden',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)'
+                e.currentTarget.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1)'
+              }}
+            >
               <CardHeader style={{
                 padding: '1.5rem',
                 borderBottom: '1px solid #f3f4f6',
@@ -445,7 +458,10 @@ export default function Groups() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyInviteCode(group.inviteCode)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        copyInviteCode(group.inviteCode)
+                      }}
                       style={{
                         padding: '0.5rem',
                         border: '2px solid #e5e7eb',
