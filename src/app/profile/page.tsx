@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, Calendar, Target, Edit3, Save, X, Camera, Trash2 } from 'lucide-react'
+import { User, Calendar, Target, Edit3, Save, X, Camera, Trash2, Grid, Upload } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -20,6 +20,12 @@ interface UserProfile {
   }
 }
 
+interface DefaultAvatar {
+  id: string
+  filename: string
+  url: string
+}
+
 export default function Profile() {
   const { data: session, status, update } = useSession()
   const router = useRouter()
@@ -29,6 +35,9 @@ export default function Profile() {
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [showDefaultAvatars, setShowDefaultAvatars] = useState(false)
+  const [defaultAvatars, setDefaultAvatars] = useState<DefaultAvatar[]>([])
+  const [loadingAvatars, setLoadingAvatars] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -176,6 +185,62 @@ export default function Profile() {
     } catch (error) {
       console.error('Error removing avatar:', error)
       alert('Failed to remove avatar. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  const loadDefaultAvatars = async () => {
+    if (defaultAvatars.length > 0) {
+      setShowDefaultAvatars(true)
+      return
+    }
+
+    setLoadingAvatars(true)
+    try {
+      const response = await fetch('/api/default-avatars')
+      if (response.ok) {
+        const data = await response.json()
+        setDefaultAvatars(data.avatars)
+        setShowDefaultAvatars(true)
+      } else {
+        alert('Failed to load default avatars')
+      }
+    } catch (error) {
+      console.error('Error loading default avatars:', error)
+      alert('Failed to load default avatars')
+    } finally {
+      setLoadingAvatars(false)
+    }
+  }
+
+  const handleSelectDefaultAvatar = async (avatarUrl: string) => {
+    setUploadingAvatar(true)
+    try {
+      const response = await fetch('/api/set-default-avatar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ avatarUrl })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(data.user)
+        setShowDefaultAvatars(false)
+        
+        // Update the session to reflect the new avatar
+        await update({ avatar: data.user.avatar })
+        
+        router.refresh()
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to set avatar: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error setting default avatar:', error)
+      alert('Failed to set avatar. Please try again.')
     } finally {
       setUploadingAvatar(false)
     }
@@ -348,6 +413,65 @@ export default function Profile() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Avatar Selection Options */}
+        <div style={{
+          marginBottom: '2rem',
+          display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap'
+        }}>
+          <button
+            onClick={() => document.getElementById('avatar-upload')?.click()}
+            disabled={uploadingAvatar}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
+              opacity: uploadingAvatar ? 0.6 : 1,
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 10px rgba(102, 126, 234, 0.3)'
+            }}
+            onMouseEnter={(e) => !uploadingAvatar && (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => !uploadingAvatar && (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <Upload className="w-4 h-4" />
+            Upload Photo
+          </button>
+          
+          <button
+            onClick={loadDefaultAvatars}
+            disabled={uploadingAvatar || loadingAvatars}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              background: 'white',
+              color: '#667eea',
+              border: '2px solid #667eea',
+              borderRadius: '8px',
+              cursor: (uploadingAvatar || loadingAvatars) ? 'not-allowed' : 'pointer',
+              opacity: (uploadingAvatar || loadingAvatars) ? 0.6 : 1,
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => !uploadingAvatar && !loadingAvatars && (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => !uploadingAvatar && !loadingAvatars && (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <Grid className="w-4 h-4" />
+            {loadingAvatars ? 'Loading...' : 'Choose Default Avatar'}
+          </button>
         </div>
 
         <div style={{
@@ -605,6 +729,120 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+      
+      {/* Default Avatar Selection Modal */}
+      {showDefaultAvatars && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            maxWidth: '800px',
+            maxHeight: '80vh',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '1.5rem',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                Choose Default Avatar
+              </h3>
+              <button
+                onClick={() => setShowDefaultAvatars(false)}
+                disabled={uploadingAvatar}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  borderRadius: '6px',
+                  color: '#6b7280'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div style={{
+              padding: '1.5rem',
+              maxHeight: '60vh',
+              overflowY: 'auto'
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                gap: '1rem'
+              }}>
+                {defaultAvatars.map((avatar) => (
+                  <button
+                    key={avatar.id}
+                    onClick={() => handleSelectDefaultAvatar(avatar.url)}
+                    disabled={uploadingAvatar}
+                    style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      border: '3px solid transparent',
+                      cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
+                      opacity: uploadingAvatar ? 0.6 : 1,
+                      background: `url(${avatar.url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      transition: 'all 0.2s ease',
+                      overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!uploadingAvatar) {
+                        e.currentTarget.style.border = '3px solid #667eea'
+                        e.currentTarget.style.transform = 'scale(1.1)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!uploadingAvatar) {
+                        e.currentTarget.style.border = '3px solid transparent'
+                        e.currentTarget.style.transform = 'scale(1)'
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {defaultAvatars.length === 0 && !loadingAvatars && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  color: '#6b7280'
+                }}>
+                  No default avatars available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
