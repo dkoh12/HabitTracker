@@ -2,13 +2,15 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Calendar, Users, Home, LogOut } from 'lucide-react'
+import { Calendar, Users, Home, LogOut, User, ChevronDown } from 'lucide-react'
 
 export function Navigation() {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   if (!session) return null
 
@@ -89,6 +91,13 @@ export function Navigation() {
                 <Users className="w-4 h-4" />
                 <span>Groups</span>
               </Link>
+              <Link
+                href="/profile"
+                style={getLinkStyle('/profile')}
+              >
+                <User className="w-4 h-4" />
+                <span>Profile</span>
+              </Link>
             </div>
           </div>
           <div style={{
@@ -96,35 +105,125 @@ export function Navigation() {
             alignItems: 'center',
             gap: '1rem'
           }}>
-            <span style={{
-              fontSize: '0.9rem',
-              color: '#6b7280',
-              fontWeight: '500'
-            }}>
-              Welcome, {session.user?.name || session.user?.email}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signOut()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'transparent',
-                border: 'none',
-                color: '#6b7280',
-                padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </Button>
+            {/* Profile Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                onMouseEnter={() => setShowProfileMenu(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  background: showProfileMenu ? 'rgba(102, 126, 234, 0.1)' : 'transparent',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  color: showProfileMenu ? '#667eea' : '#6b7280'
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  fontWeight: '600'
+                }}>
+                  {(session.user?.name || session.user?.email || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span>Welcome, {session.user?.name || session.user?.email}</span>
+                <ChevronDown className="w-4 h-4" style={{
+                  transform: showProfileMenu ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease'
+                }} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showProfileMenu && (
+                <div
+                  onMouseLeave={() => setShowProfileMenu(false)}
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '0.5rem',
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                    minWidth: '200px',
+                    zIndex: 50,
+                    overflow: 'hidden'
+                  }}
+                >
+                  <Link
+                    href="/profile"
+                    onClick={() => setShowProfileMenu(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      textDecoration: 'none',
+                      color: '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      transition: 'all 0.2s ease',
+                      borderBottom: '1px solid #f3f4f6'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f8fafc'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent'
+                    }}
+                  >
+                    <User className="w-4 h-4" style={{ color: '#667eea' }} />
+                    My Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false)
+                      signOut()
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      textAlign: 'left',
+                      color: '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fef2f2'
+                      e.currentTarget.style.color = '#dc2626'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = '#374151'
+                    }}
+                  >
+                    <LogOut className="w-4 h-4" style={{ color: '#dc2626' }} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

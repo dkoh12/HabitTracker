@@ -45,16 +45,26 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt'
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.username = (user as any).username
       }
+      
+      // Handle session updates (like when profile name changes)
+      if (trigger === 'update' && session?.name) {
+        token.name = session.name
+      }
+      
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.sub
         ;(session.user as any).username = token.username
+        // Make sure the updated name from token is reflected in session
+        if (token.name) {
+          session.user.name = token.name
+        }
       }
       return session
     }
