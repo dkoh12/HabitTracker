@@ -7,8 +7,9 @@ import { useEffect, useState } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SharedHabitForm } from '@/components/shared-habit-form'
 import { GroupWithMembers } from '@/types'
-import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, Plus, BookOpen } from 'lucide-react'
 
 interface GroupDetailProps {
   params: Promise<{
@@ -62,6 +63,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState(30) // Last 30 days
   const [groupId, setGroupId] = useState<string | null>(null)
+  const [showSharedHabitForm, setShowSharedHabitForm] = useState(false)
 
   // Await params and set groupId
   useEffect(() => {
@@ -111,6 +113,50 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       }
     } catch (error) {
       console.error('Error fetching spreadsheet data:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (group && groupId) {
+      fetchSpreadsheetData(group)
+    }
+  }, [dateRange, group, groupId])
+
+  const handleCreateSharedHabit = (newHabit: any) => {
+    // Refresh the spreadsheet data to include the new shared habit
+    if (group) {
+      fetchSpreadsheetData(group)
+    }
+  }
+
+  const handleHabitEntryClick = async (habitId: string, date: string, currentEntry: any) => {
+    if (!groupId) return
+
+    try {
+      // Toggle completion or increment value
+      const newValue = currentEntry ? (currentEntry.completed ? 0 : currentEntry.value + 1) : 1
+      const completed = newValue > 0
+
+      const response = await fetch(`/api/groups/${groupId}/shared-habits/${habitId}/entries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          date,
+          value: newValue,
+          completed
+        })
+      })
+
+      if (response.ok) {
+        // Refresh spreadsheet data to show the update
+        if (group) {
+          fetchSpreadsheetData(group)
+        }
+      }
+    } catch (error) {
+      console.error('Error updating habit entry:', error)
     }
   }
 
@@ -322,12 +368,12 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 color: '#10b981',
                 marginBottom: '0.5rem'
               }}>
-                {group.groupHabits.length}
+                {spreadsheetData?.habits.length || 0}
               </div>
               <p style={{
                 fontSize: '0.875rem',
                 color: '#6b7280'
-              }}>Group habits</p>
+              }}>Shared habits</p>
             </CardContent>
           </Card>
 
@@ -403,42 +449,67 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 }}>Group Progress Tracker</CardTitle>
                 <div style={{
                   display: 'flex',
-                  gap: '0.5rem'
+                  gap: '0.5rem',
+                  alignItems: 'center'
                 }}>
                   <Button
-                    variant={dateRange === 7 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateRange(7)}
+                    onClick={() => setShowSharedHabitForm(true)}
                     style={{
                       padding: '0.5rem 1rem',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
                       fontSize: '0.875rem',
                       fontWeight: '500',
-                      borderRadius: '8px',
-                      border: dateRange === 7 ? 'none' : '2px solid #e5e7eb',
-                      background: dateRange === 7 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
-                      color: dateRange === 7 ? 'white' : '#374151',
-                      transition: 'all 0.2s ease'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
                     }}
                   >
-                    7 days
+                    <Plus style={{ width: '16px', height: '16px' }} />
+                    Add Shared Habit
                   </Button>
-                  <Button
-                    variant={dateRange === 30 ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateRange(30)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      borderRadius: '8px',
-                      border: dateRange === 30 ? 'none' : '2px solid #e5e7eb',
-                      background: dateRange === 30 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
-                      color: dateRange === 30 ? 'white' : '#374151',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    30 days
-                  </Button>
+                  <div style={{
+                    display: 'flex',
+                    gap: '0.5rem'
+                  }}>
+                    <Button
+                      variant={dateRange === 7 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDateRange(7)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        borderRadius: '8px',
+                        border: dateRange === 7 ? 'none' : '2px solid #e5e7eb',
+                        background: dateRange === 7 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                        color: dateRange === 7 ? 'white' : '#374151',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      7 days
+                    </Button>
+                    <Button
+                      variant={dateRange === 30 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDateRange(30)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        borderRadius: '8px',
+                        border: dateRange === 30 ? 'none' : '2px solid #e5e7eb',
+                        background: dateRange === 30 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                        color: dateRange === 30 ? 'white' : '#374151',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      30 days
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -457,19 +528,19 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     fontWeight: '600',
                     marginBottom: '1rem',
                     color: '#1f2937'
-                  }}>No Shared Habits Yet</h3>
+                  }}>No Shared Group Habits Yet</h3>
                   <p style={{
                     color: '#6b7280',
                     marginBottom: '2rem',
                     fontSize: '1rem',
                     lineHeight: '1.6'
                   }}>
-                    To see the progress spreadsheet, group members need to add their habits to this group.
+                    Create shared habits that all group members can participate in together!
                     <br />
-                    Go to your individual habits and share them with this group!
+                    Perfect for book clubs, fitness challenges, or learning goals.
                   </p>
                   <Button
-                    onClick={() => router.push('/habits')}
+                    onClick={() => setShowSharedHabitForm(true)}
                     style={{
                       padding: '0.75rem 1.5rem',
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -479,10 +550,15 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       fontSize: '1rem',
                       fontWeight: '500',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      margin: '0 auto'
                     }}
                   >
-                    Go to My Habits
+                    <BookOpen style={{ width: '20px', height: '20px' }} />
+                    Create First Shared Habit
                   </Button>
                 </div>
               ) : (
@@ -504,11 +580,25 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         padding: '1rem',
                         textAlign: 'left',
                         fontWeight: '600',
+                        minWidth: '120px',
+                        color: '#374151',
+                        fontSize: '0.875rem'
+                      }}>
+                        Date
+                      </th>
+                      <th style={{
+                        position: 'sticky',
+                        left: '120px',
+                        background: 'white',
+                        borderRight: '2px solid #e5e7eb',
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
                         minWidth: '200px',
                         color: '#374151',
                         fontSize: '0.875rem'
                       }}>
-                        Date / Habit
+                        Habit
                       </th>
                       {spreadsheetData.members.map(member => (
                         <th key={member.id} style={{
@@ -574,109 +664,140 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
                   {/* Body */}
                   <tbody>
-                    {spreadsheetData.dates.map(date => (
-                      <React.Fragment key={date}>
-                        {/* Date Header Row */}
-                        <tr style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
-                          <td 
-                            colSpan={spreadsheetData.members.length + 1}
-                            style={{
-                              padding: '0.75rem 1rem',
-                              border: '1px solid #e5e7eb',
-                              fontWeight: '600',
-                              color: '#374151',
-                              fontSize: '0.875rem'
-                            }}
-                          >
-                            {formatDate(date)} - {new Date(date).toLocaleDateString('en-US', { weekday: 'long' })}
-                          </td>
-                        </tr>
-                        
-                        {/* Habit Rows for this date */}
-                        {spreadsheetData.habits.map(habit => (
-                          <tr key={`${date}-${habit.id}`} style={{
-                            transition: 'background-color 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent'
+                    {spreadsheetData.dates.map(date => 
+                      spreadsheetData.habits.map((habit, habitIndex) => (
+                        <tr key={`${date}-${habit.id}`} style={{
+                          transition: 'background-color 0.2s ease',
+                          borderTop: habitIndex === 0 ? '2px solid #e5e7eb' : 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f9fafb'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                        }}>
+                          {/* Date Column */}
+                          <td style={{
+                            position: 'sticky',
+                            left: 0,
+                            background: 'white',
+                            borderRight: '2px solid #e5e7eb',
+                            padding: '1rem',
+                            borderBottom: '1px solid #e5e7eb',
+                            verticalAlign: 'middle'
                           }}>
-                            <td style={{
-                              position: 'sticky',
-                              left: 0,
-                              background: 'white',
-                              borderRight: '2px solid #e5e7eb',
-                              padding: '1rem'
-                            }}>
+                            {habitIndex === 0 && (
                               <div style={{
                                 display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.75rem'
+                                flexDirection: 'column',
+                                gap: '0.25rem'
                               }}>
-                                <div
-                                  style={{
-                                    width: '12px',
-                                    height: '12px',
-                                    borderRadius: '50%',
-                                    backgroundColor: habit.color,
-                                    flexShrink: 0,
-                                    boxShadow: `0 0 0 2px ${habit.color}20`
-                                  }}
-                                />
                                 <div style={{
-                                  minWidth: 0,
-                                  flex: 1
+                                  fontWeight: '600',
+                                  color: '#1f2937',
+                                  fontSize: '0.875rem'
                                 }}>
-                                  <div style={{
-                                    fontWeight: '500',
-                                    color: '#1f2937',
-                                    textOverflow: 'ellipsis',
-                                    overflow: 'hidden',
-                                    whiteSpace: 'nowrap',
-                                    fontSize: '0.875rem'
-                                  }}>{habit.name}</div>
-                                  <div style={{
-                                    fontSize: '0.75rem',
-                                    color: '#6b7280'
-                                  }}>
-                                    Target: {habit.target}{habit.unit && ` ${habit.unit}`}
-                                  </div>
+                                  {formatDate(date)}
+                                </div>
+                                <div style={{
+                                  fontSize: '0.75rem',
+                                  color: '#6b7280'
+                                }}>
+                                  {new Date(date).toLocaleDateString('en-US', { weekday: 'short' })}
                                 </div>
                               </div>
-                            </td>
-                            {spreadsheetData.members.map(member => {
-                              const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id]
-                              return (
-                                <td key={member.id} style={{
+                            )}
+                          </td>
+                          
+                          {/* Habit Column */}
+                          <td style={{
+                            position: 'sticky',
+                            left: '120px',
+                            background: 'white',
+                            borderRight: '2px solid #e5e7eb',
+                            padding: '1rem',
+                            borderBottom: '1px solid #e5e7eb'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem'
+                            }}>
+                              <div
+                                style={{
+                                  width: '12px',
+                                  height: '12px',
+                                  borderRadius: '50%',
+                                  backgroundColor: habit.color,
+                                  flexShrink: 0,
+                                  boxShadow: `0 0 0 2px ${habit.color}20`
+                                }}
+                              />
+                              <div style={{
+                                minWidth: 0,
+                                flex: 1
+                              }}>
+                                <div style={{
+                                  fontWeight: '500',
+                                  color: '#1f2937',
+                                  textOverflow: 'ellipsis',
+                                  overflow: 'hidden',
+                                  whiteSpace: 'nowrap',
+                                  fontSize: '0.875rem'
+                                }}>{habit.name}</div>
+                                <div style={{
+                                  fontSize: '0.75rem',
+                                  color: '#6b7280'
+                                }}>
+                                  Target: {habit.target}{habit.unit && ` ${habit.unit}`}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          
+                          {/* Member Progress Columns */}
+                          {spreadsheetData.members.map(member => {
+                            const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id]
+                            return (
+                              <td 
+                                key={member.id} 
+                                style={{
                                   border: '1px solid #e5e7eb',
                                   padding: '1rem',
-                                  textAlign: 'center'
+                                  textAlign: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'background-color 0.2s ease'
+                                }}
+                                onClick={() => handleHabitEntryClick(habit.id, date, entry)}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f3f4f6'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent'
+                                }}
+                              >
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: '0.25rem'
                                 }}>
-                                  <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '0.25rem'
-                                  }}>
-                                    {getCompletionIcon(entry, habit)}
-                                    {entry && entry.value > 0 && (
-                                      <span style={{
-                                        fontSize: '0.75rem',
-                                        color: '#6b7280'
-                                      }}>
-                                        {entry.value}{habit.unit && ` ${habit.unit}`}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                              )
-                            })}
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    ))}
+                                  {getCompletionIcon(entry, habit)}
+                                  {entry && entry.value > 0 && (
+                                    <span style={{
+                                      fontSize: '0.75rem',
+                                      color: '#6b7280'
+                                    }}>
+                                      {entry.value}{habit.unit && ` ${habit.unit}`}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -692,6 +813,9 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 borderRadius: '12px',
                 border: '1px solid #e5e7eb'
               }}>
+                <div style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '600', width: '100%', marginBottom: '0.5rem' }}>
+                  Click any cell to mark your progress:
+                </div>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -811,6 +935,15 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         )}
       </div>
     </div>
+
+    {/* Shared Habit Form Modal */}
+    {showSharedHabitForm && groupId && (
+      <SharedHabitForm
+        groupId={groupId}
+        onClose={() => setShowSharedHabitForm(false)}
+        onSuccess={handleCreateSharedHabit}
+      />
+    )}
     </>
   )
 }

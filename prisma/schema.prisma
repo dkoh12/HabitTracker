@@ -25,6 +25,8 @@ model User {
   habitEntries HabitEntry[]
   groupMembers GroupMember[]
   groupsOwned  Group[]       @relation("GroupOwner")
+  createdSharedHabits SharedGroupHabit[]
+  sharedHabitEntries SharedGroupHabitEntry[]
 }
 
 model Habit {
@@ -76,6 +78,7 @@ model Group {
   owner        User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members      GroupMember[]
   groupHabits  GroupHabit[]
+  sharedHabits SharedGroupHabit[]
 }
 
 model GroupMember {
@@ -103,4 +106,44 @@ model GroupHabit {
   habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, habitId])
+}
+
+model SharedGroupHabit {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  frequency   String   @default("daily") // daily, weekly, monthly
+  target      Int      @default(1)       // target count per frequency period
+  unit        String?  // e.g., "minutes", "pages", "chapters"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  
+  // Entries for this shared habit
+  entries SharedGroupHabitEntry[]
+}
+
+model SharedGroupHabitEntry {
+  id        String   @id @default(cuid())
+  date      DateTime
+  value     Int      @default(1) // How many times completed
+  notes     String?
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId  String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sharedHabitId String
+  sharedHabit   SharedGroupHabit @relation(fields: [sharedHabitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sharedHabitId, date])
 }

@@ -80,10 +80,27 @@ export async function GET(
 
     // Get all habits from group members
     const memberIds = allMembers.map(m => m.id)
-    const groupHabits = group.groupHabits.map(gh => gh.habit)
+    
+    // Get shared group habits instead of individual habits
+    const sharedHabits = await prisma.sharedGroupHabit.findMany({
+      where: {
+        groupId: id,
+        isActive: true
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true
+          }
+        }
+      }
+    })
 
-    // If no group habits, return empty spreadsheet data
-    if (groupHabits.length === 0) {
+    // If no shared group habits, return empty spreadsheet data
+    if (sharedHabits.length === 0) {
       const spreadsheetData = {
         dates,
         members: allMembers,
@@ -93,11 +110,11 @@ export async function GET(
       return NextResponse.json(spreadsheetData)
     }
 
-    // Get all habit entries for the date range and members
-    const habitEntries = await prisma.habitEntry.findMany({
+    // Get all shared habit entries for the date range and members
+    const sharedHabitEntries = await prisma.sharedGroupHabitEntry.findMany({
       where: {
-        habitId: {
-          in: groupHabits.map(h => h.id)
+        sharedHabitId: {
+          in: sharedHabits.map(h => h.id)
         },
         userId: {
           in: memberIds
@@ -112,24 +129,24 @@ export async function GET(
     // Organize entries by date -> userId -> habitId
     const entriesMap: Record<string, Record<string, Record<string, any>>> = {}
     
-    habitEntries.forEach(entry => {
+    sharedHabitEntries.forEach(entry => {
       const dateStr = entry.date.toISOString().split('T')[0]
       if (!entriesMap[dateStr]) entriesMap[dateStr] = {}
       if (!entriesMap[dateStr][entry.userId]) entriesMap[dateStr][entry.userId] = {}
-      entriesMap[dateStr][entry.userId][entry.habitId] = {
+      entriesMap[dateStr][entry.userId][entry.sharedHabitId] = {
         id: entry.id,
-        habitId: entry.habitId,
+        habitId: entry.sharedHabitId,
         userId: entry.userId,
         date: dateStr,
         value: entry.value,
-        completed: entry.value > 0 // Derive completion from value
+        completed: entry.completed
       }
     })
 
     const spreadsheetData = {
       dates,
       members: allMembers,
-      habits: groupHabits.map(habit => ({
+      habits: sharedHabits.map(habit => ({
         id: habit.id,
         name: habit.name,
         description: habit.description,
@@ -137,13 +154,8 @@ export async function GET(
         target: habit.target,
         unit: habit.unit,
         frequency: habit.frequency,
-        userId: habit.userId,
-        user: {
-          id: habit.user.id,
-          name: habit.user.name,
-          email: habit.user.email,
-          avatar: habit.user.avatar
-        }
+        userId: habit.createdById,
+        user: habit.createdBy
       })),
       entries: entriesMap
     }
