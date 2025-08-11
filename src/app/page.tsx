@@ -28,14 +28,18 @@ export default function Home() {
   }, [session, status, router])
 
   const fetchHabits = async () => {
+    console.log('🔄 fetchHabits called')
     try {
       const response = await fetch('/api/habits')
       if (response.ok) {
         const data = await response.json()
+        console.log('📊 Habits fetched:', data.length, 'habits')
         setHabits(data)
+      } else {
+        console.error('❌ fetchHabits error:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching habits:', error)
+      console.error('💥 Error fetching habits:', error)
     } finally {
       setLoading(false)
     }
@@ -61,6 +65,7 @@ export default function Home() {
   }
 
   const updateHabitEntry = async (habitId: string, date: string, value: number) => {
+    console.log('🚀 updateHabitEntry called:', { habitId, date, value })
     try {
       const response = await fetch('/api/habit-entries', {
         method: 'POST',
@@ -70,11 +75,18 @@ export default function Home() {
         body: JSON.stringify({ habitId, date, value })
       })
 
+      console.log('📡 API response status:', response.status)
+      
       if (response.ok) {
+        const result = await response.json()
+        console.log('✅ API success:', result)
         fetchHabits()
+      } else {
+        const error = await response.text()
+        console.error('❌ API error:', response.status, error)
       }
     } catch (error) {
-      console.error('Error updating habit entry:', error)
+      console.error('💥 Network error updating habit entry:', error)
     }
   }
 

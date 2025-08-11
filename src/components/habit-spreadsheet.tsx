@@ -16,6 +16,15 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedHabit, setSelectedHabit] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week')
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number>>(new Map())
+
+  // Clear optimistic updates when habits data changes (real data updated)
+  useEffect(() => {
+    if (habits.length > 0) {
+      setOptimisticUpdates(new Map())
+    }
+  }, [habits])
 
   // Calculate date ranges based on view mode
   const getDateRange = () => {
@@ -35,6 +44,14 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   const { start: startDate, end: endDate } = getDateRange()
 
   const getEntryValue = (habitId: string, date: Date) => {
+    const dateKey = `${habitId}-${format(date, 'yyyy-MM-dd')}`
+    
+    // Check for optimistic update first
+    if (optimisticUpdates.has(dateKey)) {
+      return optimisticUpdates.get(dateKey)!
+    }
+    
+    // Otherwise get the actual value from data
     const habit = habits.find(h => h.id === habitId)
     if (!habit) return 0
 
@@ -46,7 +63,31 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
 
   const handleCellClick = (habitId: string, date: Date, currentValue: number) => {
     const newValue = currentValue > 0 ? 0 : 1
-    onUpdateEntry(habitId, format(date, 'yyyy-MM-dd'), newValue)
+    const dateString = format(date, 'yyyy-MM-dd')
+    const dateKey = `${habitId}-${dateString}`
+    
+    console.log('📝 handleCellClick:', { habitId, dateString, currentValue, newValue })
+    
+    // Apply optimistic update immediately for instant UI feedback
+    setOptimisticUpdates(prev => {
+      const newMap = new Map(prev)
+      newMap.set(dateKey, newValue)
+      return newMap
+    })
+    
+    // Call the parent's update function
+    onUpdateEntry(habitId, dateString, newValue)
+    
+    // Clear the optimistic update after a delay (when real data should be back)
+    setTimeout(() => {
+      setOptimisticUpdates(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(dateKey)
+        return newMap
+      })
+    }, 2000) // Clear after 2 seconds
+    
+    console.log('✅ Entry updated successfully!')
   }
 
   const getHabitStats = (habitId: string) => {
@@ -58,9 +99,10 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
     let currentDay = new Date(startDate)
 
     while (currentDay <= endDate) {
-      if ((viewMode === 'week' || isSameMonth(currentDay, currentDate)) && currentDay <= new Date()) {
+      // For week view, count all days; for month view, only count current month days for stats
+      if (viewMode === 'week' || isSameMonth(currentDay, currentDate)) {
         total++
-        if (getEntryValue(habitId, currentDay) > 0) {
+        if (currentDay <= new Date() && getEntryValue(habitId, currentDay) > 0) {
           completed++
         }
       }
@@ -156,13 +198,13 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
           </div>
           
           {/* Habit tracking */}
-          {!isFuture && isCurrentMonth && (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: viewMode === 'week' ? '0.5rem' : '3px',
-              flex: 1
-            }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: viewMode === 'week' ? '0.5rem' : '3px',
+            flex: 1,
+            opacity: isCurrentMonth ? 1 : 0.7
+          }}>
               {habits.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
@@ -175,31 +217,87 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
               ) : (
                 (selectedHabit ? habits.filter(h => h.id === selectedHabit) : habits.slice(0, viewMode === 'week' ? 10 : 4)).map(habit => {
                   const value = getEntryValue(habit.id, day)
+                  const cellId = `${habit.id}-${format(day, 'yyyy-MM-dd')}`
+                  const isHovered = hoveredCell === cellId
+                  const tooltipText = isFuture 
+                    ? `${habit.name}: Future tracking (cannot click)` 
+                    : `${habit.name}: ${value > 0 ? '✅ Completed' : '⭕ Not completed'} - Click to toggle`
+                  
                   return (
                     <div
                       key={habit.id}
-                      onClick={() => handleCellClick(habit.id, day, value)}
+                      onClick={!isFuture ? (e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log('🎯 CLICKING HABIT:', habit.name, 'for date:', format(day, 'yyyy-MM-dd'), 'current value:', value)
+                        handleCellClick(habit.id, day, value)
+                      } : undefined}
+                      onMouseEnter={() => {
+                        if (!isFuture) {
+                          setHoveredCell(cellId)
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        if (!isFuture) {
+                          setHoveredCell(null)
+                        }
+                      }}
                       style={{
                         width: '100%',
-                        height: viewMode === 'week' ? '12px' : '6px',
-                        borderRadius: viewMode === 'week' ? '6px' : '3px',
-                        backgroundColor: value > 0 ? habit.color : '#e5e7eb',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: value > 0 ? `0 0 0 1px ${habit.color}40` : 'none',
-                        position: 'relative'
+                        height: viewMode === 'week' ? '16px' : '8px',
+                        borderRadius: viewMode === 'week' ? '8px' : '4px',
+                        backgroundColor: isFuture 
+                          ? `${habit.color}10` 
+                          : isHovered 
+                            ? (value > 0 ? habit.color : `${habit.color}80`)
+                            : (value > 0 ? habit.color : `${habit.color}20`),
+                        border: isFuture 
+                          ? `1px dashed ${habit.color}30` 
+                          : (value > 0 ? 'none' : `1px solid ${habit.color}60`),
+                        cursor: isFuture ? 'default' : 'pointer',
+                        transition: 'all 0.15s ease',
+                        transform: !isFuture && isHovered ? 'scale(1.03)' : 'scale(1)',
+                        boxShadow: value > 0 && !isFuture 
+                          ? `0 0 0 1px ${habit.color}60` 
+                          : isHovered && !isFuture 
+                            ? `0 0 0 2px ${habit.color}40`
+                            : 'none',
+                        position: 'relative',
+                        opacity: isFuture ? 0.5 : 1,
+                        userSelect: 'none',
+                        zIndex: isHovered ? 10 : 1,
+                        minHeight: viewMode === 'week' ? '16px' : '8px'
                       }}
-                      title={`${habit.name}: ${value > 0 ? 'Completed' : 'Not completed'}`}
+                      title={tooltipText}
+                      aria-label={tooltipText}
                     >
+                      {/* Visual completion indicator */}
+                      {value > 0 && !isFuture && (
+                        <div style={{
+                          position: 'absolute',
+                          right: '2px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          fontSize: viewMode === 'week' ? '10px' : '8px',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          textShadow: '0 0 2px rgba(0,0,0,0.5)'
+                        }}>
+                          ✓
+                        </div>
+                      )}
+                      
+                      {/* Count indicator for values > 1 */}
                       {viewMode === 'week' && value > 1 && (
                         <div style={{
                           position: 'absolute',
-                          right: '4px',
+                          left: '4px',
                           top: '50%',
                           transform: 'translateY(-50%)',
                           fontSize: '0.7rem',
                           color: 'white',
-                          fontWeight: '600'
+                          fontWeight: '600',
+                          textShadow: '0 0 2px rgba(0,0,0,0.5)'
                         }}>
                           {value}
                         </div>
@@ -219,7 +317,6 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                 </div>
               )}
             </div>
-          )}
         </div>
       )
       day = addDays(day, 1)
