@@ -85,9 +85,7 @@ export default function SignIn() {
               <h1 style={{ 
                 fontSize: '24px', 
                 fontWeight: 'bold', 
-                margin: 0,
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-                color: 'white'
+                margin: 0
               }}>HabitTracker</h1>
             </div>
             
@@ -97,20 +95,14 @@ export default function SignIn() {
                 fontWeight: 'bold', 
                 lineHeight: '1.1', 
                 marginBottom: '16px',
-                textShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-                color: 'white'
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
               }}>
                 Build Better Habits Together
               </h2>
               <p style={{ 
                 fontSize: '18px', 
-                opacity: 0.95, 
-                lineHeight: '1.6',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                backdropFilter: 'blur(10px)'
+                opacity: 0.9, 
+                lineHeight: '1.6'
               }}>
                 Track your daily habits, build streaks, and share your progress with friends and family.
               </p>
