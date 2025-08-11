@@ -37,6 +37,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           username: user.username,
+          avatar: user.avatar,
         }
       }
     })
@@ -48,11 +49,17 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.username = (user as any).username
+        token.avatar = (user as any).avatar
       }
       
-      // Handle session updates (like when profile name changes)
-      if (trigger === 'update' && session?.name) {
-        token.name = session.name
+      // Handle session updates (like when profile name or avatar changes)
+      if (trigger === 'update') {
+        if (session?.name) {
+          token.name = session.name
+        }
+        if (session?.avatar !== undefined) {
+          token.avatar = session.avatar
+        }
       }
       
       return token
@@ -61,6 +68,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.sub
         ;(session.user as any).username = token.username
+        ;(session.user as any).avatar = token.avatar
         // Make sure the updated name from token is reflected in session
         if (token.name) {
           session.user.name = token.name

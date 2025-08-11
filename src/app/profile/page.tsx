@@ -7,12 +7,13 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, Calendar, Target, Edit3, Save, X } from 'lucide-react'
+import { User, Calendar, Target, Edit3, Save, X, Camera, Trash2 } from 'lucide-react'
 
 interface UserProfile {
   id: string
   name: string
   email: string
+  avatar: string | null
   createdAt: string
   _count: {
     habits: number
@@ -27,6 +28,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -100,6 +102,85 @@ export default function Profile() {
     setEditing(false)
   }
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await fetch('/api/upload-avatar', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(data.user)
+        
+        // Update the session to reflect the new avatar
+        await update({ avatar: data.user.avatar })
+        
+        router.refresh()
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to upload avatar: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      alert('Failed to upload avatar. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
+      // Reset the input
+      event.target.value = ''
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!confirm('Are you sure you want to remove your profile photo?')) {
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      const response = await fetch('/api/upload-avatar', {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(data.user)
+        
+        // Update the session to reflect the removed avatar
+        await update({ avatar: null })
+        
+        router.refresh()
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to remove avatar: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error removing avatar:', error)
+      alert('Failed to remove avatar. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   if (status === 'loading' || loading) {
     return (
       <div style={{
@@ -155,19 +236,88 @@ export default function Profile() {
           marginBottom: '2rem',
           gap: '1rem'
         }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '1.5rem',
-            fontWeight: '600'
-          }}>
-            {profile.name.charAt(0).toUpperCase()}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: profile.avatar 
+                ? `url(${profile.avatar})` 
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '2rem',
+              fontWeight: '600',
+              border: '4px solid white',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}>
+              {!profile.avatar && profile.name.charAt(0).toUpperCase()}
+              
+              {/* Upload Overlay */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: '50%',
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0,
+                transition: 'opacity 0.2s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+              onClick={() => document.getElementById('avatar-upload')?.click()}
+              >
+                <Camera className="w-6 h-6" style={{ color: 'white' }} />
+              </div>
+            </div>
+            
+            {/* Remove Avatar Button */}
+            {profile.avatar && (
+              <button
+                onClick={handleRemoveAvatar}
+                disabled={uploadingAvatar}
+                style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  right: '0',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: '#dc2626',
+                  border: '2px solid white',
+                  color: 'white',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#b91c1c'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#dc2626'}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+            
+            {/* Hidden File Input */}
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              disabled={uploadingAvatar}
+              style={{ display: 'none' }}
+            />
           </div>
           <div>
             <h1 style={{
@@ -187,6 +337,16 @@ export default function Profile() {
             }}>
               Manage your account settings and preferences
             </p>
+            {uploadingAvatar && (
+              <p style={{
+                fontSize: '0.875rem',
+                color: '#667eea',
+                margin: '0.5rem 0 0 0',
+                fontWeight: '500'
+              }}>
+                {profile.avatar ? 'Removing...' : 'Uploading...'} ⏳
+              </p>
+            )}
           </div>
         </div>
 

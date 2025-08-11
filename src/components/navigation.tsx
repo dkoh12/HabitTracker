@@ -129,7 +129,11 @@ export function Navigation() {
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: (session.user as any)?.avatar 
+                    ? `url(${(session.user as any).avatar})` 
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -137,7 +141,7 @@ export function Navigation() {
                   fontSize: '0.875rem',
                   fontWeight: '600'
                 }}>
-                  {(session.user?.name || session.user?.email || 'U').charAt(0).toUpperCase()}
+                  {!(session.user as any)?.avatar && (session.user?.name || session.user?.email || 'U').charAt(0).toUpperCase()}
                 </div>
                 <span>Welcome, {session.user?.name || session.user?.email}</span>
                 <ChevronDown className="w-4 h-4" style={{
