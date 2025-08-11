@@ -443,12 +443,56 @@ export default function GroupDetail({ params }: GroupDetailProps) {
               </div>
             </CardHeader>
             <CardContent style={{ padding: '0' }}>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '0.875rem'
+              {spreadsheetData.habits.length === 0 ? (
+                <div style={{
+                  padding: '3rem 2rem',
+                  textAlign: 'center'
                 }}>
+                  <div style={{
+                    fontSize: '4rem',
+                    marginBottom: '1rem'
+                  }}>📊</div>
+                  <h3 style={{
+                    fontSize: '1.5rem',
+                    fontWeight: '600',
+                    marginBottom: '1rem',
+                    color: '#1f2937'
+                  }}>No Shared Habits Yet</h3>
+                  <p style={{
+                    color: '#6b7280',
+                    marginBottom: '2rem',
+                    fontSize: '1rem',
+                    lineHeight: '1.6'
+                  }}>
+                    To see the progress spreadsheet, group members need to add their habits to this group.
+                    <br />
+                    Go to your individual habits and share them with this group!
+                  </p>
+                  <Button
+                    onClick={() => router.push('/habits')}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Go to My Habits
+                  </Button>
+                </div>
+              ) : (
+                <>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '0.875rem'
+                  }}>
                   {/* Header Row */}
                   <thead>
                     <tr>
@@ -637,7 +681,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 </table>
               </div>
 
-              {/* Legend */}
+              {/* Legend - only show when there are habits */}
               <div style={{
                 marginTop: '1.5rem',
                 display: 'flex',
@@ -729,6 +773,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   }}>No Entry</span>
                 </div>
               </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}

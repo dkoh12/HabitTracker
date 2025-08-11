@@ -82,6 +82,17 @@ export async function GET(
     const memberIds = allMembers.map(m => m.id)
     const groupHabits = group.groupHabits.map(gh => gh.habit)
 
+    // If no group habits, return empty spreadsheet data
+    if (groupHabits.length === 0) {
+      const spreadsheetData = {
+        dates,
+        members: allMembers,
+        habits: [],
+        entries: {}
+      }
+      return NextResponse.json(spreadsheetData)
+    }
+
     // Get all habit entries for the date range and members
     const habitEntries = await prisma.habitEntry.findMany({
       where: {
