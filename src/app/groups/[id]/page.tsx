@@ -141,21 +141,33 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     console.log('Click handler called with:', { habitId, date, memberId, currentEntry })
 
     try {
-      // Simple toggle: if completed, mark as not completed (0), otherwise mark as completed (target value)
       const habit = spreadsheetData?.habits.find(h => h.id === habitId)
       const targetValue = habit?.target || 1
       
       let newValue: number
       let completed: boolean
       
-      if (currentEntry?.completed) {
-        // Currently completed -> mark as not completed
-        newValue = 0
+      // Simplified cycling: No Entry -> Partial -> Completed -> No Entry (via value=0)
+      if (!currentEntry) {
+        // No entry -> Go to partial progress 
+        newValue = Math.max(1, Math.floor(targetValue / 2))
         completed = false
-      } else {
-        // Not completed or no entry -> mark as completed with target value
+        console.log('State: No Entry -> Partial Progress')
+      } else if (currentEntry.value > 0 && currentEntry.value < targetValue && !currentEntry.completed) {
+        // Partial progress -> Go to completed
         newValue = targetValue
         completed = true
+        console.log('State: Partial Progress -> Completed')
+      } else if (currentEntry.completed || currentEntry.value >= targetValue) {
+        // Completed -> Go back to no entry (set value to 0)
+        newValue = 0
+        completed = false
+        console.log('State: Completed -> No Entry (value=0)')
+      } else {
+        // Fallback: value is 0, go to partial
+        newValue = Math.max(1, Math.floor(targetValue / 2))
+        completed = false
+        console.log('State: Fallback -> Partial Progress')
       }
 
       console.log('Sending API request:', { date, value: newValue, completed })
@@ -227,7 +239,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         </div>
       )
     } else {
-      return <XCircle className="w-5 h-5 text-red-400" />
+      // Entry exists but value is 0 - show red X
+      return <XCircle style={{ width: '28px', height: '28px', color: '#ef4444' }} />
     }
   }
 
@@ -908,7 +921,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   }}>
                     ✓
                   </div>
-                  Click on your own cells to mark your progress:
+                  Click on your own cells to cycle through progress states:
                 </div>
                 <div style={{
                   display: 'flex',

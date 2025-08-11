@@ -175,3 +175,69 @@ export async function GET(request: NextRequest, context: RouteContext) {
     )
   }
 }
+
+// DELETE /api/groups/[id]/shared-habits/[habitId]/entries - Delete entry for shared habit
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id: groupId, habitId } = await context.params
+    const { date } = await request.json()
+
+    // Verify user is a member of the group
+    const membership = await prisma.groupMember.findFirst({
+      where: {
+        groupId,
+        userId: (session.user as any).id
+      }
+    })
+
+    const group = await prisma.group.findFirst({
+      where: {
+        id: groupId,
+        ownerId: (session.user as any).id
+      }
+    })
+
+    if (!membership && !group) {
+      return NextResponse.json({ error: 'Not a member of this group' }, { status: 403 })
+    }
+
+    // Verify the shared habit exists and belongs to this group
+    const sharedHabit = await prisma.sharedGroupHabit.findFirst({
+      where: {
+        id: habitId,
+        groupId
+      }
+    })
+
+    if (!sharedHabit) {
+      return NextResponse.json({ error: 'Shared habit not found' }, { status: 404 })
+    }
+
+    // Parse the date string properly to avoid timezone issues
+    const entryDate = new Date(date + 'T00:00:00.000Z')
+    
+    console.log('API DELETE: Received date:', date, 'Parsed as:', entryDate.toISOString())
+
+    // Delete the entry
+    const deletedEntry = await prisma.sharedGroupHabitEntry.deleteMany({
+      where: {
+        userId: (session.user as any).id,
+        sharedHabitId: habitId,
+        date: entryDate
+      }
+    })
+
+    return NextResponse.json({ deleted: deletedEntry.count > 0 })
+  } catch (error) {
+    console.error('Delete shared habit entry error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
