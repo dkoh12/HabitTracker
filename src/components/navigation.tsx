@@ -51,11 +51,10 @@ export function Navigation() {
                   gap: '0.5rem',
                   fontSize: '0.9rem',
                   fontWeight: '500',
-                  color: '#667eea',
+                  color: '#6b7280',
                   textDecoration: 'none',
                   padding: '0.5rem 1rem',
                   borderRadius: '8px',
-                  background: 'rgba(102, 126, 234, 0.1)',
                   transition: 'all 0.2s ease'
                 }}
               >
@@ -88,10 +87,11 @@ export function Navigation() {
                   gap: '0.5rem',
                   fontSize: '0.9rem',
                   fontWeight: '500',
-                  color: '#6b7280',
+                  color: '#667eea',
                   textDecoration: 'none',
                   padding: '0.5rem 1rem',
                   borderRadius: '8px',
+                  background: 'rgba(102, 126, 234, 0.1)',
                   transition: 'all 0.2s ease'
                 }}
               >
