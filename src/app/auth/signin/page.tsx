@@ -43,7 +43,7 @@ export default function SignIn() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -82,14 +82,36 @@ export default function SignIn() {
               }}>
                 <Calendar size={24} />
               </div>
-              <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>HabitTracker</h1>
+              <h1 style={{ 
+                fontSize: '24px', 
+                fontWeight: 'bold', 
+                margin: 0,
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                color: 'white'
+              }}>HabitTracker</h1>
             </div>
             
             <div style={{ marginBottom: '32px' }}>
-              <h2 style={{ fontSize: '36px', fontWeight: 'bold', lineHeight: '1.1', marginBottom: '16px' }}>
+              <h2 style={{ 
+                fontSize: '36px', 
+                fontWeight: 'bold', 
+                lineHeight: '1.1', 
+                marginBottom: '16px',
+                textShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                color: 'white'
+              }}>
                 Build Better Habits Together
               </h2>
-              <p style={{ fontSize: '18px', opacity: 0.9, lineHeight: '1.6' }}>
+              <p style={{ 
+                fontSize: '18px', 
+                opacity: 0.95, 
+                lineHeight: '1.6',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                backdropFilter: 'blur(10px)'
+              }}>
                 Track your daily habits, build streaks, and share your progress with friends and family.
               </p>
             </div>
@@ -181,15 +203,14 @@ export default function SignIn() {
               </div>
             </div>
 
-            <Card style={{ border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-              <CardHeader style={{ textAlign: 'center', paddingBottom: '8px' }}>
-                <CardTitle style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
-                  Welcome back
-                </CardTitle>
-                <p style={{ color: '#6b7280', margin: 0 }}>Sign in to continue your habit journey</p>
-              </CardHeader>
-              <CardContent style={{ paddingTop: '24px' }}>
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                Welcome back
+              </h2>
+              <p style={{ color: '#6b7280', margin: 0, fontSize: '16px' }}>Sign in to continue your habit journey</p>
+            </div>
+            
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
                       Email address
@@ -213,7 +234,8 @@ export default function SignIn() {
                           height: '48px',
                           border: '2px solid #e5e7eb',
                           borderRadius: '12px',
-                          fontSize: '16px'
+                          fontSize: '16px',
+                          backgroundColor: '#ffffff'
                         }}
                         placeholder="Enter your email"
                         required
@@ -244,7 +266,8 @@ export default function SignIn() {
                           height: '48px',
                           border: '2px solid #e5e7eb',
                           borderRadius: '12px',
-                          fontSize: '16px'
+                          fontSize: '16px',
+                          backgroundColor: '#ffffff'
                         }}
                         placeholder="Enter your password"
                         required
@@ -307,18 +330,23 @@ export default function SignIn() {
                 </form>
 
                 <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                  <p style={{ color: '#6b7280', margin: 0 }}>
-                    Don't have an account?{' '}
-                    <Link 
-                      href="/auth/signup" 
-                      style={{ fontWeight: '600', color: '#667eea', textDecoration: 'none' }}
-                    >
-                      Create one now
-                    </Link>
+                  <p style={{ color: '#6b7280', margin: 0, lineHeight: '1.6' }}>
+                    Don't have an account?
                   </p>
+                  <Link 
+                    href="/auth/signup" 
+                    style={{ 
+                      fontWeight: '600', 
+                      color: '#667eea', 
+                      textDecoration: 'none',
+                      fontSize: '16px',
+                      display: 'inline-block',
+                      marginTop: '4px'
+                    }}
+                  >
+                    Create one now
+                  </Link>
                 </div>
-              </CardContent>
-            </Card>
 
             <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '24px' }}>
               By signing in, you agree to our Terms of Service and Privacy Policy
