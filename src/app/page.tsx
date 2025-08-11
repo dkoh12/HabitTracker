@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HabitWithEntries, HabitFormData } from '@/types'
 import { Plus, Star, TrendingUp, Target, Activity } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -36,11 +37,29 @@ export default function Home() {
         const data = await response.json()
         console.log('📊 Habits fetched:', data.length, 'habits')
         setHabits(data)
+      } else if (response.status === 401) {
+        // Session is invalid (user no longer exists in database)
+        console.log('Session invalid, logging out user')
+        await signOut({ callbackUrl: '/auth/signin' })
+        return
       } else {
         console.error('❌ fetchHabits error:', response.status)
       }
     } catch (error) {
       console.error('💥 Error fetching habits:', error)
+      // If there's a network error, check if it's a session problem
+      if (session?.user) {
+        try {
+          const userCheckResponse = await fetch('/api/user/me')
+          if (userCheckResponse.status === 401) {
+            console.log('User session invalid, logging out')
+            await signOut({ callbackUrl: '/auth/signin' })
+            return
+          }
+        } catch (userCheckError) {
+          console.error('Error checking user session:', userCheckError)
+        }
+      }
     } finally {
       setLoading(false)
     }

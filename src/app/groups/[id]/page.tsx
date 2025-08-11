@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SharedHabitForm } from '@/components/shared-habit-form'
 import { GroupWithMembers } from '@/types'
 import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, Plus, BookOpen } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 interface GroupDetailProps {
   params: Promise<{
@@ -94,9 +95,26 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         await fetchSpreadsheetData(groupData)
       } else if (response.status === 404) {
         router.push('/groups')
+      } else if (response.status === 401) {
+        // Session is invalid (user no longer exists in database)
+        console.log('Session invalid, logging out user')
+        await signOut({ callbackUrl: '/auth/signin' })
       }
     } catch (error) {
       console.error('Error fetching group detail:', error)
+      // If there's a network error or other issue, also check if it's a session problem
+      if (session?.user) {
+        // Try to verify the user still exists by making a simple API call
+        try {
+          const userCheckResponse = await fetch('/api/user/me')
+          if (userCheckResponse.status === 401) {
+            console.log('User session invalid, logging out')
+            await signOut({ callbackUrl: '/auth/signin' })
+          }
+        } catch (userCheckError) {
+          console.error('Error checking user session:', userCheckError)
+        }
+      }
     } finally {
       setLoading(false)
     }
@@ -134,11 +152,25 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
     // Only allow users to update their own entries
     const currentUserId = (session.user as any).id
+    console.log('Current user ID:', currentUserId, 'Member ID:', memberId)
     if (memberId !== currentUserId) {
+      console.log('Not current user, skipping click')
       return // Don't allow clicking on other users' cells
     }
 
-    console.log('Click handler called with:', { habitId, date, memberId, currentEntry })
+    console.log('Click handler called with:', { 
+      habitId, 
+      date, 
+      memberId, 
+      currentEntry,
+      currentEntryDetails: currentEntry ? {
+        id: currentEntry.id,
+        value: currentEntry.value,
+        completed: currentEntry.completed,
+        userId: currentEntry.userId,
+        habitId: currentEntry.habitId
+      } : null
+    })
 
     try {
       const habit = spreadsheetData?.habits.find(h => h.id === habitId)

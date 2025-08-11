@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers, GroupFormData } from '@/types'
 import { Users, Plus, Copy, UserPlus } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 export default function Groups() {
   const { data: session, status } = useSession()
@@ -35,9 +36,27 @@ export default function Groups() {
       if (response.ok) {
         const data = await response.json()
         setGroups(data)
+      } else if (response.status === 401) {
+        // Session is invalid (user no longer exists in database)
+        console.log('Session invalid, logging out user')
+        await signOut({ callbackUrl: '/auth/signin' })
+        return
       }
     } catch (error) {
       console.error('Error fetching groups:', error)
+      // If there's a network error, check if it's a session problem
+      if (session?.user) {
+        try {
+          const userCheckResponse = await fetch('/api/user/me')
+          if (userCheckResponse.status === 401) {
+            console.log('User session invalid, logging out')
+            await signOut({ callbackUrl: '/auth/signin' })
+            return
+          }
+        } catch (userCheckError) {
+          console.error('Error checking user session:', userCheckError)
+        }
+      }
     } finally {
       setLoading(false)
     }
