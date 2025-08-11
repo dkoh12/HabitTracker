@@ -52,8 +52,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Shared habit not found' }, { status: 404 })
     }
 
-    const entryDate = new Date(date)
-    entryDate.setHours(0, 0, 0, 0)
+    // Parse the date string properly to avoid timezone issues
+    const entryDate = new Date(date + 'T00:00:00.000Z')
+    
+    console.log('API: Received date:', date, 'Parsed as:', entryDate.toISOString())
 
     // Upsert the entry
     const entry = await prisma.sharedGroupHabitEntry.upsert({

@@ -129,13 +129,36 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     }
   }
 
-  const handleHabitEntryClick = async (habitId: string, date: string, currentEntry: any) => {
-    if (!groupId) return
+  const handleHabitEntryClick = async (habitId: string, date: string, memberId: string, currentEntry: any) => {
+    if (!groupId || !session?.user) return
+
+    // Only allow users to update their own entries
+    const currentUserId = (session.user as any).id
+    if (memberId !== currentUserId) {
+      return // Don't allow clicking on other users' cells
+    }
+
+    console.log('Click handler called with:', { habitId, date, memberId, currentEntry })
 
     try {
-      // Toggle completion or increment value
-      const newValue = currentEntry ? (currentEntry.completed ? 0 : currentEntry.value + 1) : 1
-      const completed = newValue > 0
+      // Simple toggle: if completed, mark as not completed (0), otherwise mark as completed (target value)
+      const habit = spreadsheetData?.habits.find(h => h.id === habitId)
+      const targetValue = habit?.target || 1
+      
+      let newValue: number
+      let completed: boolean
+      
+      if (currentEntry?.completed) {
+        // Currently completed -> mark as not completed
+        newValue = 0
+        completed = false
+      } else {
+        // Not completed or no entry -> mark as completed with target value
+        newValue = targetValue
+        completed = true
+      }
+
+      console.log('Sending API request:', { date, value: newValue, completed })
 
       const response = await fetch(`/api/groups/${groupId}/shared-habits/${habitId}/entries`, {
         method: 'POST',
@@ -150,10 +173,13 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       })
 
       if (response.ok) {
-        // Refresh spreadsheet data to show the update
+        console.log('API request successful, refreshing data')
+        // Refresh spreadsheet data to show the update immediately
         if (group) {
           fetchSpreadsheetData(group)
         }
+      } else {
+        console.error('API request failed:', response.status, await response.text())
       }
     } catch (error) {
       console.error('Error updating habit entry:', error)
@@ -170,17 +196,33 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
   const getCompletionIcon = (entry: HabitEntry | null, habit: GroupHabitData) => {
     if (!entry) {
-      return <Circle className="w-5 h-5 text-gray-300" />
+      return <Circle style={{ width: '28px', height: '28px', color: '#d1d5db' }} />
     }
     
     if (entry.completed || entry.value >= habit.target) {
-      return <CheckCircle2 className="w-5 h-5 text-green-500" />
+      return <CheckCircle2 style={{ 
+        width: '28px', 
+        height: '28px', 
+        color: '#10b981',
+        filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))'
+      }} />
     } else if (entry.value > 0) {
       return (
-        <div className="relative">
-          <Circle className="w-5 h-5 text-orange-400" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+        <div style={{ position: 'relative' }}>
+          <Circle style={{ width: '28px', height: '28px', color: '#f59e0b' }} />
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              width: '10px',
+              height: '10px',
+              background: '#f59e0b',
+              borderRadius: '50%'
+            }}></div>
           </div>
         </div>
       )
@@ -758,6 +800,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                           {/* Member Progress Columns */}
                           {spreadsheetData.members.map(member => {
                             const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id]
+                            const isCurrentUser = member.id === (session?.user as any)?.id
+                            
                             return (
                               <td 
                                 key={member.id} 
@@ -765,15 +809,41 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                   border: '1px solid #e5e7eb',
                                   padding: '1rem',
                                   textAlign: 'center',
-                                  cursor: 'pointer',
-                                  transition: 'background-color 0.2s ease'
+                                  cursor: isCurrentUser ? 'pointer' : 'default',
+                                  transition: 'all 0.2s ease',
+                                  transform: 'scale(1)',
+                                  backgroundColor: isCurrentUser ? 'transparent' : '#f9fafb',
+                                  opacity: isCurrentUser ? 1 : 0.7
                                 }}
-                                onClick={() => handleHabitEntryClick(habit.id, date, entry)}
+                                onClick={(e) => {
+                                  if (!isCurrentUser) return
+                                  
+                                  // Add click animation - store reference to avoid null error
+                                  const target = e.currentTarget
+                                  target.style.transform = 'scale(0.95)'
+                                  target.style.backgroundColor = '#e0f2fe'
+                                  setTimeout(() => {
+                                    if (target) {
+                                      target.style.transform = 'scale(1)'
+                                      target.style.backgroundColor = 'transparent'
+                                    }
+                                  }, 150)
+                                  
+                                  handleHabitEntryClick(habit.id, date, member.id, entry)
+                                }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#f3f4f6'
+                                  if (isCurrentUser) {
+                                    e.currentTarget.style.backgroundColor = '#f3f4f6'
+                                    e.currentTarget.style.transform = 'scale(1.02)'
+                                  }
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent'
+                                  if (isCurrentUser) {
+                                    e.currentTarget.style.backgroundColor = 'transparent'
+                                    e.currentTarget.style.transform = 'scale(1)'
+                                  } else {
+                                    e.currentTarget.style.backgroundColor = '#f9fafb'
+                                  }
                                 }}
                               >
                                 <div style={{
@@ -813,8 +883,32 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 borderRadius: '12px',
                 border: '1px solid #e5e7eb'
               }}>
-                <div style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '600', width: '100%', marginBottom: '0.5rem' }}>
-                  Click any cell to mark your progress:
+                <div style={{ 
+                  fontSize: '0.875rem', 
+                  color: '#374151', 
+                  fontWeight: '600', 
+                  width: '100%', 
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '4px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}>
+                    ✓
+                  </div>
+                  Click on your own cells to mark your progress:
                 </div>
                 <div style={{
                   display: 'flex',
@@ -822,9 +916,10 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   gap: '0.5rem'
                 }}>
                   <CheckCircle2 style={{
-                    width: '20px',
-                    height: '20px',
-                    color: '#10b981'
+                    width: '28px',
+                    height: '28px',
+                    color: '#10b981',
+                    filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))'
                   }} />
                   <span style={{
                     fontSize: '0.875rem',
@@ -839,8 +934,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 }}>
                   <div style={{ position: 'relative' }}>
                     <Circle style={{
-                      width: '20px',
-                      height: '20px',
+                      width: '28px',
+                      height: '28px',
                       color: '#f59e0b'
                     }} />
                     <div style={{
@@ -851,8 +946,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       justifyContent: 'center'
                     }}>
                       <div style={{
-                        width: '8px',
-                        height: '8px',
+                        width: '10px',
+                        height: '10px',
                         background: '#f59e0b',
                         borderRadius: '50%'
                       }}></div>
@@ -870,8 +965,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   gap: '0.5rem'
                 }}>
                   <XCircle style={{
-                    width: '20px',
-                    height: '20px',
+                    width: '28px',
+                    height: '28px',
                     color: '#ef4444'
                   }} />
                   <span style={{
@@ -886,8 +981,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   gap: '0.5rem'
                 }}>
                   <Circle style={{
-                    width: '20px',
-                    height: '20px',
+                    width: '28px',
+                    height: '28px',
                     color: '#d1d5db'
                   }} />
                   <span style={{
