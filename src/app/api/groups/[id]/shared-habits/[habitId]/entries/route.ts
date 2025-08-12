@@ -52,10 +52,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Shared habit not found' }, { status: 404 })
     }
 
-    // Parse the date string properly to avoid timezone issues
+    // Parse the date string in UTC for consistent storage
     const entryDate = new Date(date + 'T00:00:00.000Z')
     
-    console.log('API: Received date:', date, 'Parsed as:', entryDate.toISOString())
+    // Backend timezone info (server's timezone, not client's)
+    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const serverOffset = new Date().getTimezoneOffset()
+    const localDateOnServer = new Date(date + 'T00:00:00')
+    
+    console.log('API: Received date:', date, 'Parsed as UTC:', entryDate.toISOString())
+    console.log('API: Server timezone:', serverTimezone, 'Offset (minutes):', serverOffset)
+    console.log('API: Same date in server local timezone:', localDateOnServer.toISOString())
+    console.log('API: Upserting entry with userId:', (session.user as any).id, 'habitId:', habitId, 'value:', value, 'completed:', completed)
 
     // Upsert the entry
     const entry = await prisma.sharedGroupHabitEntry.upsert({
@@ -218,12 +226,17 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Shared habit not found' }, { status: 404 })
     }
 
-    // Parse the date string properly to avoid timezone issues
+    // Parse the date string in UTC for consistent storage
     const entryDate = new Date(date + 'T00:00:00.000Z')
     
-    console.log('API DELETE: Received date:', date, 'Parsed as:', entryDate.toISOString())
+    // Backend timezone info
+    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const serverOffset = new Date().getTimezoneOffset()
+    
+    console.log('API DELETE: Received date:', date, 'Parsed as UTC:', entryDate.toISOString())
+    console.log('API DELETE: Server timezone:', serverTimezone, 'Offset (minutes):', serverOffset)
 
-    // Delete the entry
+    // Delete ALL entries for this user/habit/date combination (to handle any duplicates)
     const deletedEntry = await prisma.sharedGroupHabitEntry.deleteMany({
       where: {
         userId: (session.user as any).id,
@@ -231,6 +244,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         date: entryDate
       }
     })
+
+    console.log('API DELETE: Deleted', deletedEntry.count, 'entries for date:', date)
 
     return NextResponse.json({ deleted: deletedEntry.count > 0 })
   } catch (error) {

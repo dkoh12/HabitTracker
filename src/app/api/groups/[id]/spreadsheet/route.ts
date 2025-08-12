@@ -51,7 +51,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Generate date range
+    // Generate date range in UTC for consistent backend handling
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days + 1)
@@ -123,23 +123,42 @@ export async function GET(
           gte: new Date(startDate.toISOString().split('T')[0] + 'T00:00:00.000Z'),
           lte: new Date(endDate.toISOString().split('T')[0] + 'T23:59:59.999Z')
         }
+      },
+      orderBy: {
+        updatedAt: 'desc' // Get most recent updates first
       }
     })
 
-    // Organize entries by date -> userId -> habitId
+    console.log('Spreadsheet API - Fetched entries:', sharedHabitEntries.map(e => ({
+      id: e.id,
+      userId: e.userId,
+      date: e.date.toISOString().split('T')[0],
+      value: e.value,
+      completed: e.completed,
+      sharedHabitId: e.sharedHabitId,
+      updatedAt: e.updatedAt
+    })))
+
+    // Organize entries by date -> userId -> habitId (only keep most recent for each combination)
     const entriesMap: Record<string, Record<string, Record<string, any>>> = {}
     
     sharedHabitEntries.forEach(entry => {
       const dateStr = entry.date.toISOString().split('T')[0]
+      const entryKey = `${dateStr}-${entry.userId}-${entry.sharedHabitId}`
+      
       if (!entriesMap[dateStr]) entriesMap[dateStr] = {}
       if (!entriesMap[dateStr][entry.userId]) entriesMap[dateStr][entry.userId] = {}
-      entriesMap[dateStr][entry.userId][entry.sharedHabitId] = {
-        id: entry.id,
-        habitId: entry.sharedHabitId,
-        userId: entry.userId,
-        date: dateStr,
-        value: entry.value,
-        completed: entry.completed
+      
+      // Only add if this slot is empty (since entries are ordered by updatedAt desc, first one is most recent)
+      if (!entriesMap[dateStr][entry.userId][entry.sharedHabitId]) {
+        entriesMap[dateStr][entry.userId][entry.sharedHabitId] = {
+          id: entry.id,
+          habitId: entry.sharedHabitId,
+          userId: entry.userId,
+          date: dateStr,
+          value: entry.value,
+          completed: entry.completed
+        }
       }
     })
 
