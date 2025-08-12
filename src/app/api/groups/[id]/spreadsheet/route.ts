@@ -68,13 +68,15 @@ export async function GET(
         id: group.owner.id,
         name: group.owner.name,
         email: group.owner.email,
-        avatar: group.owner.avatar
+        avatar: group.owner.avatar,
+        role: 'OWNER'
       },
       ...group.members.map(member => ({
         id: member.user.id,
         name: member.user.name,
         email: member.user.email,
-        avatar: member.user.avatar
+        avatar: member.user.avatar,
+        role: member.role
       }))
     ]
 

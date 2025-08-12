@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       data: {
         userId: (session.user as any).id,
         groupId: group.id,
-        role: 'member'
+        role: 'Member'
       },
       include: {
         user: true,

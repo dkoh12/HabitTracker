@@ -6,11 +6,13 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting seed...')
 
-  // Create test users
+  // Create test users using upsert to handle existing data
   const hashedPassword = await bcrypt.hash('david', 10)
   
-  const user1 = await prisma.user.create({
-    data: {
+  const user1 = await prisma.user.upsert({
+    where: { username: 'david' },
+    update: {},
+    create: {
       email: 'david@io',
       username: 'david',
       password: hashedPassword,
@@ -19,8 +21,10 @@ async function main() {
     }
   })
 
-  const user2 = await prisma.user.create({
-    data: {
+  const user2 = await prisma.user.upsert({
+    where: { username: 'alice' },
+    update: {},
+    create: {
       email: 'alice@example.com',
       username: 'alice',
       password: hashedPassword,
@@ -29,8 +33,10 @@ async function main() {
     }
   })
 
-  const user3 = await prisma.user.create({
-    data: {
+  const user3 = await prisma.user.upsert({
+    where: { username: 'bob' },
+    update: {},
+    create: {
       email: 'bob@example.com',
       username: 'bob',
       password: hashedPassword,
@@ -41,9 +47,11 @@ async function main() {
 
   console.log('✅ Created test users')
 
-  // Create a test group
-  const group = await prisma.group.create({
-    data: {
+  // Create a test group using upsert
+  const group = await prisma.group.upsert({
+    where: { inviteCode: 'BOOKCLUB123' },
+    update: {},
+    create: {
       name: 'Book Club Adventures',
       description: 'A group for passionate readers who want to tackle great books together!',
       ownerId: user1.id,
@@ -51,20 +59,34 @@ async function main() {
     }
   })
 
-  // Add members to the group
-  await prisma.groupMember.create({
-    data: {
+  // Add members to the group using upsert
+  await prisma.groupMember.upsert({
+    where: {
+      userId_groupId: {
+        userId: user2.id,
+        groupId: group.id
+      }
+    },
+    update: {},
+    create: {
       userId: user2.id,
       groupId: group.id,
-      role: 'member'
+      role: 'Member'
     }
   })
 
-  await prisma.groupMember.create({
-    data: {
+  await prisma.groupMember.upsert({
+    where: {
+      userId_groupId: {
+        userId: user3.id,
+        groupId: group.id
+      }
+    },
+    update: {},
+    create: {
       userId: user3.id,
       groupId: group.id,
-      role: 'member'
+      role: 'Admin'  // Make one user an admin for testing
     }
   })
 
@@ -83,97 +105,31 @@ async function main() {
     }
   })
 
-  await prisma.habit.create({
-    data: {
-      name: 'Read Personal Books',
-      description: 'Read books for personal development',
-      color: '#3B82F6',
-      frequency: 'daily',
-      target: 20,
-      unit: 'pages',
-      userId: user1.id
-    }
-  })
+  console.log('✅ Created personal habit')
 
-  console.log('✅ Created sample personal habits')
-
-  // Create a shared group habit
-  const sharedHabit = await prisma.sharedGroupHabit.create({
-    data: {
-      name: 'Read "The Great Gatsby"',
-      description: 'Our book club is reading The Great Gatsby together. Let\'s track our daily reading progress!',
+  // Create a shared group habit for the Book Club using upsert for consistency
+  await prisma.sharedGroupHabit.upsert({
+    where: {
+      groupId_name: {
+        groupId: group.id,
+        name: 'Book Club Reading'
+      }
+    },
+    update: {},
+    create: {
+      name: 'Book Club Reading',
+      description: 'Read the monthly book club selection for at least 30 minutes',
       color: '#8B5CF6',
       frequency: 'daily',
-      target: 15,
-      unit: 'pages',
+      target: 30,
+      unit: 'minutes',
+      isActive: true,
       groupId: group.id,
       createdById: user1.id
     }
   })
 
-  console.log('✅ Created shared group habit')
-
-  // Add some sample entries for the shared habit
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const twoDaysAgo = new Date(today)
-  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
-
-  // User 1 entries
-  await prisma.sharedGroupHabitEntry.create({
-    data: {
-      userId: user1.id,
-      sharedHabitId: sharedHabit.id,
-      date: yesterday,
-      value: 15,
-      completed: true
-    }
-  })
-
-  await prisma.sharedGroupHabitEntry.create({
-    data: {
-      userId: user1.id,
-      sharedHabitId: sharedHabit.id,
-      date: twoDaysAgo,
-      value: 20,
-      completed: true
-    }
-  })
-
-  // User 2 entries
-  await prisma.sharedGroupHabitEntry.create({
-    data: {
-      userId: user2.id,
-      sharedHabitId: sharedHabit.id,
-      date: yesterday,
-      value: 10,
-      completed: false
-    }
-  })
-
-  // User 3 entries
-  await prisma.sharedGroupHabitEntry.create({
-    data: {
-      userId: user3.id,
-      sharedHabitId: sharedHabit.id,
-      date: yesterday,
-      value: 15,
-      completed: true
-    }
-  })
-
-  await prisma.sharedGroupHabitEntry.create({
-    data: {
-      userId: user3.id,
-      sharedHabitId: sharedHabit.id,
-      date: twoDaysAgo,
-      value: 12,
-      completed: false
-    }
-  })
-
-  console.log('✅ Created sample progress entries')
+  console.log('✅ Created shared group habit: Book Club Reading')
 
   console.log('\n🎉 Seed completed successfully!')
   console.log('\n📋 Test Account Details:')
@@ -181,8 +137,14 @@ async function main() {
   console.log('Password: david')
   console.log('\n📚 Test Group: "Book Club Adventures"')
   console.log('Invite Code: BOOKCLUB123')
+  console.log('\n👥 Group Members:')
+  console.log('- David (Owner)')
+  console.log('- Alice (Member)')
+  console.log('- Bob (Admin)')
+  console.log('\n📖 Shared Habit:')
+  console.log('- Book Club Reading (30 min daily)')
   console.log('\n🎯 Features to test:')
-  console.log('- Join the group with other test accounts')
+  console.log('- Test admin role management')
   console.log('- Create new shared group habits')
   console.log('- Click on spreadsheet cells to mark progress')
   console.log('- View group progress over time')

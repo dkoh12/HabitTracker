@@ -82,9 +82,9 @@ model Group {
 }
 
 model GroupMember {
-  id       String   @id @default(cuid())
-  role     String   @default("member") // member, admin
-  joinedAt DateTime @default(now())
+  id       String      @id @default(cuid())
+  role     GroupRole   @default(Member)
+  joinedAt DateTime    @default(now())
 
   // Relations
   userId  String
@@ -93,6 +93,11 @@ model GroupMember {
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
+}
+
+enum GroupRole {
+  Member
+  Admin
 }
 
 model GroupHabit {
@@ -128,6 +133,9 @@ model SharedGroupHabit {
   
   // Entries for this shared habit
   entries SharedGroupHabitEntry[]
+
+  // Ensure each group can only have one habit with a given name
+  @@unique([groupId, name])
 }
 
 model SharedGroupHabitEntry {
