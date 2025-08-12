@@ -179,51 +179,81 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       let newValue: number
       let completed: boolean
       
-      // Simplified cycling: No Entry -> Partial -> Completed -> No Entry (via value=0)
+      // Enhanced cycling: No Entry -> Completed -> Partial -> Not Started -> No Entry
       if (!currentEntry) {
-        // No entry -> Go to partial progress 
-        newValue = Math.max(1, Math.floor(targetValue / 2))
-        completed = false
-        console.log('State: No Entry -> Partial Progress')
-      } else if (currentEntry.value > 0 && currentEntry.value < targetValue && !currentEntry.completed) {
-        // Partial progress -> Go to completed
+        // No entry -> Go to completed
         newValue = targetValue
         completed = true
-        console.log('State: Partial Progress -> Completed')
+        console.log('State: No Entry -> Completed')
       } else if (currentEntry.completed || currentEntry.value >= targetValue) {
-        // Completed -> Go back to no entry (set value to 0)
-        newValue = 0
-        completed = false
-        console.log('State: Completed -> No Entry (value=0)')
-      } else {
-        // Fallback: value is 0, go to partial
+        // Completed -> Go to partial progress
         newValue = Math.max(1, Math.floor(targetValue / 2))
         completed = false
-        console.log('State: Fallback -> Partial Progress')
+        console.log('State: Completed -> Partial Progress')
+      } else if (currentEntry.value > 0 && currentEntry.value < targetValue && !currentEntry.completed) {
+        // Partial progress -> Go to not started (red X)
+        newValue = 0
+        completed = false
+        console.log('State: Partial Progress -> Not Started (red X)')
+      } else if (currentEntry.value === 0 && !currentEntry.completed) {
+        // Not started (red X) -> Go back to no entry (remove entry completely)
+        // We'll handle this by deleting the entry in the API
+        newValue = -1 // Special value to indicate deletion
+        completed = false
+        console.log('State: Not Started -> Delete Entry')
+      } else {
+        // Fallback: go to completed
+        newValue = targetValue
+        completed = true
+        console.log('State: Fallback -> Completed')
       }
 
       console.log('Sending API request:', { date, value: newValue, completed })
 
-      const response = await fetch(`/api/groups/${groupId}/shared-habits/${habitId}/entries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          date,
-          value: newValue,
-          completed
+      if (newValue === -1) {
+        // Delete the entry
+        const response = await fetch(`/api/groups/${groupId}/shared-habits/${habitId}/entries`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            date
+          })
         })
-      })
 
-      if (response.ok) {
-        console.log('API request successful, refreshing data')
-        // Refresh spreadsheet data to show the update immediately
-        if (group) {
-          fetchSpreadsheetData(group)
+        if (response.ok) {
+          console.log('Entry deleted successfully, refreshing data')
+          // Refresh spreadsheet data to show the update immediately
+          if (group) {
+            fetchSpreadsheetData(group)
+          }
+        } else {
+          console.error('Delete request failed:', response.status, await response.text())
         }
       } else {
-        console.error('API request failed:', response.status, await response.text())
+        // Create or update the entry
+        const response = await fetch(`/api/groups/${groupId}/shared-habits/${habitId}/entries`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            date,
+            value: newValue,
+            completed
+          })
+        })
+
+        if (response.ok) {
+          console.log('API request successful, refreshing data')
+          // Refresh spreadsheet data to show the update immediately
+          if (group) {
+            fetchSpreadsheetData(group)
+          }
+        } else {
+          console.error('API request failed:', response.status, await response.text())
+        }
       }
     } catch (error) {
       console.error('Error updating habit entry:', error)
@@ -960,6 +990,22 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
+                  <Circle style={{
+                    width: '28px',
+                    height: '28px',
+                    color: '#d1d5db'
+                  }} />
+                  <span style={{
+                    fontSize: '0.875rem',
+                    color: '#374151',
+                    fontWeight: '500'
+                  }}>No Entry</span>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
                   <CheckCircle2 style={{
                     width: '28px',
                     height: '28px',
@@ -1019,22 +1065,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     color: '#374151',
                     fontWeight: '500'
                   }}>Not Started</span>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  <Circle style={{
-                    width: '28px',
-                    height: '28px',
-                    color: '#d1d5db'
-                  }} />
-                  <span style={{
-                    fontSize: '0.875rem',
-                    color: '#374151',
-                    fontWeight: '500'
-                  }}>No Entry</span>
                 </div>
               </div>
                 </>

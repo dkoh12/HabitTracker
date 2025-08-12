@@ -67,7 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         }
       },
       update: {
-        value: value || 1,
+        value: value !== undefined ? value : 1,
         notes,
         completed: completed !== undefined ? completed : value >= sharedHabit.target
       },
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         userId: (session.user as any).id,
         sharedHabitId: habitId,
         date: entryDate,
-        value: value || 1,
+        value: value !== undefined ? value : 1,
         notes,
         completed: completed !== undefined ? completed : value >= sharedHabit.target
       },
