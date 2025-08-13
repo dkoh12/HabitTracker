@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navigation } from '@/components/navigation'
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft } from 'lucide-react'
-import { signOut } from 'next-auth/react'
+import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 interface CreateHabitPageProps {
   params: Promise<{
@@ -18,7 +17,6 @@ interface CreateHabitPageProps {
 }
 
 export default function CreateHabitPage({ params }: CreateHabitPageProps) {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [groupId, setGroupId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -63,29 +61,14 @@ export default function CreateHabitPage({ params }: CreateHabitPageProps) {
     resolveParams()
   }, [params])
 
-  useEffect(() => {
-    if (status === 'loading' || !groupId) return
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-    
-    // Validate that the user still exists in the database
-    validateUserSession()
-  }, [session, status, router, groupId])
+  const { session, status } = useAuthValidation()
 
-  const validateUserSession = async () => {
-    try {
-      const userCheckResponse = await fetch('/api/user/me')
-      if (userCheckResponse.status === 401) {
-        console.log('User session invalid after database reset, logging out')
-        await signOut({ callbackUrl: '/auth/signin' })
-        return
-      }
-    } catch (error) {
-      console.error('Error validating user session:', error)
+  // Basic validation when groupId changes
+  useEffect(() => {
+    if (groupId && !session) {
+      router.push('/auth/signin')
     }
-  }
+  }, [groupId, session, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

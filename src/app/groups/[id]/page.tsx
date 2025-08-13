@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Navigation } from '@/components/navigation'
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers } from '@/types'
 import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
-import { signOut } from 'next-auth/react'
+import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 interface GroupDetailProps {
   params: Promise<{
@@ -57,7 +56,6 @@ interface GroupSpreadsheetData {
 }
 
 export default function GroupDetail({ params }: GroupDetailProps) {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [group, setGroup] = useState<GroupWithMembers | null>(null)
   const [spreadsheetData, setSpreadsheetData] = useState<GroupSpreadsheetData | null>(null)
@@ -75,33 +73,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     resolveParams()
   }, [params])
 
-  useEffect(() => {
-    if (status === 'loading' || !groupId) return
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-    
-    // Validate that the user still exists in the database
-    validateUserSession()
-  }, [session, status, router, groupId])
-
-  const validateUserSession = async () => {
-    try {
-      const userCheckResponse = await fetch('/api/user/me')
-      if (userCheckResponse.status === 401) {
-        console.log('User session invalid after database reset, logging out')
-        await signOut({ callbackUrl: '/auth/signin' })
-        return
-      }
-      // If user validation passes, fetch group details
-      fetchGroupDetail()
-    } catch (error) {
-      console.error('Error validating user session:', error)
-      await signOut({ callbackUrl: '/auth/signin' })
-    }
-  }
-
   const fetchGroupDetail = async () => {
     if (!groupId) return
     
@@ -113,30 +84,28 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         await fetchSpreadsheetData(groupData)
       } else if (response.status === 404) {
         router.push('/groups')
-      } else if (response.status === 401) {
-        // Session is invalid (user no longer exists in database)
-        console.log('Session invalid, logging out user')
-        await signOut({ callbackUrl: '/auth/signin' })
       }
     } catch (error) {
       console.error('Error fetching group detail:', error)
-      // If there's a network error or other issue, also check if it's a session problem
-      if (session?.user) {
-        // Try to verify the user still exists by making a simple API call
-        try {
-          const userCheckResponse = await fetch('/api/user/me')
-          if (userCheckResponse.status === 401) {
-            console.log('User session invalid, logging out')
-            await signOut({ callbackUrl: '/auth/signin' })
-          }
-        } catch (userCheckError) {
-          console.error('Error checking user session:', userCheckError)
-        }
-      }
     } finally {
       setLoading(false)
     }
   }
+
+  const { session, status } = useAuthValidation({
+    onValidationSuccess: () => {
+      if (groupId) {
+        fetchGroupDetail()
+      }
+    }
+  })
+
+  // Re-run fetch when groupId changes
+  useEffect(() => {
+    if (groupId && session) {
+      fetchGroupDetail()
+    }
+  }, [groupId])
 
   const fetchSpreadsheetData = async (groupData: GroupWithMembers) => {
     if (!groupId) return

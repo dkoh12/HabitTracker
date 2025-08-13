@@ -1,8 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Navigation } from '@/components/navigation'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
 import { HabitForm } from '@/components/habit-form'
@@ -11,41 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HabitWithEntries, HabitFormData } from '@/types'
 import { Plus, Star, TrendingUp, Target, Activity } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 export default function Home() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedHabitDetails, setSelectedHabitDetails] = useState<HabitWithEntries | null>(null)
-
-  useEffect(() => {
-    if (status === 'loading') return
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-    
-    // Validate that the user still exists in the database
-    validateUserSession()
-  }, [session, status, router])
-
-  const validateUserSession = async () => {
-    try {
-      const userCheckResponse = await fetch('/api/user/me')
-      if (userCheckResponse.status === 401) {
-        console.log('User session invalid after database reset, logging out')
-        await signOut({ callbackUrl: '/auth/signin' })
-        return
-      }
-      // If user validation passes, fetch habits
-      fetchHabits()
-    } catch (error) {
-      console.error('Error validating user session:', error)
-      await signOut({ callbackUrl: '/auth/signin' })
-    }
-  }
 
   const fetchHabits = async () => {
     console.log('🔄 fetchHabits called')
@@ -65,23 +35,15 @@ export default function Home() {
       }
     } catch (error) {
       console.error('💥 Error fetching habits:', error)
-      // If there's a network error, check if it's a session problem
-      if (session?.user) {
-        try {
-          const userCheckResponse = await fetch('/api/user/me')
-          if (userCheckResponse.status === 401) {
-            console.log('User session invalid, logging out')
-            await signOut({ callbackUrl: '/auth/signin' })
-            return
-          }
-        } catch (userCheckError) {
-          console.error('Error checking user session:', userCheckError)
-        }
-      }
+      // The auth validation hook will handle session validation errors
     } finally {
       setLoading(false)
     }
   }
+
+  const { session, status } = useAuthValidation({
+    onValidationSuccess: fetchHabits
+  })
 
   const createHabit = async (habitData: HabitFormData) => {
     try {
