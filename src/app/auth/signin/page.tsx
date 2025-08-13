@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -12,9 +12,32 @@ import { Mail, Lock, ArrowRight, Calendar, Users, TrendingUp } from 'lucide-reac
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // Load saved email on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail')
+    const wasRemembered = localStorage.getItem('rememberMe') === 'true'
+    
+    if (savedEmail && wasRemembered) {
+      setEmail(savedEmail)
+      setRememberMe(true)
+    }
+  }, [])
+
+  // Handle remember me toggle
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMe(checked)
+    
+    // If unchecked, immediately clear saved data
+    if (!checked) {
+      localStorage.removeItem('rememberedEmail')
+      localStorage.removeItem('rememberMe')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,6 +54,15 @@ export default function SignIn() {
       if (result?.error) {
         setError('Invalid credentials')
       } else {
+        // Handle remember me functionality
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email)
+          localStorage.setItem('rememberMe', 'true')
+        } else {
+          localStorage.removeItem('rememberedEmail')
+          localStorage.removeItem('rememberMe')
+        }
+        
         router.push('/')
       }
     } catch (error) {
@@ -47,8 +79,8 @@ export default function SignIn() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
-    }}>
+      padding: '16px'
+    }} className="sm:p-20">
       <div style={{
         width: '100%',
         maxWidth: '900px',
@@ -161,12 +193,12 @@ export default function SignIn() {
         {/* Right side - Sign In Form */}
         <div style={{
           flex: 1,
-          padding: '48px',
+          padding: '24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
-        }}>
-          <div style={{ width: '100%', maxWidth: '400px' }}>
+        }} className="lg:p-12">
+          <div style={{ width: '100%', maxWidth: '400px', padding: '0 16px' }} className="lg:p-0">
             {/* Mobile logo */}
             <div style={{ textAlign: 'center', marginBottom: '32px' }} className="lg:hidden">
               <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '16px' }}>
@@ -227,7 +259,9 @@ export default function SignIn() {
                           border: '2px solid #e5e7eb',
                           borderRadius: '12px',
                           fontSize: '16px',
-                          backgroundColor: '#ffffff'
+                          backgroundColor: '#ffffff',
+                          width: '100%',
+                          boxSizing: 'border-box'
                         }}
                         placeholder="Enter your email"
                         required
@@ -259,12 +293,41 @@ export default function SignIn() {
                           border: '2px solid #e5e7eb',
                           borderRadius: '12px',
                           fontSize: '16px',
-                          backgroundColor: '#ffffff'
+                          backgroundColor: '#ffffff',
+                          width: '100%',
+                          boxSizing: 'border-box'
                         }}
                         placeholder="Enter your password"
                         required
                       />
                     </div>
+                  </div>
+
+                  {/* Remember Me Checkbox */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={(e) => handleRememberMeChange(e.target.checked)}
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        accentColor: '#667eea',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <label 
+                      htmlFor="rememberMe" 
+                      style={{ 
+                        fontSize: '14px', 
+                        color: '#374151', 
+                        cursor: 'pointer',
+                        userSelect: 'none'
+                      }}
+                    >
+                      Remember me
+                    </label>
                   </div>
 
                   {error && (

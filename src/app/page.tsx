@@ -26,8 +26,26 @@ export default function Home() {
       router.push('/auth/signin')
       return
     }
-    fetchHabits()
+    
+    // Validate that the user still exists in the database
+    validateUserSession()
   }, [session, status, router])
+
+  const validateUserSession = async () => {
+    try {
+      const userCheckResponse = await fetch('/api/user/me')
+      if (userCheckResponse.status === 401) {
+        console.log('User session invalid after database reset, logging out')
+        await signOut({ callbackUrl: '/auth/signin' })
+        return
+      }
+      // If user validation passes, fetch habits
+      fetchHabits()
+    } catch (error) {
+      console.error('Error validating user session:', error)
+      await signOut({ callbackUrl: '/auth/signin' })
+    }
+  }
 
   const fetchHabits = async () => {
     console.log('🔄 fetchHabits called')
