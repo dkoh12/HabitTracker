@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, Calendar, Target, Edit3, Save, X, Camera, Trash2, Grid, Upload, Lock, AlertTriangle } from 'lucide-react'
+import { User, Calendar, TrendingUp, Edit3, Save, X, Camera, Trash2, Grid, Upload, Lock, AlertTriangle } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -576,7 +576,8 @@ export default function Profile() {
             background: 'white',
             borderRadius: '16px',
             border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
           }}>
             <CardHeader style={{
               padding: '0.75rem 1.5rem',
@@ -737,7 +738,8 @@ export default function Profile() {
             background: 'white',
             borderRadius: '16px',
             border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
           }}>
             <CardHeader style={{
               padding: '0.75rem 1.5rem',
@@ -917,7 +919,8 @@ export default function Profile() {
             background: 'white',
             borderRadius: '16px',
             border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
           }}>
             <CardHeader style={{
               padding: '0.75rem 1.5rem',
@@ -932,7 +935,7 @@ export default function Profile() {
                 alignItems: 'center',
                 gap: '0.5rem'
               }}>
-                <Target className="w-5 h-5" style={{ color: '#667eea' }} />
+                <TrendingUp className="w-5 h-5" style={{ color: '#10b981' }} />
                 Account Statistics
               </CardTitle>
             </CardHeader>
@@ -1004,7 +1007,8 @@ export default function Profile() {
             background: 'white',
             borderRadius: '16px',
             border: '1px solid #fecaca',
-            boxShadow: '0 10px 25px rgba(239, 68, 68, 0.1)'
+            boxShadow: '0 10px 25px rgba(239, 68, 68, 0.1)',
+            overflow: 'hidden'
           }}>
             <CardHeader style={{
               padding: '0.75rem 1.5rem',
