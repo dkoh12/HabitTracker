@@ -47,13 +47,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { name, description, color, frequency, target, unit } = await request.json()
+    const { 
+      name, 
+      description, 
+      color, 
+      target, 
+      unit,
+      scheduleType,
+      selectedDays,
+      monthlyType,
+      monthlyDate,
+      monthlyWeekday,
+      monthlyWeek,
+      customInterval,
+      customUnit
+    } = await request.json()
 
     if (!name) {
       return NextResponse.json(
         { error: 'Habit name is required' },
         { status: 400 }
       )
+    }
+
+    // Convert advanced scheduling to simple frequency for database storage
+    let frequency = 'daily'
+    if (scheduleType === 'weekly' && selectedDays?.length === 7) {
+      frequency = 'daily'
+    } else if (scheduleType === 'monthly') {
+      frequency = 'monthly'
+    } else if (scheduleType === 'weekly') {
+      frequency = 'weekly'
+    } else if (scheduleType === 'custom') {
+      if (customUnit === 'days' && customInterval === 1) {
+        frequency = 'daily'
+      } else if (customUnit === 'weeks' && customInterval === 1) {
+        frequency = 'weekly'
+      } else if (customUnit === 'months' && customInterval === 1) {
+        frequency = 'monthly'
+      } else {
+        frequency = 'weekly' // Default for other custom intervals
+      }
     }
 
     const habit = await prisma.habit.create({

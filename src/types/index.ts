@@ -44,15 +44,6 @@ export interface HabitFormData {
   customUnit: 'days' | 'weeks' | 'months'
 }
 
-export interface LegacyHabitFormData {
-  name: string
-  description?: string
-  color?: string
-  frequency: 'daily' | 'weekly' | 'monthly'
-  target: number
-  unit?: string
-}
-
 export interface HabitEntryData {
   date: string
   value: number

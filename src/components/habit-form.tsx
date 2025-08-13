@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { HabitFormData, HabitWithEntries, LegacyHabitFormData } from '@/types'
+import { HabitFormData, HabitWithEntries } from '@/types'
 import { Clock } from 'lucide-react'
 
 interface HabitFormProps {
-  onSubmit: (data: LegacyHabitFormData) => void
+  onSubmit: (data: HabitFormData) => void
   onCancel?: () => void
   habit?: HabitWithEntries
   isEditing?: boolean
@@ -94,37 +94,7 @@ export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: Habi
       return
     }
     
-    // Convert the new scheduling format to legacy format for existing API compatibility
-    let legacyFrequency: 'daily' | 'weekly' | 'monthly' = 'daily'
-    if (formData.scheduleType === 'weekly') {
-      legacyFrequency = 'weekly'
-    } else if (formData.scheduleType === 'monthly') {
-      legacyFrequency = 'monthly'
-    } else if (formData.scheduleType === 'custom') {
-      // Map custom intervals to legacy frequency
-      if (formData.customUnit === 'days' && formData.customInterval === 1) {
-        legacyFrequency = 'daily'
-      } else if (formData.customUnit === 'weeks' && formData.customInterval === 1) {
-        legacyFrequency = 'weekly'
-      } else if (formData.customUnit === 'months' && formData.customInterval === 1) {
-        legacyFrequency = 'monthly'
-      } else {
-        // For now, default to weekly for other custom intervals
-        legacyFrequency = 'weekly'
-      }
-    }
-    
-    // Create legacy compatible data structure
-    const legacyData = {
-      name: formData.name,
-      description: formData.description,
-      color: formData.color,
-      frequency: legacyFrequency,
-      target: formData.target,
-      unit: formData.unit
-    }
-    
-    onSubmit(legacyData as any)
+    onSubmit(formData)
   }
 
   return (
