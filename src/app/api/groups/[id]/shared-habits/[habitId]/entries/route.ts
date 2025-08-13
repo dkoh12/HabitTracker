@@ -102,17 +102,12 @@ export const POST = withAuthAndParams(async (request, { user }, { params }) => {
       { status: 500 }
     )
   }
-}
+})
 
 // GET /api/groups/[id]/shared-habits/[habitId]/entries - Get entries for a shared habit
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId, habitId } = await context.params
+    const { id: groupId, habitId } = await params
     const { searchParams } = new URL(request.url)
     const days = parseInt(searchParams.get('days') || '30')
 
@@ -120,14 +115,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const membership = await prisma.groupMember.findFirst({
       where: {
         groupId,
-        userId: (session.user as any).id
+        userId: user.id
       }
     })
 
     const group = await prisma.group.findFirst({
       where: {
         id: groupId,
-        ownerId: (session.user as any).id
+        ownerId: user.id
       }
     })
 
@@ -169,31 +164,26 @@ export async function GET(request: NextRequest, context: RouteContext) {
       { status: 500 }
     )
   }
-}
+})
 
 // DELETE /api/groups/[id]/shared-habits/[habitId]/entries - Delete entry for shared habit
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId, habitId } = await context.params
+    const { id: groupId, habitId } = await params
     const { date } = await request.json()
 
     // Verify user is a member of the group
     const membership = await prisma.groupMember.findFirst({
       where: {
         groupId,
-        userId: (session.user as any).id
+        userId: user.id
       }
     })
 
     const group = await prisma.group.findFirst({
       where: {
         id: groupId,
-        ownerId: (session.user as any).id
+        ownerId: user.id
       }
     })
 
@@ -226,7 +216,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     // Delete ALL entries for this user/habit/date combination (to handle any duplicates)
     const deletedEntry = await prisma.sharedGroupHabitEntry.deleteMany({
       where: {
-        userId: (session.user as any).id,
+        userId: user.id,
         sharedHabitId: habitId,
         date: entryDate
       }
@@ -242,4 +232,4 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       { status: 500 }
     )
   }
-}
+})

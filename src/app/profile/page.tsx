@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, Calendar, Target, Edit3, Save, X, Camera, Trash2, Grid, Upload } from 'lucide-react'
+import { User, Calendar, Target, Edit3, Save, X, Camera, Trash2, Grid, Upload, Lock, AlertTriangle } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -38,6 +38,20 @@ export default function Profile() {
   const [showDefaultAvatars, setShowDefaultAvatars] = useState(false)
   const [defaultAvatars, setDefaultAvatars] = useState<DefaultAvatar[]>([])
   const [loadingAvatars, setLoadingAvatars] = useState(false)
+  
+  // Password reset states
+  const [showPasswordReset, setShowPasswordReset] = useState(false)
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [resettingPassword, setResettingPassword] = useState(false)
+  
+  // Delete account states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -243,6 +257,83 @@ export default function Profile() {
       alert('Failed to set avatar. Please try again.')
     } finally {
       setUploadingAvatar(false)
+    }
+  }
+
+  const handlePasswordReset = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      alert('Please fill in all password fields')
+      return
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('New passwords do not match')
+      return
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      alert('New password must be at least 6 characters long')
+      return
+    }
+
+    setResettingPassword(true)
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      })
+
+      if (response.ok) {
+        alert('Password updated successfully!')
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        setShowPasswordReset(false)
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to update password: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error updating password:', error)
+      alert('Failed to update password. Please try again.')
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      alert('Please type "DELETE" to confirm account deletion')
+      return
+    }
+
+    if (!confirm('Are you absolutely sure you want to delete your account? This action cannot be undone and will permanently delete all your habits, groups, and data.')) {
+      return
+    }
+
+    setDeletingAccount(true)
+    try {
+      const response = await fetch('/api/auth/delete-account', {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        alert('Account deleted successfully. You will be signed out.')
+        // Sign out and redirect to home
+        window.location.href = '/auth/signin'
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to delete account: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('Failed to delete account. Please try again.')
+    } finally {
+      setDeletingAccount(false)
     }
   }
 
@@ -488,7 +579,7 @@ export default function Profile() {
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
           }}>
             <CardHeader style={{
-              padding: '1.5rem',
+              padding: '0.75rem 1.5rem',
               borderBottom: '1px solid #f3f4f6',
               background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
             }}>
@@ -641,6 +732,186 @@ export default function Profile() {
             </CardContent>
           </Card>
 
+          {/* Password Reset Section */}
+          <Card style={{
+            background: 'white',
+            borderRadius: '16px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+          }}>
+            <CardHeader style={{
+              padding: '0.75rem 1.5rem',
+              borderBottom: '1px solid #f3f4f6',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
+            }}>
+              <CardTitle style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#1f2937',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <Lock className="w-5 h-5" style={{ color: '#667eea' }} />
+                Password & Security
+              </CardTitle>
+            </CardHeader>
+            <CardContent style={{ padding: '1.5rem' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: showPasswordReset ? '1.5rem' : '0'
+              }}>
+                <div>
+                  <h4 style={{
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    color: '#374151',
+                    margin: 0,
+                    marginBottom: '0.25rem'
+                  }}>
+                    Change Password
+                  </h4>
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: '#6b7280',
+                    margin: 0
+                  }}>
+                    Update your account password for better security
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setShowPasswordReset(!showPasswordReset)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: showPasswordReset ? '#e5e7eb' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: showPasswordReset ? '#374151' : 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {showPasswordReset ? 'Cancel' : 'Change Password'}
+                </Button>
+              </div>
+
+              {showPasswordReset && (
+                <div style={{
+                  padding: '1.5rem',
+                  background: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Current Password
+                      </label>
+                      <Input
+                        type="password"
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                        placeholder="Enter your current password"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        New Password
+                      </label>
+                      <Input
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        placeholder="Enter your new password (min. 6 characters)"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Confirm New Password
+                      </label>
+                      <Input
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        placeholder="Confirm your new password"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <Button
+                      onClick={handlePasswordReset}
+                      disabled={resettingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: resettingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword
+                          ? '#d1d5db' 
+                          : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: resettingPassword || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword 
+                          ? 'not-allowed' : 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        alignSelf: 'flex-start'
+                      }}
+                    >
+                      {resettingPassword ? 'Updating Password...' : 'Update Password'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Account Statistics */}
           <Card style={{
             background: 'white',
@@ -649,7 +920,7 @@ export default function Profile() {
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
           }}>
             <CardHeader style={{
-              padding: '1.5rem',
+              padding: '0.75rem 1.5rem',
               borderBottom: '1px solid #f3f4f6',
               background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
             }}>
@@ -725,6 +996,170 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Delete Account Section */}
+          <Card style={{
+            background: 'white',
+            borderRadius: '16px',
+            border: '1px solid #fecaca',
+            boxShadow: '0 10px 25px rgba(239, 68, 68, 0.1)'
+          }}>
+            <CardHeader style={{
+              padding: '0.75rem 1.5rem',
+              borderBottom: '1px solid #fee2e2',
+              background: 'linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)'
+            }}>
+              <CardTitle style={{
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <AlertTriangle className="w-5 h-5" style={{ color: '#dc2626' }} />
+                Danger Zone
+              </CardTitle>
+            </CardHeader>
+            <CardContent style={{ padding: '1.5rem' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: showDeleteConfirm ? '1.5rem' : '0'
+              }}>
+                <div>
+                  <h4 style={{
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    color: '#dc2626',
+                    margin: 0,
+                    marginBottom: '0.25rem'
+                  }}>
+                    Delete Account
+                  </h4>
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: '#6b7280',
+                    margin: 0
+                  }}>
+                    Permanently delete your account and all associated data
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: showDeleteConfirm ? '#e5e7eb' : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                    color: showDeleteConfirm ? '#374151' : 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {showDeleteConfirm ? 'Cancel' : 'Delete Account'}
+                </Button>
+              </div>
+
+              {showDeleteConfirm && (
+                <div style={{
+                  padding: '1.5rem',
+                  background: '#fef2f2',
+                  borderRadius: '12px',
+                  border: '1px solid #fecaca'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    background: '#fee2e2',
+                    borderRadius: '8px',
+                    border: '1px solid #fca5a5'
+                  }}>
+                    <AlertTriangle className="w-5 h-5" style={{ color: '#dc2626', flexShrink: 0 }} />
+                    <div>
+                      <h5 style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#dc2626',
+                        margin: 0,
+                        marginBottom: '0.25rem'
+                      }}>
+                        Warning: This action cannot be undone!
+                      </h5>
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: '#7f1d1d',
+                        margin: 0
+                      }}>
+                        Deleting your account will permanently remove all your habits, group memberships, progress data, and profile information.
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Type &quot;DELETE&quot; to confirm
+                      </label>
+                      <Input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder="Type DELETE here"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '2px solid #fca5a5',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleDeleteAccount}
+                      disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: deletingAccount || deleteConfirmText !== 'DELETE'
+                          ? '#d1d5db' 
+                          : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: deletingAccount || deleteConfirmText !== 'DELETE' 
+                          ? 'not-allowed' : 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        alignSelf: 'flex-start',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deletingAccount ? 'Deleting Account...' : 'Delete My Account'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
