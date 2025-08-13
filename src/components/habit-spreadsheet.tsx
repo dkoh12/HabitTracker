@@ -515,13 +515,17 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                           }}
                           onClick={() => handleCellClick(habit.id, date)}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow = 'inset 0 0 0 1px #10b981'
-                            e.currentTarget.style.border = '1px solid #10b981'
+                            e.currentTarget.style.outline = '2px solid #10b981'
+                            e.currentTarget.style.outlineOffset = '-2px'
+                            e.currentTarget.style.position = 'relative'
+                            e.currentTarget.style.zIndex = '20'
                             e.currentTarget.style.transform = 'scale(1.02)'
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.boxShadow = 'none'
-                            e.currentTarget.style.border = '1px solid #d1d5db'
+                            e.currentTarget.style.outline = 'none'
+                            e.currentTarget.style.outlineOffset = '0'
+                            e.currentTarget.style.position = 'static'
+                            e.currentTarget.style.zIndex = 'auto'
                             e.currentTarget.style.transform = 'scale(1)'
                           }}
                           title={`${habit.name} on ${formatDate(date)}: ${value}${habit.unit || ''} (Target: ${target}${habit.unit || ''}) - Click to cycle: Green → Yellow → Red → None`}
