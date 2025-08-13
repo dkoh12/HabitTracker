@@ -132,11 +132,17 @@ export function Navigation() {
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  background: (session.user as any)?.avatar 
-                    ? `url(${(session.user as any).avatar})` 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
+                  ...((session.user as any)?.avatar 
+                    ? {
+                        backgroundImage: `url(${(session.user as any).avatar})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }
+                    : {
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                      }
+                  ),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

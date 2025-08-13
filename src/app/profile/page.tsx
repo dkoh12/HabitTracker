@@ -447,11 +447,17 @@ export default function Profile() {
               width: '80px',
               height: '80px',
               borderRadius: '50%',
-              background: profile.avatar 
-                ? `url(${profile.avatar})` 
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
+              ...(profile.avatar 
+                ? {
+                    backgroundImage: `url(${profile.avatar})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }
+                : {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  }
+              ),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1297,9 +1303,10 @@ export default function Profile() {
                       border: '3px solid transparent',
                       cursor: uploadingAvatar ? 'not-allowed' : 'pointer',
                       opacity: uploadingAvatar ? 0.6 : 1,
-                      background: `url(${avatar.url})`,
+                      backgroundImage: `url(${avatar.url})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
                       transition: 'all 0.2s ease',
                       overflow: 'hidden'
                     }}
