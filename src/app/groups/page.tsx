@@ -201,7 +201,7 @@ export default function Groups() {
             marginBottom: '2rem'
           }}>
             <CardHeader style={{
-              padding: '1.5rem',
+              padding: '1rem 1.5rem',
               borderBottom: '1px solid #f3f4f6'
             }}>
               <CardTitle style={{
@@ -218,56 +218,98 @@ export default function Groups() {
                 flexDirection: 'column',
                 gap: '1.5rem'
               }}>
-                <div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem'
+                }}>
                   <label style={{
                     display: 'block',
                     fontSize: '0.9rem',
                     fontWeight: '500',
-                    marginBottom: '0.5rem',
                     color: '#374151'
                   }}>
                     Group Name *
                   </label>
-                  <Input
-                    value={createFormData.name}
-                    onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
-                    placeholder="e.g., Family Fitness, Study Buddies"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '1rem',
-                      transition: 'all 0.2s ease',
-                      background: 'white'
-                    }}
-                  />
+                  <div style={{
+                    position: 'relative',
+                    width: '100%'
+                  }}>
+                    <Input
+                      value={createFormData.name}
+                      onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
+                      placeholder="e.g., Family Fitness, Study Buddies"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem 1rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        lineHeight: '1.5',
+                        transition: 'all 0.2s ease',
+                        background: 'white',
+                        boxSizing: 'border-box',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#667eea'
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem'
+                }}>
                   <label style={{
                     display: 'block',
                     fontSize: '0.9rem',
                     fontWeight: '500',
-                    marginBottom: '0.5rem',
                     color: '#374151'
                   }}>
                     Description
                   </label>
-                  <Input
-                    value={createFormData.description}
-                    onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
-                    placeholder="Optional description"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '1rem',
-                      transition: 'all 0.2s ease',
-                      background: 'white'
-                    }}
-                  />
+                  <div style={{
+                    position: 'relative',
+                    width: '100%'
+                  }}>
+                    <textarea
+                      value={createFormData.description}
+                      onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
+                      placeholder="Optional description for your group..."
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem 1rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        lineHeight: '1.5',
+                        transition: 'all 0.2s ease',
+                        background: 'white',
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        resize: 'vertical',
+                        minHeight: '80px',
+                        fontFamily: 'inherit'
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#667eea'
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }}
+                    />
+                  </div>
                 </div>
                 <div style={{
                   display: 'flex',
@@ -316,7 +358,7 @@ export default function Groups() {
             marginBottom: '2rem'
           }}>
             <CardHeader style={{
-              padding: '1.5rem',
+              padding: '1rem 1.5rem',
               borderBottom: '1px solid #f3f4f6'
             }}>
               <CardTitle style={{
@@ -333,31 +375,50 @@ export default function Groups() {
                 flexDirection: 'column',
                 gap: '1.5rem'
               }}>
-                <div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem'
+                }}>
                   <label style={{
                     display: 'block',
                     fontSize: '0.9rem',
                     fontWeight: '500',
-                    marginBottom: '0.5rem',
                     color: '#374151'
                   }}>
                     Invite Code *
                   </label>
-                  <Input
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    placeholder="Enter the invite code"
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '1rem',
-                      transition: 'all 0.2s ease',
-                      background: 'white'
-                    }}
-                  />
+                  <div style={{
+                    position: 'relative',
+                    width: '100%'
+                  }}>
+                    <Input
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                      placeholder="Enter the invite code"
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem 1rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        lineHeight: '1.5',
+                        transition: 'all 0.2s ease',
+                        background: 'white',
+                        boxSizing: 'border-box',
+                        outline: 'none'
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#667eea'
+                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = '#e5e7eb'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }}
+                    />
+                  </div>
                 </div>
                 <div style={{
                   display: 'flex',
