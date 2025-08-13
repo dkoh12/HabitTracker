@@ -840,7 +840,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         fontWeight: '600',
                         minWidth: '120px',
                         color: '#374151',
-                        fontSize: '0.875rem'
+                        fontSize: '0.875rem',
+                        zIndex: 3
                       }}>
                         Date
                       </th>
@@ -854,7 +855,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         fontWeight: '600',
                         minWidth: '200px',
                         color: '#374151',
-                        fontSize: '0.875rem'
+                        fontSize: '0.875rem',
+                        zIndex: 2
                       }}>
                         Habit
                       </th>
@@ -980,10 +982,22 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                           borderTop: habitIndex === 0 ? '2px solid #e5e7eb' : 'none'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#f9fafb'
+                          const row = e.currentTarget
+                          row.style.backgroundColor = '#f9fafb'
+                          // Keep sticky columns white on hover
+                          const stickyColumns = row.querySelectorAll('td[style*="position: sticky"]')
+                          stickyColumns.forEach(col => {
+                            ;(col as HTMLElement).style.backgroundColor = 'white'
+                          })
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent'
+                          const row = e.currentTarget
+                          row.style.backgroundColor = 'transparent'
+                          // Reset sticky columns to white
+                          const stickyColumns = row.querySelectorAll('td[style*="position: sticky"]')
+                          stickyColumns.forEach(col => {
+                            ;(col as HTMLElement).style.backgroundColor = 'white'
+                          })
                         }}>
                           {/* Date Column */}
                           <td style={{
@@ -993,7 +1007,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                             borderRight: '2px solid #e5e7eb',
                             padding: '1rem',
                             borderBottom: '1px solid #e5e7eb',
-                            verticalAlign: 'middle'
+                            verticalAlign: 'middle',
+                            zIndex: 3
                           }}>
                             {habitIndex === 0 && (
                               <div style={{
@@ -1025,7 +1040,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                             background: 'white',
                             borderRight: '2px solid #e5e7eb',
                             padding: '1rem',
-                            borderBottom: '1px solid #e5e7eb'
+                            borderBottom: '1px solid #e5e7eb',
+                            zIndex: 2
                           }}>
                             <div style={{
                               display: 'flex',
