@@ -1,38 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
-
-interface RouteContext {
-  params: Promise<{
-    id: string
-    habitId: string
-  }>
-}
+import { withAuthAndParams } from '@/lib/withAuth'
 
 // POST /api/groups/[id]/shared-habits/[habitId]/entries - Create or update entry for shared habit
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId, habitId } = await context.params
+    const { id: groupId, habitId } = await params
     const { date, value, notes, completed } = await request.json()
 
     // Verify user is a member of the group
     const membership = await prisma.groupMember.findFirst({
       where: {
         groupId,
-        userId: (session.user as any).id
+        userId: user.id
       }
     })
 
     const group = await prisma.group.findFirst({
       where: {
         id: groupId,
-        ownerId: (session.user as any).id
+        ownerId: user.id
       }
     })
 
@@ -63,13 +50,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     console.log('API: Received date:', date, 'Parsed as UTC:', entryDate.toISOString())
     console.log('API: Server timezone:', serverTimezone, 'Offset (minutes):', serverOffset)
     console.log('API: Same date in server local timezone:', localDateOnServer.toISOString())
-    console.log('API: Upserting entry with userId:', (session.user as any).id, 'habitId:', habitId, 'value:', value, 'completed:', completed)
+    console.log('API: Upserting entry with userId:', user.id, 'habitId:', habitId, 'value:', value, 'completed:', completed)
 
     // Upsert the entry
     const entry = await prisma.sharedGroupHabitEntry.upsert({
       where: {
         userId_sharedHabitId_date: {
-          userId: (session.user as any).id,
+          userId: user.id,
           sharedHabitId: habitId,
           date: entryDate
         }
@@ -80,7 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         completed: completed !== undefined ? completed : value >= sharedHabit.target
       },
       create: {
-        userId: (session.user as any).id,
+        userId: user.id,
         sharedHabitId: habitId,
         date: entryDate,
         value: value !== undefined ? value : 1,

@@ -1,19 +1,13 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/withAuth'
 
-export async function GET() {
+export const GET = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     // Check if the user still exists in the database
-    const user = await prisma.user.findUnique({
+    const userData = await prisma.user.findUnique({
       where: {
-        id: (session.user as any).id
+        id: user.id
       },
       select: {
         id: true,
@@ -23,12 +17,12 @@ export async function GET() {
       }
     })
 
-    if (!user) {
+    if (!userData) {
       // User no longer exists in database, session is invalid
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json(userData)
   } catch (error) {
     console.error('Get current user error:', error)
     return NextResponse.json(
@@ -36,4 +30,4 @@ export async function GET() {
       { status: 500 }
     )
   }
-}
+})

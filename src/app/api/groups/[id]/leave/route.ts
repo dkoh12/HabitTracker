@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
-
-interface RouteContext {
-  params: Promise<{
-    id: string
-  }>
-}
+import { withAuthAndParams } from '@/lib/withAuth'
 
 // DELETE /api/groups/[id]/leave - Leave a group
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId } = await context.params
-    const userId = (session.user as any).id
+    const { id: groupId } = await params
+    const userId = user.id
 
     // Check if user is a member of the group (not the owner)
     const membership = await prisma.groupMember.findFirst({
@@ -72,4 +60,4 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       { status: 500 }
     )
   }
-}
+})

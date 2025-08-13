@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuthAndParams } from '@/lib/withAuth'
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { id } = await params
 
     const group = await prisma.group.findUnique({
@@ -44,8 +34,8 @@ export async function GET(
     }
 
     // Check if user is a member or owner
-    const isOwner = group.ownerId === (session.user as any).id
-    const isMember = group.members.some(member => member.userId === (session.user as any).id)
+    const isOwner = group.ownerId === user.id
+    const isMember = group.members.some(member => member.userId === user.id)
 
     if (!isOwner && !isMember) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
@@ -59,4 +49,4 @@ export async function GET(
       { status: 500 }
     )
   }
-}
+})

@@ -1,16 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/withAuth'
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { habitId, date, value, notes } = await request.json()
 
     if (!habitId || !date) {
@@ -24,7 +17,7 @@ export async function POST(request: Request) {
     const habit = await prisma.habit.findFirst({
       where: {
         id: habitId,
-        userId: (session.user as any).id
+        userId: user.id
       }
     })
 
@@ -39,7 +32,7 @@ export async function POST(request: Request) {
     const entry = await prisma.habitEntry.upsert({
       where: {
         userId_habitId_date: {
-          userId: (session.user as any).id,
+          userId: user.id,
           habitId,
           date: new Date(date)
         }
@@ -49,7 +42,7 @@ export async function POST(request: Request) {
         notes
       },
       create: {
-        userId: (session.user as any).id,
+        userId: user.id,
         habitId,
         date: new Date(date),
         value: value || 1,
@@ -65,23 +58,17 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { searchParams } = new URL(request.url)
     const habitId = searchParams.get('habitId')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
     const where: any = {
-      userId: (session.user as any).id
+      userId: user.id
     }
 
     if (habitId) {
@@ -113,4 +100,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-}
+})

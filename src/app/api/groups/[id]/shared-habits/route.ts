@@ -1,36 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
-
-interface RouteContext {
-  params: Promise<{
-    id: string
-  }>
-}
+import { withAuthAndParams } from '@/lib/withAuth'
 
 // GET /api/groups/[id]/shared-habits - Get all shared habits for a group
-export async function GET(request: NextRequest, context: RouteContext) {
+export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId } = await context.params
+    const { id: groupId } = await params
 
     // Verify user is a member of the group
     const membership = await prisma.groupMember.findFirst({
       where: {
         groupId,
-        userId: (session.user as any).id
+        userId: user.id
       }
     })
 
     const group = await prisma.group.findFirst({
       where: {
         id: groupId,
-        ownerId: (session.user as any).id
+        ownerId: user.id
       }
     })
 
@@ -83,31 +71,26 @@ export async function GET(request: NextRequest, context: RouteContext) {
       { status: 500 }
     )
   }
-}
+})
 
 // POST /api/groups/[id]/shared-habits - Create a new shared habit for the group
-export async function POST(request: NextRequest, context: RouteContext) {
+export const POST = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId } = await context.params
+    const { id: groupId } = await params
     const { name, description, color, frequency, target, unit } = await request.json()
 
     // Verify user is a member of the group or the owner
     const membership = await prisma.groupMember.findFirst({
       where: {
         groupId,
-        userId: (session.user as any).id
+        userId: user.id
       }
     })
 
     const group = await prisma.group.findFirst({
       where: {
         id: groupId,
-        ownerId: (session.user as any).id
+        ownerId: user.id
       }
     })
 
@@ -124,7 +107,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         target: target || 1,
         unit,
         groupId,
-        createdById: (session.user as any).id
+        createdById: user.id
       },
       include: {
         createdBy: {
@@ -146,4 +129,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
       { status: 500 }
     )
   }
-}
+})

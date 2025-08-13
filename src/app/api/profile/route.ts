@@ -1,19 +1,12 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/withAuth'
 
-export async function GET() {
+export const GET = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
+    const userData = await prisma.user.findUnique({
       where: {
-        id: (session.user as any).id
+        id: user.id
       },
       select: {
         id: true,
@@ -33,11 +26,11 @@ export async function GET() {
       }
     })
 
-    if (!user) {
+    if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json(userData)
   } catch (error) {
     console.error('Get profile error:', error)
     return NextResponse.json(
@@ -45,16 +38,10 @@ export async function GET() {
       { status: 500 }
     )
   }
-}
+})
 
-export async function PUT(request: Request) {
+export const PUT = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { name } = await request.json()
 
     if (!name || name.trim().length === 0) {
@@ -64,9 +51,9 @@ export async function PUT(request: Request) {
       )
     }
 
-    const user = await prisma.user.update({
+    const userData = await prisma.user.update({
       where: {
-        id: (session.user as any).id
+        id: user.id
       },
       data: {
         name: name.trim()
@@ -89,7 +76,7 @@ export async function PUT(request: Request) {
       }
     })
 
-    return NextResponse.json(user)
+    return NextResponse.json(userData)
   } catch (error) {
     console.error('Update profile error:', error)
     return NextResponse.json(
@@ -97,4 +84,4 @@ export async function PUT(request: Request) {
       { status: 500 }
     )
   }
-}
+})

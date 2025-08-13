@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { withAuth } from '@/lib/withAuth'
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { avatarUrl } = await request.json()
 
     if (!avatarUrl || typeof avatarUrl !== 'string') {
@@ -24,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Update user's avatar in database
     const updatedUser = await prisma.user.update({
-      where: { email: session.user.email },
+      where: { id: user.id },
       data: { avatar: avatarUrl },
       include: {
         _count: {
@@ -41,4 +34,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

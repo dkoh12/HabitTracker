@@ -1,19 +1,12 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/withAuth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const formData = await request.formData()
     const file = formData.get('avatar') as File
 
@@ -50,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     // Generate unique filename
-    const userId = (session.user as any).id
+    const userId = user.id
     const fileExtension = file.name.split('.').pop()
     const fileName = `${userId}-${Date.now()}.${fileExtension}`
     const filePath = join(uploadsDir, fileName)
@@ -96,22 +89,14 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function DELETE(request: Request) {
+export const DELETE = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const userId = (session.user as any).id
-
     // Update user to remove avatar
     const updatedUser = await prisma.user.update({
       where: {
-        id: userId
+        id: user.id
       },
       data: {
         avatar: null
@@ -145,4 +130,4 @@ export async function DELETE(request: Request) {
       { status: 500 }
     )
   }
-}
+})

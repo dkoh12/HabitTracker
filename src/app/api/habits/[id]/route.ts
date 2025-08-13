@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuthAndParams } from '@/lib/withAuth'
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { 
       name, 
       description, 
@@ -41,7 +31,7 @@ export async function PUT(
     const existingHabit = await prisma.habit.findFirst({
       where: {
         id: params.id,
-        userId: (session.user as any).id,
+        userId: user.id,
         isActive: true
       }
     })
@@ -95,24 +85,15 @@ export async function PUT(
       { status: 500 }
     )
   }
-}
+})
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     // Check if habit exists and belongs to user
     const existingHabit = await prisma.habit.findFirst({
       where: {
         id: params.id,
-        userId: (session.user as any).id,
+        userId: user.id,
         isActive: true
       }
     })
@@ -142,4 +123,4 @@ export async function DELETE(
       { status: 500 }
     )
   }
-}
+})

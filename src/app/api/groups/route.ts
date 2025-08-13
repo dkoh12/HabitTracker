@@ -1,25 +1,18 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
 import { generateInviteCode } from '@/lib/utils'
+import { withAuth } from '@/lib/withAuth'
 
-export async function GET() {
+export const GET = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const groups = await prisma.group.findMany({
       where: {
         OR: [
-          { ownerId: (session.user as any).id },
+          { ownerId: user.id },
           {
             members: {
               some: {
-                userId: (session.user as any).id
+                userId: user.id
               }
             }
           }
@@ -52,16 +45,10 @@ export async function GET() {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { name, description } = await request.json()
 
     if (!name) {
@@ -76,7 +63,7 @@ export async function POST(request: Request) {
         name,
         description,
         inviteCode: generateInviteCode(),
-        ownerId: (session.user as any).id
+        ownerId: user.id
       },
       include: {
         owner: true,
@@ -96,4 +83,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
+})

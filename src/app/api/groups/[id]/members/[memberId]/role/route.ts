@@ -1,26 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
-
-interface RouteContext {
-  params: Promise<{
-    id: string
-    memberId: string
-  }>
-}
+import { withAuthAndParams } from '@/lib/withAuth'
 
 // PATCH /api/groups/[id]/members/[memberId]/role - Update member role
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export const PATCH = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: groupId, memberId } = await context.params
+    const { id: groupId, memberId } = await params
     const { role } = await request.json()
-    const currentUserId = (session.user as any).id
+    const currentUserId = user.id
 
     // Validate role
     if (!['Member', 'Admin'].includes(role)) {
@@ -106,4 +93,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       { status: 500 }
     )
   }
-}
+})

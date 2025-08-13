@@ -1,16 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { withAuth } from '@/lib/withAuth'
 
-export async function POST(request: Request) {
+export const POST = withAuth(async (request, { user }) => {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { inviteCode } = await request.json()
 
     if (!inviteCode) {
@@ -38,7 +31,7 @@ export async function POST(request: Request) {
     const existingMember = await prisma.groupMember.findUnique({
       where: {
         userId_groupId: {
-          userId: (session.user as any).id,
+          userId: user.id,
           groupId: group.id
         }
       }
@@ -54,7 +47,7 @@ export async function POST(request: Request) {
     // Add user to group
     const member = await prisma.groupMember.create({
       data: {
-        userId: (session.user as any).id,
+        userId: user.id,
         groupId: group.id,
         role: 'Member'
       },
@@ -72,4 +65,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
+})
