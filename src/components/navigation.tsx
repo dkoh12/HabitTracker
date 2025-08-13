@@ -71,8 +71,8 @@ export function Navigation() {
             </Link>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <Link
-                href="/"
-                style={getLinkStyle('/')}
+                href="/dashboard"
+                style={getLinkStyle('/dashboard')}
               >
                 <Home className="w-4 h-4" />
                 <span>Dashboard</span>

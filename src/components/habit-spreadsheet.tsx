@@ -84,14 +84,14 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   const formatDate = (dateString: string) => {
     // Fix timezone issue: parse as local date instead of UTC
     const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month is 0-indexed
+    const date = new Date(year, month - 1, day, 12, 0, 0) // Set to noon to avoid timezone issues
     return format(date, 'MMM d')
   }
 
   const formatDateHeader = (dateString: string) => {
     // Fix timezone issue: parse as local date instead of UTC
     const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month is 0-indexed
+    const date = new Date(year, month - 1, day, 12, 0, 0) // Set to noon to avoid timezone issues
     return {
       day: format(date, 'd'),
       weekday: format(date, 'EEE'),
