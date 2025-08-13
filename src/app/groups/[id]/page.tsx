@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -73,7 +73,22 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     resolveParams()
   }, [params])
 
-  const fetchGroupDetail = async () => {
+  const fetchSpreadsheetData = useCallback(async (groupData: GroupWithMembers) => {
+    if (!groupId) return
+    
+    try {
+      const response = await fetch(`/api/groups/${groupId}/spreadsheet?days=${dateRange}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Fetched spreadsheet data:', data)
+        setSpreadsheetData(data)
+      }
+    } catch (error) {
+      console.error('Error fetching spreadsheet data:', error)
+    }
+  }, [groupId, dateRange])
+
+  const fetchGroupDetail = useCallback(async () => {
     if (!groupId) return
     
     try {
@@ -90,14 +105,16 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [groupId, fetchSpreadsheetData, router])
+
+  const onValidationSuccess = useCallback(() => {
+    if (groupId) {
+      fetchGroupDetail()
+    }
+  }, [groupId, fetchGroupDetail])
 
   const { session, status } = useAuthValidation({
-    onValidationSuccess: () => {
-      if (groupId) {
-        fetchGroupDetail()
-      }
-    }
+    onValidationSuccess
   })
 
   // Re-run fetch when groupId changes
@@ -105,35 +122,20 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     if (groupId && session) {
       fetchGroupDetail()
     }
-  }, [groupId])
-
-  const fetchSpreadsheetData = async (groupData: GroupWithMembers) => {
-    if (!groupId) return
-    
-    try {
-      const response = await fetch(`/api/groups/${groupId}/spreadsheet?days=${dateRange}`)
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Fetched spreadsheet data:', data)
-        setSpreadsheetData(data)
-      }
-    } catch (error) {
-      console.error('Error fetching spreadsheet data:', error)
-    }
-  }
+  }, [groupId, session, fetchGroupDetail])
 
   useEffect(() => {
     if (group && groupId) {
       fetchSpreadsheetData(group)
     }
-  }, [dateRange, group, groupId])
+  }, [dateRange, group, groupId, fetchSpreadsheetData])
 
-  const handleCreateSharedHabit = (newHabit: any) => {
+  const handleCreateSharedHabit = useCallback((newHabit: any) => {
     // Refresh the spreadsheet data to include the new shared habit
     if (group) {
       fetchSpreadsheetData(group)
     }
-  }
+  }, [group, fetchSpreadsheetData])
 
   const handleLeaveGroup = async () => {
     if (!groupId || !session?.user) return

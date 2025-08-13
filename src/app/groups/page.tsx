@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,7 @@ export default function Groups() {
   const [inviteCode, setInviteCode] = useState('')
   const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({})
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const response = await fetch('/api/groups')
       if (response.ok) {
@@ -32,7 +32,7 @@ export default function Groups() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const { session, status } = useAuthValidation({
     onValidationSuccess: fetchGroups

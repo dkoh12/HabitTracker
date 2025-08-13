@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Navigation } from '@/components/navigation'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
 import { HabitForm } from '@/components/habit-form'
@@ -17,7 +17,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [selectedHabitDetails, setSelectedHabitDetails] = useState<HabitWithEntries | null>(null)
 
-  const fetchHabits = async () => {
+  const fetchHabits = useCallback(async () => {
     console.log('🔄 fetchHabits called')
     try {
       const response = await fetch('/api/habits')
@@ -39,7 +39,7 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const { session, status } = useAuthValidation({
     onValidationSuccess: fetchHabits
