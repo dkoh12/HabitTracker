@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers, GroupFormData } from '@/types'
-import { Users, Plus, Copy, UserPlus } from 'lucide-react'
+import { Users, Plus, Copy, UserPlus, ChevronDown, ChevronUp } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 export default function Groups() {
@@ -20,6 +20,7 @@ export default function Groups() {
   const [loading, setLoading] = useState(true)
   const [createFormData, setCreateFormData] = useState<GroupFormData>({ name: '', description: '' })
   const [inviteCode, setInviteCode] = useState('')
+  const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (status === 'loading') return
@@ -473,33 +474,6 @@ export default function Groups() {
                     }} />
                     <span>{group.name}</span>
                   </CardTitle>
-                  {group.ownerId === (session.user as any)?.id && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        copyInviteCode(group.inviteCode)
-                      }}
-                      style={{
-                        padding: '0.5rem',
-                        border: '2px solid #e5e7eb',
-                        background: 'white',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <Copy style={{
-                        width: '16px',
-                        height: '16px',
-                        color: '#6b7280'
-                      }} />
-                    </Button>
-                  )}
                 </div>
               </CardHeader>
               <CardContent style={{ padding: '1.5rem' }}>
@@ -526,54 +500,139 @@ export default function Groups() {
                       👥 Members ({group.members.length + 1})
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '0.85rem',
-                        padding: '0.5rem',
-                        background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                        borderRadius: '8px'
-                      }}>
-                        <span style={{ color: '#1f2937', fontWeight: '500' }}>
-                          {group.owner.name || group.owner.email}
-                        </span>
-                        <span style={{
-                          fontSize: '0.75rem',
-                          background: '#2563eb',
-                          color: 'white',
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '12px',
-                          fontWeight: '600'
-                        }}>Owner</span>
-                      </div>
-                      {group.members.map(member => (
-                        <div key={member.id} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          fontSize: '0.85rem',
-                          padding: '0.5rem',
-                          background: '#f8fafc',
-                          borderRadius: '8px',
-                          border: '1px solid #f1f5f9'
-                        }}>
-                          <span style={{ color: '#1f2937', fontWeight: '500' }}>
-                            {member.user.name || member.user.email}
-                          </span>
-                          <span style={{
-                            fontSize: '0.75rem',
-                            background: '#e5e7eb',
-                            color: '#374151',
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '12px',
-                            fontWeight: '500',
-                            textTransform: 'capitalize'
-                          }}>
-                            {member.role}
-                          </span>
-                        </div>
-                      ))}
+                      {(() => {
+                        const currentUserId = (session?.user as any)?.id
+                        
+                        // Create combined list: owner + members
+                        const allMembers = [
+                          { 
+                            ...group.owner, 
+                            role: 'OWNER',
+                            memberUserId: group.owner.id,
+                            user: group.owner
+                          },
+                          ...group.members.map(member => ({
+                            ...member,
+                            memberUserId: member.userId
+                          }))
+                        ]
+                        
+                        // Sort: current user first, then others
+                        const sortedMembers = allMembers.sort((a, b) => {
+                          if (a.memberUserId === currentUserId) return -1
+                          if (b.memberUserId === currentUserId) return 1
+                          return 0
+                        })
+                        
+                        return sortedMembers.slice(0, expandedMembers[group.id] ? sortedMembers.length : 5).map(member => {
+                          const isCurrentUser = member.memberUserId === currentUserId
+                          const isOwnerEntry = member.role === 'OWNER'
+                          const isCurrentUserOwner = isCurrentUser && isOwnerEntry
+                          
+                          return (
+                            <div key={member.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              fontSize: '0.85rem',
+                              padding: '0.5rem',
+                              background: isCurrentUser
+                                ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
+                                : '#f8fafc',
+                              borderRadius: '8px',
+                              border: isCurrentUser
+                                ? '1px solid #3b82f6'
+                                : '1px solid #f1f5f9'
+                            }}>
+                              <span style={{ 
+                                color: isCurrentUser
+                                  ? '#1e40af'
+                                  : '#1f2937', 
+                                fontWeight: '500' 
+                              }}>
+                                {member.user.name || member.user.email}
+                                {isCurrentUser && (
+                                  <span style={{
+                                    marginLeft: '0.5rem',
+                                    fontSize: '0.75rem',
+                                    color: '#3b82f6',
+                                    fontWeight: '400'
+                                  }}>
+                                    (You)
+                                  </span>
+                                )}
+                              </span>
+                              <span style={{
+                                fontSize: '0.75rem',
+                                background: member.role === 'OWNER'
+                                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                                  : member.role === 'Admin'
+                                  ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                  : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                                color: 'white',
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                textTransform: 'capitalize'
+                              }}>
+                                {member.role === 'OWNER' ? 'Owner' : member.role}
+                              </span>
+                            </div>
+                          )
+                        })
+                      })()}
+                      {(() => {
+                        const currentUserId = (session?.user as any)?.id
+                        const totalMembers = group.members.length + 1 // +1 for owner
+                        
+                        return totalMembers > 5 && (
+                          <button
+                            onClick={() => setExpandedMembers(prev => ({
+                              ...prev,
+                              [group.id]: !prev[group.id]
+                            }))}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.5rem',
+                              width: '100%',
+                              padding: '0.5rem',
+                              background: 'transparent',
+                              border: '1px dashed #d1d5db',
+                              borderRadius: '8px',
+                              color: '#6b7280',
+                              fontSize: '0.85rem',
+                              fontWeight: '500',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              marginTop: '0.5rem'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#f9fafb'
+                              e.currentTarget.style.borderColor = '#9ca3af'
+                              e.currentTarget.style.color = '#374151'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent'
+                              e.currentTarget.style.borderColor = '#d1d5db'
+                              e.currentTarget.style.color = '#6b7280'
+                            }}
+                          >
+                            {expandedMembers[group.id] ? (
+                              <>
+                                <ChevronUp size={16} />
+                                Show Less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown size={16} />
+                                Show {totalMembers - 5} More Members
+                              </>
+                            )}
+                          </button>
+                        )
+                      })()}
                     </div>
                   </div>
 
@@ -632,7 +691,7 @@ export default function Groups() {
                       paddingTop: '1rem',
                       borderTop: '1px solid #f3f4f6'
                     }}>
-                      <p style={{
+                      <div style={{
                         fontSize: '0.8rem',
                         color: '#6b7280',
                         display: 'flex',
@@ -649,7 +708,35 @@ export default function Groups() {
                           color: '#374151',
                           fontWeight: '600'
                         }}>{group.inviteCode}</code>
-                      </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            copyInviteCode(group.inviteCode)
+                          }}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            border: '1px solid #e5e7eb',
+                            background: 'white',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            fontSize: '0.75rem',
+                            height: 'auto'
+                          }}
+                        >
+                          <Copy style={{
+                            width: '12px',
+                            height: '12px',
+                            color: '#6b7280'
+                          }} />
+                          Copy
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

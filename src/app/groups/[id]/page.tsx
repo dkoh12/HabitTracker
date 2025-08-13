@@ -489,22 +489,35 @@ export default function GroupDetail({ params }: GroupDetailProps) {
             justifyContent: 'space-between',
             width: '100%'
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem'
-            }}>
-              <Users style={{
-                width: '32px',
-                height: '32px',
-                color: '#667eea'
-              }} />
-              <h1 style={{
-                fontSize: '2.5rem',
-                fontWeight: 'bold',
-                color: '#1f2937',
-                margin: 0
-              }}>{group.name}</h1>
+            <div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                marginBottom: group.description ? '0.5rem' : 0
+              }}>
+                <Users style={{
+                  width: '32px',
+                  height: '32px',
+                  color: '#667eea'
+                }} />
+                <h1 style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  margin: 0
+                }}>{group.name}</h1>
+              </div>
+              {group.description && (
+                <p style={{
+                  fontSize: '1.125rem',
+                  color: '#6b7280',
+                  margin: 0,
+                  marginLeft: '2.75rem', // Align with title (32px icon + 0.75rem gap)
+                  lineHeight: '1.5',
+                  fontWeight: '400'
+                }}>{group.description}</p>
+              )}
             </div>
             
             {/* Show Leave Group button only if user is not the owner */}
@@ -868,83 +881,116 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       }}>
                         Habit
                       </th>
-                      {spreadsheetData.members.map(member => (
-                        <th key={member.id} style={{
-                          border: '1px solid #e5e7eb',
-                          padding: '1rem',
-                          textAlign: 'center',
-                          minWidth: '120px',
-                          background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-                        }}>
-                          <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '0.5rem'
+                      {(() => {
+                        const currentUserId = (session?.user as any)?.id
+                        
+                        // Create combined list: owner + members (same as members management section)
+                        const allMembers = [
+                          { 
+                            ...group.owner, 
+                            role: 'OWNER',
+                            id: group.owner.id  // Ensure consistent id field
+                          },
+                          ...spreadsheetData.members.filter(member => member.id !== group.owner.id) // Avoid duplicates
+                        ]
+                        
+                        // Sort members: current user first, then others
+                        const sortedMembers = allMembers.sort((a, b) => {
+                          if (a.id === currentUserId) return -1
+                          if (b.id === currentUserId) return 1
+                          return 0
+                        })
+                        
+                        return sortedMembers.map(member => (
+                          <th key={member.id} style={{
+                            border: '1px solid #e5e7eb',
+                            padding: '1rem',
+                            textAlign: 'center',
+                            minWidth: '120px',
+                            background: member.id === currentUserId
+                              ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
+                              : member.role === 'OWNER'
+                              ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+                              : 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
                           }}>
-                            {member.avatar ? (
-                              <img
-                                src={member.avatar}
-                                alt={member.name || member.email}
-                                style={{
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}>
+                              {member.avatar ? (
+                                <img
+                                  src={member.avatar}
+                                  alt={member.name || member.email}
+                                  style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    border: member.id === currentUserId 
+                                      ? '2px solid #3b82f6' 
+                                      : member.role === 'OWNER'
+                                      ? '2px solid #f59e0b'
+                                      : '2px solid #e5e7eb'
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
                                   width: '32px',
                                   height: '32px',
                                   borderRadius: '50%',
-                                  border: '2px solid #e5e7eb'
-                                }}
-                              />
-                            ) : (
-                              <div style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                border: '2px solid #e5e7eb'
-                              }}>
-                                <span style={{
-                                  color: 'white',
-                                  fontSize: '0.875rem',
-                                  fontWeight: '600'
+                                  background: member.id === currentUserId
+                                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                    : member.role === 'OWNER'
+                                    ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  border: member.id === currentUserId 
+                                    ? '2px solid #3b82f6' 
+                                    : member.role === 'OWNER'
+                                    ? '2px solid #f59e0b'
+                                    : '2px solid #e5e7eb'
                                 }}>
-                                  {(member.name || member.email).charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                            )}
-                            <span style={{
-                              fontSize: '0.875rem',
-                              fontWeight: '500',
-                              color: '#374151',
-                              textOverflow: 'ellipsis',
-                              overflow: 'hidden',
-                              whiteSpace: 'nowrap',
-                              maxWidth: '100px'
-                            }}>
-                              {member.name || member.email.split('@')[0]}
-                            </span>
-                            
-                            {/* Role Badge */}
-                            <span style={{
-                              fontSize: '0.75rem',
-                              fontWeight: '600',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              background: member.role === 'OWNER' 
-                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
-                                : member.role === 'Admin'
-                                ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                                : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                              color: 'white',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.025em'
-                            }}>
-                              {member.role === 'OWNER' ? 'Owner' : member.role === 'Admin' ? 'Admin' : 'Member'}
-                            </span>
-                          </div>
-                        </th>
-                      ))}
+                                  <span style={{
+                                    color: 'white',
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600'
+                                  }}>
+                                    {(member.name || member.email).charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              <span style={{
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                color: member.id === currentUserId 
+                                  ? '#1e40af' 
+                                  : member.role === 'OWNER'
+                                  ? '#92400e'
+                                  : '#374151',
+                                textOverflow: 'ellipsis',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                maxWidth: '100px'
+                              }}>
+                                {member.name || member.email.split('@')[0]}
+                                {member.id === currentUserId && (
+                                  <span style={{
+                                    display: 'block',
+                                    fontSize: '0.75rem',
+                                    color: '#3b82f6',
+                                    fontWeight: '400'
+                                  }}>
+                                    (You)
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          </th>
+                        ))
+                      })()}
                     </tr>
                   </thead>
 
@@ -1042,73 +1088,94 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                           </td>
                           
                           {/* Member Progress Columns */}
-                          {spreadsheetData.members.map(member => {
-                            const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id]
-                            const isCurrentUser = member.id === (session?.user as any)?.id
+                          {(() => {
+                            const currentUserId = (session?.user as any)?.id
                             
-                            return (
-                              <td 
-                                key={member.id} 
-                                style={{
-                                  border: '1px solid #e5e7eb',
-                                  padding: '1rem',
-                                  textAlign: 'center',
-                                  cursor: isCurrentUser ? 'pointer' : 'default',
-                                  transition: 'all 0.2s ease',
-                                  transform: 'scale(1)',
-                                  backgroundColor: isCurrentUser ? 'transparent' : '#f9fafb',
-                                  opacity: isCurrentUser ? 1 : 0.7
-                                }}
-                                onClick={(e) => {
-                                  if (!isCurrentUser) return
-                                  
-                                  // Add click animation - store reference to avoid null error
-                                  const target = e.currentTarget
-                                  target.style.transform = 'scale(0.95)'
-                                  target.style.backgroundColor = '#e0f2fe'
-                                  setTimeout(() => {
-                                    if (target) {
-                                      target.style.transform = 'scale(1)'
-                                      target.style.backgroundColor = 'transparent'
+                            // Create combined list: owner + members (same as header and members management)
+                            const allMembers = [
+                              { 
+                                ...group.owner, 
+                                role: 'OWNER',
+                                id: group.owner.id  // Ensure consistent id field
+                              },
+                              ...spreadsheetData.members.filter(member => member.id !== group.owner.id) // Avoid duplicates
+                            ]
+                            
+                            // Sort members: current user first, then others (same as header)
+                            const sortedMembers = allMembers.sort((a, b) => {
+                              if (a.id === currentUserId) return -1
+                              if (b.id === currentUserId) return 1
+                              return 0
+                            })
+                            
+                            return sortedMembers.map(member => {
+                              const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id]
+                              const isCurrentUser = member.id === currentUserId
+                              
+                              return (
+                                <td 
+                                  key={member.id} 
+                                  style={{
+                                    border: '1px solid #e5e7eb',
+                                    padding: '1rem',
+                                    textAlign: 'center',
+                                    cursor: isCurrentUser ? 'pointer' : 'default',
+                                    transition: 'all 0.2s ease',
+                                    transform: 'scale(1)',
+                                    backgroundColor: isCurrentUser ? 'transparent' : '#f9fafb',
+                                    opacity: isCurrentUser ? 1 : 0.7
+                                  }}
+                                  onClick={(e) => {
+                                    if (!isCurrentUser) return
+                                    
+                                    // Add click animation - store reference to avoid null error
+                                    const target = e.currentTarget
+                                    target.style.transform = 'scale(0.95)'
+                                    target.style.backgroundColor = '#e0f2fe'
+                                    setTimeout(() => {
+                                      if (target) {
+                                        target.style.transform = 'scale(1)'
+                                        target.style.backgroundColor = 'transparent'
+                                      }
+                                    }, 150)
+                                    
+                                    handleHabitEntryClick(habit.id, date, member.id, entry)
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (isCurrentUser) {
+                                      e.currentTarget.style.backgroundColor = '#f3f4f6'
+                                      e.currentTarget.style.transform = 'scale(1.02)'
                                     }
-                                  }, 150)
-                                  
-                                  handleHabitEntryClick(habit.id, date, member.id, entry)
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (isCurrentUser) {
-                                    e.currentTarget.style.backgroundColor = '#f3f4f6'
-                                    e.currentTarget.style.transform = 'scale(1.02)'
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (isCurrentUser) {
-                                    e.currentTarget.style.backgroundColor = 'transparent'
-                                    e.currentTarget.style.transform = 'scale(1)'
-                                  } else {
-                                    e.currentTarget.style.backgroundColor = '#f9fafb'
-                                  }
-                                }}
-                              >
-                                <div style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  gap: '0.25rem'
-                                }}>
-                                  {getCompletionIcon(entry, habit)}
-                                  {entry && entry.value > 0 && (
-                                    <span style={{
-                                      fontSize: '0.75rem',
-                                      color: '#6b7280'
-                                    }}>
-                                      {entry.value}{habit.unit && ` ${habit.unit}`}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            )
-                          })}
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (isCurrentUser) {
+                                      e.currentTarget.style.backgroundColor = 'transparent'
+                                      e.currentTarget.style.transform = 'scale(1)'
+                                    } else {
+                                      e.currentTarget.style.backgroundColor = '#f9fafb'
+                                    }
+                                  }}
+                                >
+                                  <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}>
+                                    {getCompletionIcon(entry, habit)}
+                                    {entry && entry.value > 0 && (
+                                      <span style={{
+                                        fontSize: '0.75rem',
+                                        color: '#6b7280'
+                                      }}>
+                                        {entry.value}{habit.unit && ` ${habit.unit}`}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              )
+                            })
+                          })()}
                         </tr>
                       ))
                     )}
@@ -1271,281 +1338,234 @@ export default function GroupDetail({ params }: GroupDetailProps) {
             </CardHeader>
             <CardContent style={{ padding: '1.5rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* Owner */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                  border: '1px solid #f59e0b20'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    {group.owner.avatar ? (
-                      <img
-                        src={group.owner.avatar}
-                        alt={group.owner.name || group.owner.email}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          border: '2px solid #f59e0b'
-                        }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                {(() => {
+                  const currentUserId = (session?.user as any)?.id
+                  
+                  // Create combined list: owner + members (no sorting in detail page)
+                  const allMembers = [
+                    { 
+                      ...group.owner, 
+                      role: 'OWNER',
+                      memberUserId: group.owner.id,
+                      user: group.owner
+                    },
+                    ...group.members.map(member => ({
+                      ...member,
+                      memberUserId: member.userId
+                    }))
+                  ]
+                  
+                  return allMembers.map(member => {
+                    const isOwner = group.owner.id === currentUserId
+                    const currentUserMembership = group.members.find(m => m.userId === currentUserId)
+                    const isCurrentUserAdmin = currentUserMembership?.role === 'Admin'
+                    const canManageRoles = isOwner || isCurrentUserAdmin
+                    const isCurrentMember = member.memberUserId === currentUserId
+                    const isOwnerEntry = member.role === 'OWNER'
+
+                    return (
+                      <div key={member.id} style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '2px solid #f59e0b'
+                        justifyContent: 'space-between',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        background: isOwnerEntry
+                          ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+                          : isCurrentMember
+                          ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
+                          : member.role === 'Admin' 
+                          ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
+                          : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+                        border: isOwnerEntry
+                          ? '1px solid #f59e0b'
+                          : isCurrentMember
+                          ? '1px solid #3b82f6'
+                          : member.role === 'Admin'
+                          ? '1px solid #3b82f620'
+                          : '1px solid #e5e7eb'
                       }}>
-                        <span style={{
-                          color: 'white',
-                          fontSize: '1rem',
-                          fontWeight: '600'
-                        }}>
-                          {(group.owner.name || group.owner.email).charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    <div>
-                      <div style={{
-                        fontWeight: '600',
-                        color: '#92400e'
-                      }}>
-                        {group.owner.name || group.owner.email.split('@')[0]}
-                      </div>
-                      <div style={{
-                        fontSize: '0.875rem',
-                        color: '#78350f'
-                      }}>
-                        {group.owner.email}
-                      </div>
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                    color: 'white',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.025em'
-                  }}>
-                    Owner
-                  </span>
-                </div>
-
-                {/* Members */}
-                {group.members.map(member => {
-                  const currentUserId = (session?.user as any)?.id
-                  const isOwner = group.owner.id === currentUserId
-                  const currentUserMembership = group.members.find(m => m.userId === currentUserId)
-                  const isCurrentUserAdmin = currentUserMembership?.role === 'Admin'
-                  const canManageRoles = isOwner || isCurrentUserAdmin
-                  const isCurrentMember = member.userId === currentUserId
-
-                  return (
-                    <div key={member.id} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '1rem',
-                      borderRadius: '8px',
-                      background: member.role === 'Admin' 
-                        ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
-                        : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-                      border: member.role === 'Admin'
-                        ? '1px solid #3b82f620'
-                        : '1px solid #e5e7eb'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {member.user.avatar ? (
-                          <img
-                            src={member.user.avatar}
-                            alt={member.user.name || member.user.email}
-                            style={{
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          {member.user.avatar ? (
+                            <img
+                              src={member.user.avatar}
+                              alt={member.user.name || member.user.email}
+                              style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                border: isOwnerEntry
+                                  ? '2px solid #f59e0b'
+                                  : isCurrentMember
+                                  ? '2px solid #3b82f6'
+                                  : member.role === 'Admin' 
+                                  ? '2px solid #3b82f6' 
+                                  : '2px solid #6b7280'
+                              }}
+                            />
+                          ) : (
+                            <div style={{
                               width: '40px',
                               height: '40px',
                               borderRadius: '50%',
-                              border: member.role === 'Admin' ? '2px solid #3b82f6' : '2px solid #6b7280'
-                            }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            background: member.role === 'Admin'
-                              ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                              : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: member.role === 'Admin' ? '2px solid #3b82f6' : '2px solid #6b7280'
-                          }}>
-                            <span style={{
-                              color: 'white',
-                              fontSize: '1rem',
-                              fontWeight: '600'
+                              background: isCurrentMember
+                                ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                : isOwnerEntry
+                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                                : member.role === 'Admin'
+                                ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: isCurrentMember
+                                ? '2px solid #3b82f6'
+                                : isOwnerEntry
+                                ? '2px solid #f59e0b'
+                                : member.role === 'Admin' 
+                                ? '2px solid #3b82f6' 
+                                : '2px solid #6b7280'
                             }}>
-                              {(member.user.name || member.user.email).charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div>
-                          <div style={{
-                            fontWeight: '600',
-                            color: member.role === 'Admin' ? '#1e40af' : '#374151'
-                          }}>
-                            {member.user.name || member.user.email.split('@')[0]}
-                            {isCurrentMember && (
                               <span style={{
-                                marginLeft: '0.5rem',
-                                fontSize: '0.75rem',
-                                color: '#6b7280',
-                                fontWeight: '400'
+                                color: 'white',
+                                fontSize: '1rem',
+                                fontWeight: '600'
                               }}>
-                                (You)
+                                {(member.user.name || member.user.email).charAt(0).toUpperCase()}
                               </span>
-                            )}
-                          </div>
-                          <div style={{
-                            fontSize: '0.875rem',
-                            color: member.role === 'Admin' ? '#1d4ed8' : '#6b7280'
-                          }}>
-                            {member.user.email}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{
+                              fontWeight: '600',
+                              color: isCurrentMember
+                                ? '#1e40af'
+                                : isOwnerEntry
+                                ? '#92400e'
+                                : member.role === 'Admin' 
+                                ? '#1e40af' 
+                                : '#374151'
+                            }}>
+                              {member.user.name || member.user.email.split('@')[0]}
+                              {isCurrentMember && (
+                                <span style={{
+                                  marginLeft: '0.5rem',
+                                  fontSize: '0.75rem',
+                                  color: '#3b82f6',
+                                  fontWeight: '400'
+                                }}>
+                                  (You)
+                                </span>
+                              )}
+                            </div>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              color: isCurrentMember
+                                ? '#1d4ed8'
+                                : isOwnerEntry
+                                ? '#78350f'
+                                : member.role === 'Admin' 
+                                ? '#1d4ed8' 
+                                : '#6b7280'
+                            }}>
+                              {member.user.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{
-                          fontSize: '0.75rem',
-                          fontWeight: '600',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          background: member.role === 'Admin'
-                            ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                            : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-                          color: 'white',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.025em'
-                        }}>
-                          {member.role === 'Admin' ? 'Admin' : 'Member'}
-                        </span>
                         
-                        {canManageRoles && (
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {member.role === 'Member' ? (
-                              <button
-                                onClick={() => handleRoleChange(member.id, 'Admin')}
-                                style={{
-                                  padding: '4px 8px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '500',
-                                  borderRadius: '4px',
-                                  border: '1px solid #3b82f6',
-                                  background: 'white',
-                                  color: '#3b82f6',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#3b82f6'
-                                  e.currentTarget.style.color = 'white'
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'white'
-                                  e.currentTarget.style.color = '#3b82f6'
-                                }}
-                              >
-                                Promote to Admin
-                              </button>
-                            ) : (
-                              // Only show demote if not demoting self or if there are other admins
-                              (() => {
-                                const otherAdmins = group.members.filter(m => 
-                                  m.userId !== member.userId && m.role === 'Admin'
-                                )
-                                const hasOtherAdmins = otherAdmins.length > 0 || isOwner
-                                const canDemote = !isCurrentMember || hasOtherAdmins
-                                
-                                if (canDemote) {
-                                  return (
-                                    <button
-                                      onClick={() => handleRoleChange(member.id, 'Member')}
-                                      style={{
-                                        padding: '4px 8px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '500',
-                                        borderRadius: '4px',
-                                        border: '1px solid #6b7280',
-                                        background: 'white',
-                                        color: '#6b7280',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = '#6b7280'
-                                        e.currentTarget.style.color = 'white'
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'white'
-                                        e.currentTarget.style.color = '#6b7280'
-                                      }}
-                                    >
-                                      Demote to Member
-                                    </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            background: member.role === 'OWNER'
+                              ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                              : member.role === 'Admin'
+                              ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                              : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                            color: 'white',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.025em'
+                          }}>
+                            {member.role === 'OWNER' ? 'Owner' : member.role === 'Admin' ? 'Admin' : 'Member'}
+                          </span>
+                          
+                          {canManageRoles && !isOwnerEntry && (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              {member.role === 'Member' ? (
+                                <button
+                                  onClick={() => handleRoleChange(member.id, 'Admin')}
+                                  style={{
+                                    padding: '4px 8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '500',
+                                    borderRadius: '4px',
+                                    border: '1px solid #3b82f6',
+                                    background: 'white',
+                                    color: '#3b82f6',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#3b82f6'
+                                    e.currentTarget.style.color = 'white'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'white'
+                                    e.currentTarget.style.color = '#3b82f6'
+                                  }}
+                                >
+                                  Promote to Admin
+                                </button>
+                              ) : (
+                                // Only show demote if not demoting self or if there are other admins
+                                (() => {
+                                  const otherAdmins = group.members.filter(m => 
+                                    m.userId !== member.memberUserId && m.role === 'Admin'
                                   )
-                                }
-                                return null
-                              })()
-                            )}
-                          </div>
-                        )}
+                                  const hasOtherAdmins = otherAdmins.length > 0 || isOwner
+                                  const canDemote = !isCurrentMember || hasOtherAdmins
+                                  
+                                  if (canDemote) {
+                                    return (
+                                      <button
+                                        onClick={() => handleRoleChange(member.id, 'Member')}
+                                        style={{
+                                          padding: '4px 8px',
+                                          fontSize: '0.75rem',
+                                          fontWeight: '500',
+                                          borderRadius: '4px',
+                                          border: '1px solid #6b7280',
+                                          background: 'white',
+                                          color: '#6b7280',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.background = '#6b7280'
+                                          e.currentTarget.style.color = 'white'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.background = 'white'
+                                          e.currentTarget.style.color = '#6b7280'
+                                        }}
+                                      >
+                                        Demote to Member
+                                      </button>
+                                    )
+                                  }
+                                  return null
+                                })()
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Group Description */}
-        {group.description && (
-          <Card style={{
-            marginTop: '2rem',
-            background: 'white',
-            borderRadius: '16px',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardHeader style={{
-              padding: '1.5rem',
-              borderBottom: '1px solid #f3f4f6',
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
-            }}>
-              <CardTitle style={{
-                fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#1f2937',
-                margin: 0
-              }}>About This Group</CardTitle>
-            </CardHeader>
-            <CardContent style={{ padding: '1.5rem' }}>
-              <p style={{
-                color: '#374151',
-                lineHeight: '1.6',
-                fontSize: '1rem'
-              }}>{group.description}</p>
             </CardContent>
           </Card>
         )}
