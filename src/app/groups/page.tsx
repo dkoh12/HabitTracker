@@ -468,7 +468,7 @@ export default function Groups() {
               }}
             >
               <CardHeader style={{
-                padding: '1.5rem',
+                padding: '1rem 1.5rem 0.75rem',
                 borderBottom: '1px solid #f3f4f6',
                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
               }}>
@@ -483,7 +483,8 @@ export default function Groups() {
                     gap: '0.75rem',
                     fontSize: '1.25rem',
                     fontWeight: '600',
-                    color: '#1f2937'
+                    color: '#1f2937',
+                    margin: '0'
                   }}>
                     <Users style={{
                       width: '20px',
@@ -494,12 +495,13 @@ export default function Groups() {
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent style={{ padding: '1.5rem' }}>
+              <CardContent style={{ padding: '1rem 1.5rem 1.5rem' }}>
                 {group.description && (
                   <p style={{
                     fontSize: '0.9rem',
                     color: '#6b7280',
-                    marginBottom: '1.5rem',
+                    marginBottom: '0.5rem',
+                    marginTop: '0',
                     lineHeight: '1.5'
                   }}>{group.description}</p>
                 )}
@@ -647,10 +649,13 @@ export default function Groups() {
                         
                         return totalMembers > 5 && (
                           <button
-                            onClick={() => setExpandedMembers(prev => ({
-                              ...prev,
-                              [group.id]: !prev[group.id]
-                            }))}
+                            onClick={(e) => {
+                              e.stopPropagation() // Prevent event bubbling to parent Card
+                              setExpandedMembers(prev => ({
+                                ...prev,
+                                [group.id]: !prev[group.id]
+                              }))
+                            }}
                             style={{
                               display: 'flex',
                               alignItems: 'center',

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SharedHabitForm } from '@/components/shared-habit-form'
 import { GroupWithMembers } from '@/types'
-import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, Plus, BookOpen } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, Plus, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 interface GroupDetailProps {
@@ -66,6 +66,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const [dateRange, setDateRange] = useState(30) // Last 30 days
   const [groupId, setGroupId] = useState<string | null>(null)
   const [showSharedHabitForm, setShowSharedHabitForm] = useState(false)
+  const [showAllMembers, setShowAllMembers] = useState(false)
 
   // Await params and set groupId
   useEffect(() => {
@@ -1306,14 +1307,23 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 margin: 0,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
-              }}>
+                gap: '0.5rem',
+                cursor: 'pointer'
+              }}
+              onClick={() => setShowAllMembers(!showAllMembers)}
+              >
                 <Users style={{ width: '20px', height: '20px' }} />
                 Group Members ({group.members.length + 1})
+                {showAllMembers ? (
+                  <ChevronUp style={{ width: '16px', height: '16px', marginLeft: 'auto' }} />
+                ) : (
+                  <ChevronDown style={{ width: '16px', height: '16px', marginLeft: 'auto' }} />
+                )}
               </CardTitle>
             </CardHeader>
-            <CardContent style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <CardContent style={{ padding: showAllMembers ? '1.5rem' : '0' }}>
+              {showAllMembers && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(() => {
                   const currentUserId = (session?.user as any)?.id
                   
@@ -1537,7 +1547,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     )
                   })
                 })()}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
