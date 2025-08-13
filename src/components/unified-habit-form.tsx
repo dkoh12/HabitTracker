@@ -54,6 +54,8 @@ export function UnifiedHabitForm({
     customInterval: 1,
     customUnit: 'days' as 'days' | 'weeks' | 'months'
   })
+  
+  const [targetInputValue, setTargetInputValue] = useState('')
 
   // Populate form data when editing
   useEffect(() => {
@@ -76,6 +78,7 @@ export function UnifiedHabitForm({
         customInterval: 1,
         customUnit: 'days'
       })
+      setTargetInputValue(habit.target.toString())
     }
   }, [habit, isEditing])
 
@@ -222,8 +225,29 @@ export function UnifiedHabitForm({
               <Input
                 type="number"
                 min="1"
-                value={formData.target}
-                onChange={(e) => setFormData({ ...formData, target: parseInt(e.target.value) || 1 })}
+                value={targetInputValue}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setTargetInputValue(value)
+                  
+                  if (value === '') {
+                    // Don't update formData.target when empty, let it stay as is
+                    return
+                  }
+                  
+                  const numValue = parseInt(value)
+                  if (!isNaN(numValue) && numValue > 0) {
+                    setFormData({ ...formData, target: numValue })
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value
+                  if (value === '' || isNaN(parseInt(value)) || parseInt(value) < 1) {
+                    setTargetInputValue('')
+                    setFormData({ ...formData, target: 1 })
+                  }
+                }}
+                placeholder="1"
                 style={{
                   width: '100%',
                   padding: '0.75rem',
