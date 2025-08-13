@@ -8,7 +8,7 @@ import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
 import { HabitForm } from '@/components/habit-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { HabitWithEntries, HabitFormData } from '@/types'
+import { HabitWithEntries, LegacyHabitFormData } from '@/types'
 import { Plus, Star, TrendingUp, Target, Activity } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
@@ -83,7 +83,7 @@ export default function Home() {
     }
   }
 
-  const createHabit = async (habitData: HabitFormData) => {
+  const createHabit = async (habitData: LegacyHabitFormData) => {
     try {
       const response = await fetch('/api/habits', {
         method: 'POST',

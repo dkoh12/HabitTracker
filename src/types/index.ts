@@ -29,6 +29,25 @@ export interface HabitFormData {
   name: string
   description?: string
   color?: string
+  target: number
+  unit?: string
+  startDate: string
+  endDate: string
+  hasEndDate: boolean
+  scheduleType: 'weekly' | 'monthly' | 'custom'
+  selectedDays: string[]
+  monthlyType: 'date' | 'weekday'
+  monthlyDate: number
+  monthlyWeekday: string
+  monthlyWeek: 'first' | 'second' | 'third' | 'fourth' | 'last'
+  customInterval: number
+  customUnit: 'days' | 'weeks' | 'months'
+}
+
+export interface LegacyHabitFormData {
+  name: string
+  description?: string
+  color?: string
   frequency: 'daily' | 'weekly' | 'monthly'
   target: number
   unit?: string

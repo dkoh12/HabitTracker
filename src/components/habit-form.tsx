@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { HabitFormData, HabitWithEntries } from '@/types'
+import { Input } from '@/components/ui/input'
+import { HabitFormData, HabitWithEntries, LegacyHabitFormData } from '@/types'
+import { Clock } from 'lucide-react'
 
 interface HabitFormProps {
-  onSubmit: (data: HabitFormData) => void
+  onSubmit: (data: LegacyHabitFormData) => void
   onCancel?: () => void
-  habit?: HabitWithEntries // For editing mode
+  habit?: HabitWithEntries
   isEditing?: boolean
 }
 
@@ -19,9 +20,11 @@ const colors = [
   '#F59E0B', // Yellow
   '#EF4444', // Red
   '#8B5CF6', // Purple
-  '#F97316', // Orange
   '#06B6D4', // Cyan
+  '#F97316', // Orange
   '#84CC16', // Lime
+  '#EC4899', // Pink
+  '#6B7280'  // Gray
 ]
 
 export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: HabitFormProps) {
@@ -29,9 +32,19 @@ export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: Habi
     name: '',
     description: '',
     color: colors[0],
-    frequency: 'daily',
     target: 1,
-    unit: ''
+    unit: '',
+    startDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    endDate: '',
+    hasEndDate: false,
+    scheduleType: 'weekly' as 'weekly' | 'monthly' | 'custom', // Type of schedule
+    selectedDays: [] as string[], // For weekly: ['monday', 'wednesday', 'friday']
+    monthlyType: 'date' as 'date' | 'weekday', // For monthly: specific date or nth weekday
+    monthlyDate: 1, // For monthly by date: 1-31
+    monthlyWeekday: 'monday' as string, // For monthly by weekday: which day
+    monthlyWeek: 'first' as 'first' | 'second' | 'third' | 'fourth' | 'last', // Which occurrence
+    customInterval: 1,
+    customUnit: 'days' as 'days' | 'weeks' | 'months'
   })
 
   // Populate form data when editing
@@ -41,16 +54,77 @@ export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: Habi
         name: habit.name,
         description: habit.description || '',
         color: habit.color,
-        frequency: habit.frequency as 'daily' | 'weekly' | 'monthly',
         target: habit.target,
-        unit: habit.unit || ''
+        unit: habit.unit || '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '',
+        hasEndDate: false,
+        scheduleType: 'weekly',
+        selectedDays: [],
+        monthlyType: 'date',
+        monthlyDate: 1,
+        monthlyWeekday: 'monday',
+        monthlyWeek: 'first',
+        customInterval: 1,
+        customUnit: 'days'
       })
     }
   }, [isEditing, habit])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    
+    // Validate end date if provided
+    if (formData.hasEndDate && formData.endDate && formData.endDate <= formData.startDate) {
+      alert('End date must be after start date')
+      return
+    }
+    
+    // Validate that scheduling is properly configured
+    if (formData.scheduleType === 'weekly' && formData.selectedDays.length === 0) {
+      alert('Please select at least one day of the week for weekly schedule')
+      return
+    }
+    if (formData.scheduleType === 'monthly' && formData.monthlyType === 'date' && (formData.monthlyDate < 1 || formData.monthlyDate > 31)) {
+      alert('Please select a valid date (1-31) for monthly schedule')
+      return
+    }
+    if (formData.scheduleType === 'custom' && formData.customInterval < 1) {
+      alert('Please enter a valid interval for custom schedule')
+      return
+    }
+    
+    // Convert the new scheduling format to legacy format for existing API compatibility
+    let legacyFrequency: 'daily' | 'weekly' | 'monthly' = 'daily'
+    if (formData.scheduleType === 'weekly') {
+      legacyFrequency = 'weekly'
+    } else if (formData.scheduleType === 'monthly') {
+      legacyFrequency = 'monthly'
+    } else if (formData.scheduleType === 'custom') {
+      // Map custom intervals to legacy frequency
+      if (formData.customUnit === 'days' && formData.customInterval === 1) {
+        legacyFrequency = 'daily'
+      } else if (formData.customUnit === 'weeks' && formData.customInterval === 1) {
+        legacyFrequency = 'weekly'
+      } else if (formData.customUnit === 'months' && formData.customInterval === 1) {
+        legacyFrequency = 'monthly'
+      } else {
+        // For now, default to weekly for other custom intervals
+        legacyFrequency = 'weekly'
+      }
+    }
+    
+    // Create legacy compatible data structure
+    const legacyData = {
+      name: formData.name,
+      description: formData.description,
+      color: formData.color,
+      frequency: legacyFrequency,
+      target: formData.target,
+      unit: formData.unit
+    }
+    
+    onSubmit(legacyData as any)
   }
 
   return (
@@ -62,36 +136,36 @@ export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: Habi
     }}>
       <CardHeader style={{
         padding: '1.5rem',
-        borderBottom: '1px solid #f3f4f6'
+        borderBottom: '1px solid #f3f4f6',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
       }}>
         <CardTitle style={{
           fontSize: '1.5rem',
           fontWeight: '600',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>{isEditing ? 'Edit Habit' : 'Create New Habit'}</CardTitle>
-      </CardHeader>
-      <CardContent style={{ padding: '1.5rem' }}>
-        <form onSubmit={handleSubmit} style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.5rem'
+          color: '#1f2937',
+          margin: 0
         }}>
+          {isEditing ? 'Edit Habit' : 'Habit Details'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent style={{ padding: '2rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Name */}
           <div>
             <label style={{
               display: 'block',
-              fontSize: '0.9rem',
+              fontSize: '0.875rem',
               fontWeight: '500',
-              marginBottom: '0.5rem',
-              color: '#374151'
+              color: '#374151',
+              marginBottom: '0.5rem'
             }}>
               Habit Name *
             </label>
             <Input
+              type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Drink water, Exercise, Read"
+              placeholder="e.g., Read 20 pages, Exercise 30 minutes"
               required
               style={{
                 width: '100%',
@@ -99,45 +173,582 @@ export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: Habi
                 border: '2px solid #e5e7eb',
                 borderRadius: '8px',
                 fontSize: '1rem',
-                transition: 'all 0.2s ease',
-                background: 'white'
+                boxSizing: 'border-box'
               }}
             />
           </div>
 
+          {/* Description */}
           <div>
             <label style={{
               display: 'block',
-              fontSize: '0.9rem',
+              fontSize: '0.875rem',
               fontWeight: '500',
-              marginBottom: '0.5rem',
-              color: '#374151'
+              color: '#374151',
+              marginBottom: '0.5rem'
             }}>
               Description
             </label>
-            <Input
+            <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Optional description"
+              placeholder="Describe this habit..."
+              rows={3}
               style={{
                 width: '100%',
                 padding: '0.75rem',
                 border: '2px solid #e5e7eb',
                 borderRadius: '8px',
                 fontSize: '1rem',
-                transition: 'all 0.2s ease',
-                background: 'white'
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                boxSizing: 'border-box'
               }}
             />
           </div>
 
+          {/* Target and Unit */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Target
+              </label>
+              <Input
+                type="number"
+                min="1"
+                value={formData.target}
+                onChange={(e) => setFormData({ ...formData, target: parseInt(e.target.value) || 1 })}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Unit
+              </label>
+              <Input
+                type="text"
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                placeholder="pages, minutes, chapters"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Start Date */}
           <div>
             <label style={{
               display: 'block',
-              fontSize: '0.9rem',
+              fontSize: '0.875rem',
               fontWeight: '500',
-              marginBottom: '0.5rem',
-              color: '#374151'
+              color: '#374151',
+              marginBottom: '0.5rem'
+            }}>
+              <Clock style={{ width: '14px', height: '14px', display: 'inline', marginRight: '0.25rem' }} />
+              Start Date *
+            </label>
+            <Input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                background: 'white',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* End Date */}
+          <div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '0.5rem'
+            }}>
+              <input
+                type="checkbox"
+                id="hasEndDate"
+                checked={formData.hasEndDate}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  hasEndDate: e.target.checked,
+                  endDate: e.target.checked ? formData.endDate : ''
+                })}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  accentColor: '#667eea'
+                }}
+              />
+              <label 
+                htmlFor="hasEndDate"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#374151',
+                  cursor: 'pointer'
+                }}
+              >
+                Set End Date
+              </label>
+            </div>
+            
+            {formData.hasEndDate && (
+              <Input
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                min={formData.startDate}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  background: 'white',
+                  boxSizing: 'border-box'
+                }}
+              />
+            )}
+          </div>
+
+          {/* Schedule Type Selector */}
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#374151',
+              marginBottom: '0.5rem'
+            }}>
+              Schedule Type
+            </label>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '0.5rem'
+            }}>
+              {[
+                { key: 'weekly', label: 'Weekly', desc: 'Specific days each week' },
+                { key: 'monthly', label: 'Monthly', desc: 'Specific dates each month' },
+                { key: 'custom', label: 'Custom', desc: 'Every N days/weeks/months' }
+              ].map(type => {
+                const isSelected = formData.scheduleType === type.key
+                return (
+                  <button
+                    key={type.key}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, scheduleType: type.key as any })}
+                    style={{
+                      padding: '0.75rem',
+                      border: isSelected ? '2px solid #667eea' : '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      background: isSelected ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                      color: isSelected ? 'white' : '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div>{type.label}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '0.25rem' }}>
+                      {type.desc}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Weekly Schedule */}
+          {formData.scheduleType === 'weekly' && (
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Select Days of the Week
+              </label>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, 1fr)',
+                gap: '0.5rem'
+              }}>
+                {[
+                  { key: 'sunday', label: 'Sun', full: 'Sunday' },
+                  { key: 'monday', label: 'Mon', full: 'Monday' },
+                  { key: 'tuesday', label: 'Tue', full: 'Tuesday' },
+                  { key: 'wednesday', label: 'Wed', full: 'Wednesday' },
+                  { key: 'thursday', label: 'Thu', full: 'Thursday' },
+                  { key: 'friday', label: 'Fri', full: 'Friday' },
+                  { key: 'saturday', label: 'Sat', full: 'Saturday' }
+                ].map(day => {
+                  const isSelected = formData.selectedDays.includes(day.key)
+                  return (
+                    <button
+                      key={day.key}
+                      type="button"
+                      onClick={() => {
+                        const newSelectedDays = isSelected
+                          ? formData.selectedDays.filter(d => d !== day.key)
+                          : [...formData.selectedDays, day.key]
+                        setFormData({ ...formData, selectedDays: newSelectedDays })
+                      }}
+                      style={{
+                        padding: '0.75rem 0.5rem',
+                        border: isSelected ? '2px solid #667eea' : '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        background: isSelected ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                        color: isSelected ? 'white' : '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        textAlign: 'center'
+                      }}
+                      title={day.full}
+                    >
+                      {day.label}
+                    </button>
+                  )
+                })}
+              </div>
+              
+              {/* Quick Select Options */}
+              <div style={{
+                marginTop: '0.75rem',
+                display: 'flex',
+                gap: '0.5rem',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ 
+                    ...formData, 
+                    selectedDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] 
+                  })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: '#374151',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Weekdays
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ 
+                    ...formData, 
+                    selectedDays: ['saturday', 'sunday'] 
+                  })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: '#374151',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Weekends
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ 
+                    ...formData, 
+                    selectedDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] 
+                  })}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: '#374151',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Every Day
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Monthly Schedule */}
+          {formData.scheduleType === 'monthly' && (
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Monthly Schedule Type
+              </label>
+              
+              {/* Monthly Type Selector */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '0.5rem',
+                marginBottom: '1rem'
+              }}>
+                {[
+                  { key: 'date', label: 'By Date', desc: 'Same date each month' },
+                  { key: 'weekday', label: 'By Weekday', desc: 'Same weekday occurrence' }
+                ].map(type => {
+                  const isSelected = formData.monthlyType === type.key
+                  return (
+                    <button
+                      key={type.key}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, monthlyType: type.key as any })}
+                      style={{
+                        padding: '0.75rem',
+                        border: isSelected ? '2px solid #667eea' : '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        background: isSelected ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                        color: isSelected ? 'white' : '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div>{type.label}</div>
+                      <div style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '0.25rem' }}>
+                        {type.desc}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Date Selection */}
+              {formData.monthlyType === 'date' && (
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Day of Month (1-31)
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={formData.monthlyDate}
+                    onChange={(e) => setFormData({ ...formData, monthlyDate: parseInt(e.target.value) || 1 })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Weekday Selection */}
+              {formData.monthlyType === 'weekday' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Which Occurrence
+                    </label>
+                    <select
+                      value={formData.monthlyWeek}
+                      onChange={(e) => setFormData({ ...formData, monthlyWeek: e.target.value as any })}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="first">First</option>
+                      <option value="second">Second</option>
+                      <option value="third">Third</option>
+                      <option value="fourth">Fourth</option>
+                      <option value="last">Last</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Day of Week
+                    </label>
+                    <select
+                      value={formData.monthlyWeekday}
+                      onChange={(e) => setFormData({ ...formData, monthlyWeekday: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        background: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="monday">Monday</option>
+                      <option value="tuesday">Tuesday</option>
+                      <option value="wednesday">Wednesday</option>
+                      <option value="thursday">Thursday</option>
+                      <option value="friday">Friday</option>
+                      <option value="saturday">Saturday</option>
+                      <option value="sunday">Sunday</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Custom Schedule */}
+          {formData.scheduleType === 'custom' && (
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Custom Interval
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Every
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.customInterval}
+                    onChange={(e) => setFormData({ ...formData, customInterval: parseInt(e.target.value) || 1 })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Unit
+                  </label>
+                  <select
+                    value={formData.customUnit}
+                    onChange={(e) => setFormData({ ...formData, customUnit: e.target.value as any })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      background: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Color */}
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#374151',
+              marginBottom: '0.5rem'
             }}>
               Color
             </label>
@@ -161,97 +772,6 @@ export function HabitForm({ onSubmit, onCancel, habit, isEditing = false }: Habi
                 />
               ))}
             </div>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '1rem'
-          }}>
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                marginBottom: '0.5rem',
-                color: '#374151'
-              }}>
-                Frequency
-              </label>
-              <select
-                value={formData.frequency}
-                onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' })}
-                style={{
-                  width: '100%',
-                  height: '3rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e5e7eb',
-                  background: 'white',
-                  padding: '0 0.75rem',
-                  fontSize: '1rem',
-                  color: '#374151',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                marginBottom: '0.5rem',
-                color: '#374151'
-              }}>
-                Target
-              </label>
-              <Input
-                type="number"
-                min="1"
-                value={formData.target}
-                onChange={(e) => setFormData({ ...formData, target: parseInt(e.target.value) || 1 })}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  transition: 'all 0.2s ease',
-                  background: 'white'
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.9rem',
-              fontWeight: '500',
-              marginBottom: '0.5rem',
-              color: '#374151'
-            }}>
-              Unit (optional)
-            </label>
-            <Input
-              value={formData.unit}
-              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-              placeholder="e.g., minutes, glasses, pages"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                transition: 'all 0.2s ease',
-                background: 'white'
-              }}
-            />
           </div>
 
           <div style={{

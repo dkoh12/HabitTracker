@@ -7,9 +7,8 @@ import { useEffect, useState } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { SharedHabitForm } from '@/components/shared-habit-form'
 import { GroupWithMembers } from '@/types'
-import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, Plus, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 interface GroupDetailProps {
@@ -65,7 +64,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState(30) // Last 30 days
   const [groupId, setGroupId] = useState<string | null>(null)
-  const [showSharedHabitForm, setShowSharedHabitForm] = useState(false)
   const [showAllMembers, setShowAllMembers] = useState(false)
 
   // Await params and set groupId
@@ -711,7 +709,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   alignItems: 'center'
                 }}>
                   <Button
-                    onClick={() => setShowSharedHabitForm(true)}
+                    onClick={() => router.push(`/groups/${groupId}/create-habit`)}
                     style={{
                       padding: '0.5rem 1rem',
                       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -726,7 +724,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       gap: '0.5rem'
                     }}
                   >
-                    <Plus style={{ width: '16px', height: '16px' }} />
                     Add Shared Habit
                   </Button>
                   <div style={{
@@ -798,7 +795,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     Perfect for book clubs, fitness challenges, or learning goals.
                   </p>
                   <Button
-                    onClick={() => setShowSharedHabitForm(true)}
+                    onClick={() => router.push(`/groups/${groupId}/create-habit`)}
                     style={{
                       padding: '0.75rem 1.5rem',
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1570,15 +1567,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         )}
       </div>
     </div>
-
-    {/* Shared Habit Form Modal */}
-    {showSharedHabitForm && groupId && (
-      <SharedHabitForm
-        groupId={groupId}
-        onClose={() => setShowSharedHabitForm(false)}
-        onSuccess={handleCreateSharedHabit}
-      />
-    )}
     </>
   )
 }

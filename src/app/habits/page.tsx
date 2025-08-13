@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { HabitForm } from '@/components/habit-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { HabitWithEntries, HabitFormData } from '@/types'
+import { HabitWithEntries, LegacyHabitFormData } from '@/types'
 import { Plus, Edit3, Trash2, Calendar, Star, TrendingUp, Target, Activity } from 'lucide-react'
 
 export default function Habits() {
@@ -42,7 +42,7 @@ export default function Habits() {
     }
   }
 
-  const createHabit = async (habitData: HabitFormData) => {
+  const createHabit = async (habitData: LegacyHabitFormData) => {
     try {
       const response = await fetch('/api/habits', {
         method: 'POST',
@@ -61,7 +61,7 @@ export default function Habits() {
     }
   }
 
-  const updateHabit = async (habitData: HabitFormData) => {
+  const updateHabit = async (habitData: LegacyHabitFormData) => {
     if (!editingHabit) return
     
     try {
@@ -111,7 +111,7 @@ export default function Habits() {
     setShowHabitForm(false)
   }
 
-  const handleFormSubmit = (habitData: HabitFormData) => {
+  const handleFormSubmit = (habitData: LegacyHabitFormData) => {
     if (editingHabit) {
       updateHabit(habitData)
     } else {
