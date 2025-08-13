@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { Navigation } from '@/components/navigation'
+import { HabitCalendar } from '@/components/habit-calendar'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
 import { HabitForm } from '@/components/habit-form'
 import { Button } from '@/components/ui/button'
@@ -537,6 +538,11 @@ export default function Home() {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <HabitCalendar
+            habits={habits}
+            onUpdateEntry={updateHabitEntry}
+          />
+
           <HabitSpreadsheet
             habits={habits}
             onUpdateEntry={updateHabitEntry}

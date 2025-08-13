@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, startOfDay } from 'date-fns'
+import { useState } from 'react'
+import { format, startOfWeek, endOfWeek, addDays, subWeeks, addWeeks } from 'date-fns'
 import { HabitWithEntries } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Calendar1, CalendarDays } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Table as TableIcon, CheckCircle2, XCircle, Circle } from 'lucide-react'
 
 interface HabitSpreadsheetProps {
   habits: HabitWithEntries[]
@@ -14,315 +14,196 @@ interface HabitSpreadsheetProps {
 
 export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedHabit, setSelectedHabit] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week')
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
-  const [optimisticUpdates, setOptimisticUpdates] = useState<Map<string, number>>(new Map())
+  const [dateRange, setDateRange] = useState<7 | 30>(7)
 
-  // Clear optimistic updates when habits data changes (real data updated)
-  useEffect(() => {
-    if (habits.length > 0) {
-      setOptimisticUpdates(new Map())
-    }
-  }, [habits])
+  console.log('🔥 HabitSpreadsheet rendering with habits:', habits.length)
 
-  // Calculate date ranges based on view mode
+  // Calculate date range based on current date and range selection
   const getDateRange = () => {
-    if (viewMode === 'week') {
+    if (dateRange === 7) {
       const weekStart = startOfWeek(currentDate)
       const weekEnd = endOfWeek(currentDate)
       return { start: weekStart, end: weekEnd }
     } else {
-      const monthStart = startOfMonth(currentDate)
-      const monthEnd = endOfMonth(monthStart)
-      const start = startOfWeek(monthStart)
-      const end = endOfWeek(monthEnd)
+      // For 30 days, show last 30 days from current date
+      const end = new Date(currentDate)
+      const start = new Date(currentDate)
+      start.setDate(start.getDate() - 29) // 30 days including today
       return { start, end }
     }
   }
 
   const { start: startDate, end: endDate } = getDateRange()
 
-  const getEntryValue = (habitId: string, date: Date) => {
-    const dateKey = `${habitId}-${format(date, 'yyyy-MM-dd')}`
-    
-    // Check for optimistic update first
-    if (optimisticUpdates.has(dateKey)) {
-      return optimisticUpdates.get(dateKey)!
+  // Generate array of dates for the range
+  const getDatesArray = () => {
+    const dates = []
+    let currentDay = new Date(startDate)
+    while (currentDay <= endDate) {
+      dates.push(format(currentDay, 'yyyy-MM-dd'))
+      currentDay = addDays(currentDay, 1)
     }
-    
-    // Otherwise get the actual value from data
+    return dates
+  }
+
+  const dates = getDatesArray()
+
+  const getEntryValue = (habitId: string, date: string) => {
     const habit = habits.find(h => h.id === habitId)
     if (!habit) return 0
 
     const entry = habit.habitEntries.find(
-      e => format(new Date(e.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      e => format(new Date(e.date), 'yyyy-MM-dd') === date
     )
     return entry?.value || 0
   }
 
-  const handleCellClick = (habitId: string, date: Date, currentValue: number) => {
-    const newValue = currentValue > 0 ? 0 : 1
-    const dateString = format(date, 'yyyy-MM-dd')
-    const dateKey = `${habitId}-${dateString}`
-    
-    console.log('📝 handleCellClick:', { habitId, dateString, currentValue, newValue })
-    
-    // Apply optimistic update immediately for instant UI feedback
-    setOptimisticUpdates(prev => {
-      const newMap = new Map(prev)
-      newMap.set(dateKey, newValue)
-      return newMap
-    })
-    
-    // Call the parent's update function
-    onUpdateEntry(habitId, dateString, newValue)
-    
-    // Clear the optimistic update after a delay (when real data should be back)
-    setTimeout(() => {
-      setOptimisticUpdates(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(dateKey)
-        return newMap
-      })
-    }, 2000) // Clear after 2 seconds
-    
-    console.log('✅ Entry updated successfully!')
-  }
+  // Track entry state for red vs none distinction
+  const [entryStates, setEntryStates] = useState<Record<string, Record<string, boolean>>>({}) // habitId -> date -> hasEntry
 
-  const getHabitStats = (habitId: string) => {
+  const handleCellClick = (habitId: string, date: string) => {
+    const currentValue = getEntryValue(habitId, date)
     const habit = habits.find(h => h.id === habitId)
-    if (!habit) return { completed: 0, total: 0 }
+    const targetValue = habit?.target || 1
+    const entryKey = `${habitId}-${date}`
+    const hasEntry = entryStates[habitId]?.[date] || currentValue > 0
 
-    let completed = 0
-    let total = 0
-    let currentDay = new Date(startDate)
+    let newValue: number
+    let newHasEntry = true
 
-    while (currentDay <= endDate) {
-      // For week view, count all days; for month view, only count current month days for stats
-      if (viewMode === 'week' || isSameMonth(currentDay, currentDate)) {
-        total++
-        if (currentDay <= new Date() && getEntryValue(habitId, currentDay) > 0) {
-          completed++
-        }
-      }
-      currentDay = addDays(currentDay, 1)
+    // Rotation order: none → green → yellow → red → none
+    if (!hasEntry && currentValue === 0) {
+      // none → green (completed)
+      newValue = targetValue
+      newHasEntry = true
+    } else if (currentValue >= targetValue) {
+      // green (completed) → yellow (partial)
+      newValue = Math.max(1, Math.floor(targetValue / 2))
+      newHasEntry = true
+    } else if (currentValue > 0 && currentValue < targetValue) {
+      // yellow (partial) → red (attempted but failed)
+      newValue = 0
+      newHasEntry = true
+    } else if (currentValue === 0 && hasEntry) {
+      // red (attempted but failed) → none (no entry)
+      newValue = 0
+      newHasEntry = false
+    } else {
+      // fallback to green
+      newValue = targetValue
+      newHasEntry = true
     }
 
-    return { completed, total }
+    // Update entry state tracking
+    setEntryStates(prev => ({
+      ...prev,
+      [habitId]: {
+        ...prev[habitId],
+        [date]: newHasEntry
+      }
+    }))
+
+    onUpdateEntry(habitId, date, newValue)
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return format(date, 'MMM d')
+  }
+
+  const formatDateHeader = (dateString: string) => {
+    const date = new Date(dateString)
+    return {
+      day: format(date, 'd'),
+      weekday: format(date, 'EEE'),
+      month: format(date, 'MMM')
+    }
   }
 
   const navigatePrevious = () => {
-    if (viewMode === 'week') {
+    if (dateRange === 7) {
       setCurrentDate(subWeeks(currentDate, 1))
     } else {
-      setCurrentDate(subMonths(currentDate, 1))
+      const newDate = new Date(currentDate)
+      newDate.setDate(newDate.getDate() - 30)
+      setCurrentDate(newDate)
     }
   }
 
   const navigateNext = () => {
-    if (viewMode === 'week') {
+    if (dateRange === 7) {
       setCurrentDate(addWeeks(currentDate, 1))
     } else {
-      setCurrentDate(addMonths(currentDate, 1))
+      const newDate = new Date(currentDate)
+      newDate.setDate(newDate.getDate() + 30)
+      setCurrentDate(newDate)
     }
   }
 
   const getDateRangeText = () => {
-    if (viewMode === 'week') {
+    if (dateRange === 7) {
       return `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`
     } else {
-      return format(currentDate, 'MMMM yyyy')
+      return `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`
     }
   }
 
-  const renderCalendarDays = () => {
-    const days = []
-    let day = startDate
-    const today = new Date()
-
-    while (day <= endDate) {
-      const dayKey = format(day, 'yyyy-MM-dd')
-      const isCurrentMonth = viewMode === 'week' || isSameMonth(day, currentDate)
-      const isToday = isSameDay(day, today)
-      const isFuture = day > today
-
-      days.push(
-        <div
-          key={dayKey}
-          style={{
-            minHeight: viewMode === 'week' ? '150px' : '120px',
-            border: '1px solid #e5e7eb',
-            background: isCurrentMonth 
-              ? (isToday ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)' : 'white')
-              : '#f8fafc',
-            padding: '0.75rem',
-            position: 'relative',
-            opacity: isCurrentMonth ? 1 : 0.5,
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          {/* Date label */}
+  const getCompletionIcon = (value: number, target: number, habitId: string, date: string) => {
+    const hasEntry = entryStates[habitId]?.[date] || value > 0
+    
+    if (!hasEntry && value === 0) {
+      // No entry - gray circle
+      return <Circle style={{ width: '20px', height: '20px', color: '#d1d5db' }} />
+    }
+    
+    if (value >= target) {
+      // Completed - green checkmark
+      return <CheckCircle2 style={{ 
+        width: '20px', 
+        height: '20px', 
+        color: '#10b981',
+        filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.4))'
+      }} />
+    } else if (value > 0) {
+      // Partial progress - yellow circle with dot
+      return (
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <Circle style={{ width: '20px', height: '20px', color: '#f59e0b' }} />
           <div style={{
-            fontSize: viewMode === 'week' ? '1rem' : '0.8rem',
-            fontWeight: isToday ? '700' : '600',
-            color: isToday ? '#1d4ed8' : (isCurrentMonth ? '#374151' : '#9ca3af'),
-            marginBottom: '0.5rem',
+            position: 'absolute',
+            inset: 0,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: viewMode === 'week' ? 'flex-start' : 'center',
-            flexDirection: viewMode === 'week' ? 'column' : 'row',
-            gap: viewMode === 'week' ? '0.25rem' : '0.5rem'
+            justifyContent: 'center'
           }}>
-            {viewMode === 'week' ? (
-              <>
-                <span style={{
-                  fontSize: '0.75rem',
-                  color: '#6b7280',
-                  fontWeight: '500',
-                  textTransform: 'uppercase'
-                }}>
-                  {format(day, 'EEEE')}
-                </span>
-                <span style={{
-                  fontSize: '1.25rem',
-                  fontWeight: isToday ? '800' : '700'
-                }}>
-                  {format(day, 'do')}
-                </span>
-              </>
-            ) : (
-              <span>{format(day, 'd')}</span>
-            )}
+            <div style={{
+              width: '6px',
+              height: '6px',
+              background: '#f59e0b',
+              borderRadius: '50%'
+            }}></div>
           </div>
-          
-          {/* Habit tracking */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: viewMode === 'week' ? '0.5rem' : '3px',
-            flex: 1,
-            opacity: isCurrentMonth ? 1 : 0.7
-          }}>
-              {habits.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '1rem 0.5rem',
-                  color: '#9ca3af',
-                  fontSize: '0.7rem'
-                }}>
-                  No habits
-                </div>
-              ) : (
-                (selectedHabit ? habits.filter(h => h.id === selectedHabit) : habits.slice(0, viewMode === 'week' ? 10 : 4)).map(habit => {
-                  const value = getEntryValue(habit.id, day)
-                  const cellId = `${habit.id}-${format(day, 'yyyy-MM-dd')}`
-                  const isHovered = hoveredCell === cellId
-                  const tooltipText = isFuture 
-                    ? `${habit.name}: Future tracking (cannot click)` 
-                    : `${habit.name}: ${value > 0 ? '✅ Completed' : '⭕ Not completed'} - Click to toggle`
-                  
-                  return (
-                    <div
-                      key={habit.id}
-                      onClick={!isFuture ? (e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        console.log('🎯 CLICKING HABIT:', habit.name, 'for date:', format(day, 'yyyy-MM-dd'), 'current value:', value)
-                        handleCellClick(habit.id, day, value)
-                      } : undefined}
-                      onMouseEnter={() => {
-                        if (!isFuture) {
-                          setHoveredCell(cellId)
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        if (!isFuture) {
-                          setHoveredCell(null)
-                        }
-                      }}
-                      style={{
-                        width: '100%',
-                        height: viewMode === 'week' ? '16px' : '8px',
-                        borderRadius: viewMode === 'week' ? '8px' : '4px',
-                        backgroundColor: isFuture 
-                          ? `${habit.color}10` 
-                          : isHovered 
-                            ? (value > 0 ? habit.color : `${habit.color}80`)
-                            : (value > 0 ? habit.color : `${habit.color}20`),
-                        border: isFuture 
-                          ? `1px dashed ${habit.color}30` 
-                          : (value > 0 ? 'none' : `1px solid ${habit.color}60`),
-                        cursor: isFuture ? 'default' : 'pointer',
-                        transition: 'all 0.15s ease',
-                        transform: !isFuture && isHovered ? 'scale(1.03)' : 'scale(1)',
-                        boxShadow: value > 0 && !isFuture 
-                          ? `0 0 0 1px ${habit.color}60` 
-                          : isHovered && !isFuture 
-                            ? `0 0 0 2px ${habit.color}40`
-                            : 'none',
-                        position: 'relative',
-                        opacity: isFuture ? 0.5 : 1,
-                        userSelect: 'none',
-                        zIndex: isHovered ? 10 : 1,
-                        minHeight: viewMode === 'week' ? '16px' : '8px'
-                      }}
-                      title={tooltipText}
-                      aria-label={tooltipText}
-                    >
-                      {/* Visual completion indicator */}
-                      {value > 0 && !isFuture && (
-                        <div style={{
-                          position: 'absolute',
-                          right: '2px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          fontSize: viewMode === 'week' ? '10px' : '8px',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          textShadow: '0 0 2px rgba(0,0,0,0.5)'
-                        }}>
-                          ✓
-                        </div>
-                      )}
-                      
-                      {/* Count indicator for values > 1 */}
-                      {viewMode === 'week' && value > 1 && (
-                        <div style={{
-                          position: 'absolute',
-                          left: '4px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          fontSize: '0.7rem',
-                          color: 'white',
-                          fontWeight: '600',
-                          textShadow: '0 0 2px rgba(0,0,0,0.5)'
-                        }}>
-                          {value}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })
-              )}
-              {!selectedHabit && habits.length > (viewMode === 'week' ? 10 : 4) && (
-                <div style={{
-                  fontSize: '0.7rem',
-                  color: '#6b7280',
-                  textAlign: 'center',
-                  marginTop: '2px'
-                }}>
-                  +{habits.length - (viewMode === 'week' ? 10 : 4)} more
-                </div>
-              )}
-            </div>
         </div>
       )
-      day = addDays(day, 1)
+    } else if (value === 0 && hasEntry) {
+      // Attempted but failed - red X
+      return <XCircle style={{ width: '20px', height: '20px', color: '#ef4444' }} />
+    } else {
+      // Fallback - gray circle
+      return <Circle style={{ width: '20px', height: '20px', color: '#d1d5db' }} />
     }
+  }
 
-    return days
+  const getCellColor = (value: number, target: number) => {
+    if (value === 0) return '#ffffff' // white for no entry
+    if (value >= target) return '#dcfce7' // light green for completed
+    return '#fef3c7' // light yellow for partial
+  }
+
+  const getCellTextColor = (value: number, target: number) => {
+    if (value === 0) return '#9ca3af' // gray for no entry
+    if (value >= target) return '#166534' // dark green for completed
+    return '#92400e' // dark yellow for partial
   }
 
   return (
@@ -331,7 +212,8 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
       borderRadius: '16px',
       border: '1px solid #e5e7eb',
       boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      marginBottom: '2rem'
     }}>
       <CardHeader style={{
         padding: '1.5rem',
@@ -348,15 +230,15 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
           <CardTitle style={{
             fontSize: '1.5rem',
             fontWeight: '600',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem'
           }}>
-            <CalendarIcon className="w-6 h-6" style={{ color: '#667eea' }} />
-            Habit Calendar
+            <TableIcon className="w-6 h-6" style={{ color: '#10b981' }} />
+            Habit Spreadsheet
           </CardTitle>
           
           <div style={{
@@ -365,58 +247,45 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
             gap: '1rem',
             flexWrap: 'wrap'
           }}>
-            {/* View Mode Toggle */}
+            {/* Date Range Toggle */}
             <div style={{
               display: 'flex',
-              background: '#f3f4f6',
-              borderRadius: '12px',
-              padding: '0.25rem',
-              gap: '0.25rem'
+              gap: '0.5rem'
             }}>
-              <button
-                onClick={() => setViewMode('week')}
+              <Button
+                variant={dateRange === 7 ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDateRange(7)}
                 style={{
                   padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: viewMode === 'week' 
-                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                    : 'transparent',
-                  color: viewMode === 'week' ? 'white' : '#6b7280',
                   fontSize: '0.875rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
+                  fontWeight: '500',
+                  borderRadius: '8px',
+                  border: dateRange === 7 ? 'none' : '2px solid #e5e7eb',
+                  background: dateRange === 7 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'white',
+                  color: dateRange === 7 ? 'white' : '#374151',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <Calendar1 className="w-4 h-4" />
-                Week
-              </button>
-              <button
-                onClick={() => setViewMode('month')}
+                7 days
+              </Button>
+              <Button
+                variant={dateRange === 30 ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDateRange(30)}
                 style={{
                   padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: viewMode === 'month' 
-                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                    : 'transparent',
-                  color: viewMode === 'month' ? 'white' : '#6b7280',
                   fontSize: '0.875rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
+                  fontWeight: '500',
+                  borderRadius: '8px',
+                  border: dateRange === 30 ? 'none' : '2px solid #e5e7eb',
+                  background: dateRange === 30 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'white',
+                  color: dateRange === 30 ? 'white' : '#374151',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <CalendarDays className="w-4 h-4" />
-                Month
-              </button>
+                30 days
+              </Button>
             </div>
 
             {/* Navigation */}
@@ -435,23 +304,20 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                   background: 'white',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  transition: 'all 0.2s ease'
                 }}
               >
                 <ChevronLeft className="w-4 h-4" style={{ color: '#6b7280' }} />
               </Button>
               <span style={{
-                fontSize: '1.1rem',
+                fontSize: '1rem',
                 fontWeight: '600',
                 color: '#374151',
                 padding: '0.5rem 1rem',
-                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
                 borderRadius: '20px',
-                border: '1px solid #93c5fd',
-                minWidth: '180px',
+                border: '1px solid #10b981',
+                minWidth: '200px',
                 textAlign: 'center'
               }}>
                 {getDateRangeText()}
@@ -466,10 +332,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                   background: 'white',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  transition: 'all 0.2s ease'
                 }}
               >
                 <ChevronRight className="w-4 h-4" style={{ color: '#6b7280' }} />
@@ -477,178 +340,276 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
             </div>
           </div>
         </div>
-
-        {/* Habit Filter */}
-        {habits.length > 0 && (
-          <div style={{ marginTop: '1rem' }}>
-            <div style={{
-              display: 'flex',
-              gap: '0.5rem',
-              flexWrap: 'wrap',
-              alignItems: 'center'
-            }}>
-              <span style={{
-                fontSize: '0.9rem',
-                color: '#6b7280',
-                fontWeight: '500'
-              }}>Filter:</span>
-              <button
-                onClick={() => setSelectedHabit(null)}
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '20px',
-                  border: 'none',
-                  background: selectedHabit === null 
-                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                    : '#f3f4f6',
-                  color: selectedHabit === null ? 'white' : '#6b7280',
-                  fontSize: '0.8rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                All Habits
-              </button>
-              {habits.map(habit => (
-                <button
-                  key={habit.id}
-                  onClick={() => setSelectedHabit(habit.id)}
-                  style={{
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: selectedHabit === habit.id 
-                      ? habit.color 
-                      : '#f3f4f6',
-                    color: selectedHabit === habit.id ? 'white' : '#6b7280',
-                    fontSize: '0.8rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {habit.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </CardHeader>
 
       <CardContent style={{ padding: '0' }}>
-        {/* Calendar Header - Days of Week */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-          borderBottom: '2px solid #e5e7eb'
-        }}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div
-              key={day}
-              style={{
-                padding: '1rem 0.5rem',
-                textAlign: 'center',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                color: '#374151',
-                borderRight: '1px solid #e5e7eb'
-              }}
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          minHeight: viewMode === 'week' ? '200px' : '600px'
-        }}>
-          {renderCalendarDays()}
-        </div>
-
-        {/* Legend or Empty State */}
-        <div style={{
-          padding: '1rem 1.5rem',
-          borderTop: '1px solid #f3f4f6',
-          background: '#f8fafc'
-        }}>
-          {habits.length === 0 ? (
+        {habits.length === 0 ? (
+          <div style={{
+            padding: '3rem 2rem',
+            textAlign: 'center'
+          }}>
             <div style={{
-              textAlign: 'center',
+              fontSize: '4rem',
+              marginBottom: '1rem'
+            }}>📊</div>
+            <h3 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              marginBottom: '1rem',
+              color: '#1f2937'
+            }}>No Habits Yet</h3>
+            <p style={{
               color: '#6b7280',
-              padding: '1rem'
+              marginBottom: '2rem',
+              fontSize: '1rem',
+              lineHeight: '1.6'
             }}>
-              <div style={{
-                fontSize: '2rem',
-                marginBottom: '0.5rem'
-              }}>📝</div>
-              <h3 style={{
-                fontSize: '1rem',
-                fontWeight: '600',
-                color: '#374151',
-                marginBottom: '0.25rem'
-              }}>No habits to track yet</h3>
-              <p style={{
-                fontSize: '0.875rem',
-                color: '#6b7280'
-              }}>Create your first habit to start building consistency!</p>
+              Create your first habit to start tracking your progress in spreadsheet format!
+            </p>
+          </div>
+        ) : (
+          <div style={{ 
+            overflowX: 'auto',
+            border: '1px solid #e5e7eb',
+            borderTop: 'none'
+          }}>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '0.875rem',
+              fontFamily: 'ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace'
+            }}>
+              {/* Header Row */}
+              <thead>
+                <tr style={{ background: '#f9fafb' }}>
+                  {/* Date column header */}
+                  <th style={{
+                    position: 'sticky',
+                    left: 0,
+                    background: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    padding: '0.75rem',
+                    textAlign: 'left',
+                    fontWeight: '600',
+                    minWidth: '100px',
+                    color: '#374151',
+                    fontSize: '0.875rem',
+                    zIndex: 10
+                  }}>
+                    Date
+                  </th>
+                  {/* Habit columns */}
+                  {habits.map(habit => (
+                    <th key={habit.id} style={{
+                      border: '1px solid #d1d5db',
+                      padding: '0.75rem',
+                      textAlign: 'center',
+                      minWidth: '120px',
+                      maxWidth: '150px',
+                      background: '#f9fafb',
+                      fontWeight: '600',
+                      color: '#374151',
+                      wordWrap: 'break-word'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}>
+                        <div style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: habit.color,
+                          marginBottom: '0.25rem'
+                        }} />
+                        <div style={{
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          textAlign: 'center',
+                          lineHeight: '1.2'
+                        }}>
+                          {habit.name}
+                        </div>
+                        <div style={{
+                          fontSize: '0.7rem',
+                          color: '#6b7280',
+                          textAlign: 'center'
+                        }}>
+                          Target: {habit.target}{habit.unit && ` ${habit.unit}`}
+                        </div>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              {/* Body Rows - One row per date */}
+              <tbody>
+                {dates.map((date, dateIndex) => {
+                  const dateInfo = formatDateHeader(date)
+                  const isToday = format(new Date(), 'yyyy-MM-dd') === date
+                  
+                  return (
+                    <tr key={date} style={{
+                      background: isToday ? '#f0fdf4' : (dateIndex % 2 === 0 ? '#ffffff' : '#f9fafb'),
+                      transition: 'background-color 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isToday) {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isToday) {
+                        e.currentTarget.style.backgroundColor = dateIndex % 2 === 0 ? '#ffffff' : '#f9fafb'
+                      }
+                    }}>
+                      {/* Date cell */}
+                      <td style={{
+                        position: 'sticky',
+                        left: 0,
+                        background: isToday ? '#ecfdf5' : (dateIndex % 2 === 0 ? '#ffffff' : '#f9fafb'),
+                        border: '1px solid #d1d5db',
+                        padding: '0.75rem',
+                        fontWeight: isToday ? '700' : '500',
+                        color: isToday ? '#166534' : '#374151',
+                        zIndex: 5
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.125rem'
+                        }}>
+                          <div style={{
+                            fontSize: '0.875rem',
+                            fontWeight: isToday ? '700' : '600'
+                          }}>
+                            {dateInfo.month} {dateInfo.day}
+                          </div>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: isToday ? '#059669' : '#6b7280'
+                          }}>
+                            {dateInfo.weekday}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Habit cells */}
+                      {habits.map(habit => {
+                        const value = getEntryValue(habit.id, date)
+                        const target = habit.target || 1
+                        const cellBg = getCellColor(value, target)
+                        const textColor = getCellTextColor(value, target)
+                        
+                        return (
+                          <td key={habit.id} style={{
+                            border: '1px solid #d1d5db',
+                            padding: '0.5rem',
+                            textAlign: 'center',
+                            verticalAlign: 'middle',
+                            cursor: 'pointer',
+                            background: cellBg,
+                            color: textColor,
+                            fontWeight: '600',
+                            fontSize: '0.875rem',
+                            transition: 'all 0.15s ease',
+                            userSelect: 'none'
+                          }}
+                          onClick={() => handleCellClick(habit.id, date)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #10b981'
+                            e.currentTarget.style.transform = 'scale(1.05)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.boxShadow = 'none'
+                            e.currentTarget.style.transform = 'scale(1)'
+                          }}
+                          title={`${habit.name} on ${formatDate(date)}: ${value}${habit.unit || ''} (Target: ${target}${habit.unit || ''}) - Click to cycle: Green → Yellow → Red → None`}
+                          >
+                            {getCompletionIcon(value, target, habit.id, date)}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Legend */}
+        {habits.length > 0 && (
+          <div style={{
+            padding: '1rem 1.5rem',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            borderTop: '1px solid #e5e7eb',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            alignItems: 'center',
+            fontSize: '0.875rem'
+          }}>
+            <div style={{
+              fontWeight: '600',
+              color: '#374151',
+              marginRight: '0.5rem'
+            }}>
+              Legend:
             </div>
-          ) : (
             <div style={{
               display: 'flex',
-              flexWrap: 'wrap',
-              gap: '1rem',
-              alignItems: 'center'
+              alignItems: 'center',
+              gap: '0.5rem'
             }}>
-              <span style={{
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                color: '#374151'
-              }}>Legend:</span>
-              {(selectedHabit ? habits.filter(h => h.id === selectedHabit) : habits).map(habit => {
-                const { completed, total } = getHabitStats(habit.id)
-                return (
-                  <div key={habit.id} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.5rem 0.75rem',
-                    background: 'white',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    <div style={{
-                      width: '12px',
-                      height: '6px',
-                      borderRadius: '3px',
-                      backgroundColor: habit.color
-                    }} />
-                    <span style={{
-                      fontSize: '0.8rem',
-                      color: '#374151',
-                      fontWeight: '500'
-                    }}>
-                      {habit.name}
-                    </span>
-                    <span style={{
-                      fontSize: '0.75rem',
-                      color: '#6b7280',
-                      background: '#f3f4f6',
-                      padding: '0.125rem 0.375rem',
-                      borderRadius: '10px'
-                    }}>
-                      {completed}/{total}
-                    </span>
-                  </div>
-                )
-              })}
+              <Circle style={{ width: '16px', height: '16px', color: '#d1d5db' }} />
+              <span style={{ color: '#6b7280' }}>No entry</span>
             </div>
-          )}
-        </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <CheckCircle2 style={{ width: '16px', height: '16px', color: '#10b981' }} />
+              <span style={{ color: '#166534' }}>Target reached</span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <Circle style={{ width: '16px', height: '16px', color: '#f59e0b' }} />
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{
+                    width: '4px',
+                    height: '4px',
+                    background: '#f59e0b',
+                    borderRadius: '50%'
+                  }}></div>
+                </div>
+              </div>
+              <span style={{ color: '#92400e' }}>Partial progress</span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <XCircle style={{ width: '16px', height: '16px', color: '#ef4444' }} />
+              <span style={{ color: '#dc2626' }}>Attempted but failed</span>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
