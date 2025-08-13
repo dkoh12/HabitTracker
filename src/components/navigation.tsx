@@ -106,10 +106,13 @@ export function Navigation() {
             gap: '1rem'
           }}>
             {/* Profile Dropdown */}
-            <div style={{ position: 'relative' }}>
+            <div 
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setShowProfileMenu(true)}
+              onMouseLeave={() => setShowProfileMenu(false)}
+            >
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                onMouseEnter={() => setShowProfileMenu(true)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -153,12 +156,10 @@ export function Navigation() {
               {/* Dropdown Menu */}
               {showProfileMenu && (
                 <div
-                  onMouseLeave={() => setShowProfileMenu(false)}
                   style={{
                     position: 'absolute',
-                    top: '100%',
+                    top: 'calc(100% - 2px)', // Reduce gap to prevent mouse leaving area
                     right: 0,
-                    marginTop: '0.5rem',
                     background: 'white',
                     borderRadius: '12px',
                     border: '1px solid #e5e7eb',
