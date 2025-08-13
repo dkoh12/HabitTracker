@@ -30,7 +30,7 @@ export default function Profile() {
   const { data: session, status, update } = useSession()
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start with false - no loading screen
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -72,9 +72,8 @@ export default function Profile() {
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
-    } finally {
-      setLoading(false)
     }
+    // No finally block needed - we don't use loading state anymore
   }
 
   const handleSave = async () => {
@@ -337,37 +336,88 @@ export default function Profile() {
     }
   }
 
-  if (status === 'loading' || loading) {
+  if (!session) return null
+
+  // Show page immediately, even if profile is still loading
+  if (!profile) {
+    // Profile is loading - show page with skeleton/placeholder content
     return (
       <div style={{
         minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
       }}>
-        <div style={{ textAlign: 'center' }}>
+        <Navigation />
+        <div style={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          padding: '2rem 1rem'
+        }}>
           <div style={{
-            width: '80px',
-            height: '80px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTop: '4px solid white',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto'
-          }}></div>
-          <p style={{ 
-            marginTop: '1rem', 
-            color: 'white',
-            fontSize: '1.1rem',
-            fontWeight: '500'
-          }}>Loading your profile...</p>
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '2rem',
+            gap: '1rem'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: '#e5e7eb',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }} />
+            <div>
+              <div style={{
+                width: '200px',
+                height: '32px',
+                background: '#e5e7eb',
+                borderRadius: '8px',
+                marginBottom: '8px',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }} />
+              <div style={{
+                width: '300px',
+                height: '16px',
+                background: '#e5e7eb',
+                borderRadius: '8px',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }} />
+            </div>
+          </div>
+          <div style={{
+            display: 'grid',
+            gap: '2rem',
+            gridTemplateColumns: '1fr',
+            maxWidth: '600px'
+          }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{
+                background: 'white',
+                borderRadius: '16px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                padding: '1.5rem',
+                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              }}>
+                <div style={{
+                  width: '150px',
+                  height: '20px',
+                  background: '#e5e7eb',
+                  borderRadius: '8px',
+                  marginBottom: '1rem'
+                }} />
+                <div style={{
+                  width: '100%',
+                  height: '60px',
+                  background: '#f3f4f6',
+                  borderRadius: '8px'
+                }} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
-
-  if (!session || !profile) return null
 
   const memberSince = new Date(profile.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',

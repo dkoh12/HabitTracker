@@ -16,7 +16,7 @@ export default function Habits() {
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
   const [editingHabit, setEditingHabit] = useState<HabitWithEntries | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start with false - no loading screen
   const [selectedHabitDetails, setSelectedHabitDetails] = useState<HabitWithEntries | null>(null)
 
   useEffect(() => {
@@ -37,9 +37,8 @@ export default function Habits() {
       }
     } catch (error) {
       console.error('Error fetching habits:', error)
-    } finally {
-      setLoading(false)
     }
+    // No finally block needed - we don't use loading state anymore
   }
 
   const createHabit = async (habitData: HabitFormData) => {
@@ -469,36 +468,7 @@ export default function Habits() {
     )
   }
 
-  if (status === 'loading' || loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTop: '4px solid white',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto'
-          }}></div>
-          <p style={{ 
-            marginTop: '1rem', 
-            color: 'white',
-            fontSize: '1.1rem',
-            fontWeight: '500'
-          }}>Loading your habits...</p>
-        </div>
-      </div>
-    )
-  }
-
+  // Remove loading screen - page renders immediately
   if (!session) return null
 
   return (
