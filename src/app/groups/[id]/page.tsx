@@ -592,48 +592,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 color: '#1f2937',
                 fontWeight: '600'
               }}>
-                <Users style={{
-                  width: '20px',
-                  height: '20px',
-                  color: '#667eea'
-                }} />
-                Members
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={{ padding: '1.5rem' }}>
-              <div style={{
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                color: '#667eea',
-                marginBottom: '0.5rem'
-              }}>
-                {group.members.length + 1}
-              </div>
-              <p style={{
-                fontSize: '0.875rem',
-                color: '#6b7280'
-              }}>Active members</p>
-            </CardContent>
-          </Card>
-
-          <Card style={{
-            background: 'white',
-            borderRadius: '16px',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardHeader style={{
-              padding: '1.5rem 1.5rem 1rem 1.5rem',
-              borderBottom: '1px solid #f3f4f6'
-            }}>
-              <CardTitle style={{
-                fontSize: '1.125rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#1f2937',
-                fontWeight: '600'
-              }}>
                 <TrendingUp style={{
                   width: '20px',
                   height: '20px',
@@ -1333,7 +1291,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 gap: '0.5rem'
               }}>
                 <Users style={{ width: '20px', height: '20px' }} />
-                Group Members
+                Group Members ({group.members.length + 1})
               </CardTitle>
             </CardHeader>
             <CardContent style={{ padding: '1.5rem' }}>
@@ -1372,17 +1330,13 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         borderRadius: '8px',
                         background: isOwnerEntry
                           ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
-                          : isCurrentMember
-                          ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
                           : member.role === 'Admin' 
                           ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
                           : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
                         border: isOwnerEntry
                           ? '1px solid #f59e0b'
-                          : isCurrentMember
-                          ? '1px solid #3b82f6'
                           : member.role === 'Admin'
-                          ? '1px solid #3b82f620'
+                          ? '1px solid #3b82f6'
                           : '1px solid #e5e7eb'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

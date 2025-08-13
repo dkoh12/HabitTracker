@@ -544,24 +544,66 @@ export default function Groups() {
                                 ? '1px solid #3b82f6'
                                 : '1px solid #f1f5f9'
                             }}>
-                              <span style={{ 
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.5rem',
                                 color: isCurrentUser
                                   ? '#1e40af'
                                   : '#1f2937', 
                                 fontWeight: '500' 
                               }}>
-                                {member.user.name || member.user.email}
-                                {isCurrentUser && (
-                                  <span style={{
-                                    marginLeft: '0.5rem',
-                                    fontSize: '0.75rem',
-                                    color: '#3b82f6',
-                                    fontWeight: '400'
+                                {member.user.avatar ? (
+                                  <img
+                                    src={member.user.avatar}
+                                    alt={member.user.name || member.user.email}
+                                    style={{
+                                      width: '24px',
+                                      height: '24px',
+                                      borderRadius: '50%',
+                                      border: isCurrentUser
+                                        ? '1px solid #3b82f6'
+                                        : '1px solid #d1d5db'
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    borderRadius: '50%',
+                                    background: isCurrentUser
+                                      ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                      : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: isCurrentUser
+                                      ? '1px solid #3b82f6'
+                                      : '1px solid #d1d5db'
                                   }}>
-                                    (You)
-                                  </span>
+                                    <span style={{
+                                      color: 'white',
+                                      fontSize: '0.75rem',
+                                      fontWeight: '600'
+                                    }}>
+                                      {(member.user.name || member.user.email).charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
                                 )}
-                              </span>
+                                <span>
+                                  {member.user.name || member.user.email}
+                                  {isCurrentUser && (
+                                    <span style={{
+                                      marginLeft: '0.5rem',
+                                      fontSize: '0.75rem',
+                                      color: '#3b82f6',
+                                      fontWeight: '400'
+                                    }}>
+                                      (You)
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
                               <span style={{
                                 fontSize: '0.75rem',
                                 background: member.role === 'OWNER'
