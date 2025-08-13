@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers } from '@/types'
-import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp, Edit3, Trash2, Eye } from 'lucide-react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 interface GroupDetailProps {
@@ -63,6 +63,17 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const [dateRange, setDateRange] = useState(30) // Last 30 days
   const [groupId, setGroupId] = useState<string | null>(null)
   const [showAllMembers, setShowAllMembers] = useState(false)
+  const [selectedHabit, setSelectedHabit] = useState<GroupHabitData | null>(null)
+  const [showHabitModal, setShowHabitModal] = useState(false)
+  const [modalType, setModalType] = useState<'view' | 'edit' | 'delete'>('view')
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    color: '',
+    target: 1,
+    unit: '',
+    frequency: 'daily'
+  })
 
   // Await params and set groupId
   useEffect(() => {
@@ -136,6 +147,86 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       fetchSpreadsheetData(group)
     }
   }, [group, fetchSpreadsheetData])
+
+  const handleViewHabit = (habit: GroupHabitData) => {
+    setSelectedHabit(habit)
+    setModalType('view')
+    setShowHabitModal(true)
+  }
+
+  const handleEditHabit = (habit: GroupHabitData) => {
+    setSelectedHabit(habit)
+    setEditFormData({
+      name: habit.name,
+      description: habit.description || '',
+      color: habit.color,
+      target: habit.target,
+      unit: habit.unit || '',
+      frequency: habit.frequency
+    })
+    setModalType('edit')
+    setShowHabitModal(true)
+  }
+
+  const handleDeleteHabit = (habit: GroupHabitData) => {
+    setSelectedHabit(habit)
+    setModalType('delete')
+    setShowHabitModal(true)
+  }
+
+  const confirmDeleteHabit = async () => {
+    if (!selectedHabit || !groupId) return
+
+    try {
+      const response = await fetch(`/api/groups/${groupId}/shared-habits/${selectedHabit.id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setShowHabitModal(false)
+        setSelectedHabit(null)
+        // Refresh the data
+        if (group) {
+          await fetchSpreadsheetData(group)
+        }
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to delete habit')
+      }
+    } catch (error) {
+      console.error('Error deleting habit:', error)
+      alert('An error occurred while deleting the habit')
+    }
+  }
+
+  const saveHabitChanges = async () => {
+    if (!selectedHabit || !groupId) return
+
+    try {
+      const response = await fetch(`/api/groups/${groupId}/shared-habits/${selectedHabit.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editFormData)
+      })
+
+      if (response.ok) {
+        setShowHabitModal(false)
+        setSelectedHabit(null)
+        // Refresh the data
+        if (group) {
+          await fetchSpreadsheetData(group)
+        }
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to update habit')
+      }
+    } catch (error) {
+      console.error('Error updating habit:', error)
+      alert('An error occurred while updating the habit')
+    }
+  }
 
   const handleLeaveGroup = async () => {
     if (!groupId || !session?.user) return
@@ -555,97 +646,329 @@ export default function GroupDetail({ params }: GroupDetailProps) {
           </div>
         </div>
 
-        {/* Group Info */}
-        <div style={{
-          display: 'grid',
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          marginBottom: '2rem'
-        }}>
+        {/* Group Habits Management */}
+        {spreadsheetData && spreadsheetData.habits.length > 0 && (
           <Card style={{
             background: 'white',
             borderRadius: '16px',
             border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            marginBottom: '1.5rem',
+            overflow: 'hidden'
           }}>
             <CardHeader style={{
-              padding: '1.5rem 1.5rem 1rem 1.5rem',
-              borderBottom: '1px solid #f3f4f6'
+              padding: '1.5rem',
+              borderBottom: '1px solid #f3f4f6',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
             }}>
-              <CardTitle style={{
-                fontSize: '1.125rem',
+              <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                color: '#1f2937',
-                fontWeight: '600'
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem'
               }}>
-                <TrendingUp style={{
-                  width: '20px',
-                  height: '20px',
-                  color: '#10b981'
-                }} />
-                Habits
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={{ padding: '1.5rem' }}>
-              <div style={{
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                color: '#10b981',
-                marginBottom: '0.5rem'
-              }}>
-                {spreadsheetData?.habits.length || 0}
+                <CardTitle style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '600',
+                  color: '#1f2937',
+                  margin: 0
+                }}>
+                  Group Habits ({spreadsheetData.habits.length})
+                </CardTitle>
+                <Button
+                  onClick={() => router.push(`/groups/${groupId}/create-habit`)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  Add Shared Habit
+                </Button>
               </div>
-              <p style={{
-                fontSize: '0.875rem',
-                color: '#6b7280'
-              }}>Shared habits</p>
+            </CardHeader>
+            <CardContent style={{ padding: '0' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse'
+                }}>
+                  <thead>
+                    <tr style={{ background: '#f9fafb' }}>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        borderBottom: '1px solid #e5e7eb'
+                      }}>
+                        Habit
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        borderBottom: '1px solid #e5e7eb'
+                      }}>
+                        Target
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        borderBottom: '1px solid #e5e7eb'
+                      }}>
+                        Frequency
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        borderBottom: '1px solid #e5e7eb'
+                      }}>
+                        Created by
+                      </th>
+                      <th style={{
+                        padding: '1rem',
+                        textAlign: 'right',
+                        fontWeight: '600',
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        borderBottom: '1px solid #e5e7eb',
+                        width: '120px'
+                      }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {spreadsheetData.habits.map((habit, index) => {
+                      const currentUserId = (session?.user as any)?.id
+                      const isGroupOwner = group?.owner.id === currentUserId
+                      const membership = group?.members.find(m => m.userId === currentUserId)
+                      const isAdmin = membership?.role === 'Admin'
+                      const canManage = isGroupOwner || isAdmin
+                      
+                      return (
+                        <tr key={habit.id} style={{
+                          borderBottom: index < spreadsheetData.habits.length - 1 ? '1px solid #f3f4f6' : 'none',
+                          transition: 'background-color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f9fafb'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                        }}>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem'
+                            }}>
+                              <div style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: habit.color,
+                                flexShrink: 0,
+                                boxShadow: `0 0 0 2px ${habit.color}20`
+                              }} />
+                              <div>
+                                <div style={{
+                                  fontWeight: '500',
+                                  color: '#1f2937',
+                                  fontSize: '0.875rem',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  {habit.name}
+                                </div>
+                                {habit.description && (
+                                  <div style={{
+                                    fontSize: '0.75rem',
+                                    color: '#6b7280',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {habit.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <span style={{
+                              fontSize: '0.875rem',
+                              color: '#1f2937',
+                              fontWeight: '500'
+                            }}>
+                              {habit.target}{habit.unit && ` ${habit.unit}`}
+                            </span>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <span style={{
+                              fontSize: '0.875rem',
+                              color: '#1f2937',
+                              textTransform: 'capitalize',
+                              background: '#f3f4f6',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '12px'
+                            }}>
+                              {habit.frequency}
+                            </span>
+                          </td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}>
+                              {habit.user.avatar ? (
+                                <img
+                                  src={habit.user.avatar}
+                                  alt={habit.user.name || habit.user.email}
+                                  style={{
+                                    width: '24px',
+                                    height: '24px',
+                                    borderRadius: '50%',
+                                    border: '1px solid #d1d5db'
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '50%',
+                                  background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  border: '1px solid #d1d5db'
+                                }}>
+                                  <span style={{
+                                    color: 'white',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '600'
+                                  }}>
+                                    {(habit.user.name || habit.user.email).charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              <span style={{
+                                fontSize: '0.875rem',
+                                color: '#1f2937'
+                              }}>
+                                {habit.user.name || habit.user.email}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '1rem', textAlign: 'right' }}>
+                            <div style={{
+                              display: 'flex',
+                              gap: '0.5rem',
+                              justifyContent: 'flex-end'
+                            }}>
+                              <button
+                                onClick={() => handleViewHabit(habit)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '0.5rem',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'background-color 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#f3f4f6'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent'
+                                }}
+                                title="View habit details"
+                              >
+                                <Eye style={{ width: '16px', height: '16px', color: '#6b7280' }} />
+                              </button>
+                              
+                              {canManage && (
+                                <>
+                                  <button
+                                    onClick={() => handleEditHabit(habit)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0.5rem',
+                                      borderRadius: '6px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'background-color 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#fef3c7'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent'
+                                    }}
+                                    title="Edit habit"
+                                  >
+                                    <Edit3 style={{ width: '16px', height: '16px', color: '#f59e0b' }} />
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => handleDeleteHabit(habit)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0.5rem',
+                                      borderRadius: '6px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'background-color 0.2s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor = '#fee2e2'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor = 'transparent'
+                                    }}
+                                    title="Delete habit"
+                                  >
+                                    <Trash2 style={{ width: '16px', height: '16px', color: '#ef4444' }} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
-
-          <Card style={{
-            background: 'white',
-            borderRadius: '16px',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardHeader style={{
-              padding: '1.5rem 1.5rem 1rem 1.5rem',
-              borderBottom: '1px solid #f3f4f6'
-            }}>
-              <CardTitle style={{
-                fontSize: '1.125rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#1f2937',
-                fontWeight: '600'
-              }}>
-                <Calendar style={{
-                  width: '20px',
-                  height: '20px',
-                  color: '#8b5cf6'
-                }} />
-                Tracking
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={{ padding: '1.5rem' }}>
-              <div style={{
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                color: '#8b5cf6',
-                marginBottom: '0.5rem'
-              }}>
-                {dateRange}
-              </div>
-              <p style={{
-                fontSize: '0.875rem',
-                color: '#6b7280'
-              }}>Days tracked</p>
-            </CardContent>
-          </Card>
-        </div>
+        )}
 
         {/* Spreadsheet */}
         {spreadsheetData && (
@@ -676,66 +999,42 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 }}>Group Progress Tracker</CardTitle>
                 <div style={{
                   display: 'flex',
-                  gap: '0.5rem',
-                  alignItems: 'center'
+                  gap: '0.5rem'
                 }}>
                   <Button
-                    onClick={() => router.push(`/groups/${groupId}/create-habit`)}
+                    variant={dateRange === 7 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateRange(7)}
                     style={{
                       padding: '0.5rem 1rem',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
                       fontSize: '0.875rem',
                       fontWeight: '500',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
+                      borderRadius: '8px',
+                      border: dateRange === 7 ? 'none' : '2px solid #e5e7eb',
+                      background: dateRange === 7 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                      color: dateRange === 7 ? 'white' : '#374151',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    Add Shared Habit
+                    7 days
                   </Button>
-                  <div style={{
-                    display: 'flex',
-                    gap: '0.5rem'
-                  }}>
-                    <Button
-                      variant={dateRange === 7 ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setDateRange(7)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        borderRadius: '8px',
-                        border: dateRange === 7 ? 'none' : '2px solid #e5e7eb',
-                        background: dateRange === 7 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
-                        color: dateRange === 7 ? 'white' : '#374151',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      7 days
-                    </Button>
-                    <Button
-                      variant={dateRange === 30 ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setDateRange(30)}
-                      style={{
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        borderRadius: '8px',
-                        border: dateRange === 30 ? 'none' : '2px solid #e5e7eb',
-                        background: dateRange === 30 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
-                        color: dateRange === 30 ? 'white' : '#374151',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      30 days
-                    </Button>
-                  </div>
+                  <Button
+                    variant={dateRange === 30 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDateRange(30)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      borderRadius: '8px',
+                      border: dateRange === 30 ? 'none' : '2px solid #e5e7eb',
+                      background: dateRange === 30 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                      color: dateRange === 30 ? 'white' : '#374151',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    30 days
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -1277,7 +1576,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
             background: 'white',
             borderRadius: '16px',
             border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
           }}>
             <CardHeader style={{
               padding: '1.5rem',
@@ -1537,6 +1837,367 @@ export default function GroupDetail({ params }: GroupDetailProps) {
           </Card>
         )}
       </div>
+      
+      {/* Habit Management Modal */}
+      {showHabitModal && selectedHabit && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50,
+          padding: '1rem'
+        }}
+        onClick={() => setShowHabitModal(false)}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)'
+          }}
+          onClick={(e) => e.stopPropagation()}>
+            <div style={{
+              padding: '1.5rem',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0,
+                color: '#1f2937'
+              }}>
+                {modalType === 'view' ? 'View Habit' : 
+                 modalType === 'edit' ? 'Edit Habit' : 
+                 'Delete Habit'}
+              </h2>
+            </div>
+            
+            <div style={{ padding: '1.5rem' }}>
+              {modalType === 'view' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      backgroundColor: selectedHabit.color,
+                      boxShadow: `0 0 0 2px ${selectedHabit.color}20`
+                    }} />
+                    <h3 style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      margin: 0,
+                      color: '#1f2937'
+                    }}>{selectedHabit.name}</h3>
+                  </div>
+                  
+                  {selectedHabit.description && (
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>Description</label>
+                      <p style={{
+                        color: '#6b7280',
+                        margin: 0,
+                        lineHeight: '1.5'
+                      }}>{selectedHabit.description}</p>
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>Target</label>
+                      <p style={{
+                        color: '#1f2937',
+                        margin: 0,
+                        fontWeight: '500'
+                      }}>{selectedHabit.target}{selectedHabit.unit && ` ${selectedHabit.unit}`}</p>
+                    </div>
+                    
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>Frequency</label>
+                      <p style={{
+                        color: '#1f2937',
+                        margin: 0,
+                        fontWeight: '500',
+                        textTransform: 'capitalize'
+                      }}>{selectedHabit.frequency}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>Created by</label>
+                    <p style={{
+                      color: '#1f2937',
+                      margin: 0,
+                      fontWeight: '500'
+                    }}>{selectedHabit.user.name || selectedHabit.user.email}</p>
+                  </div>
+                </div>
+              )}
+              
+              {modalType === 'edit' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>Habit Name *</label>
+                    <input
+                      type="text"
+                      value={editFormData.name}
+                      onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        boxSizing: 'border-box'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '0.5rem'
+                    }}>Description</label>
+                    <textarea
+                      value={editFormData.description}
+                      onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        outline: 'none',
+                        transition: 'border-color 0.2s ease',
+                        boxSizing: 'border-box',
+                        resize: 'vertical',
+                        fontFamily: 'inherit'
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '1rem' }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>Color</label>
+                      <input
+                        type="color"
+                        value={editFormData.color}
+                        onChange={(e) => setEditFormData({ ...editFormData, color: e.target.value })}
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>Target *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={editFormData.target}
+                        onChange={(e) => setEditFormData({ ...editFormData, target: parseInt(e.target.value) || 1 })}
+                        style={{
+                          width: '80px',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease',
+                          boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+                        onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '0.5rem'
+                      }}>Unit</label>
+                      <input
+                        type="text"
+                        value={editFormData.unit}
+                        onChange={(e) => setEditFormData({ ...editFormData, unit: e.target.value })}
+                        placeholder="e.g., pages, minutes"
+                        style={{
+                          width: '120px',
+                          padding: '0.75rem',
+                          border: '2px solid #e5e7eb',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          outline: 'none',
+                          transition: 'border-color 0.2s ease',
+                          boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = '#667eea'}
+                        onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {modalType === 'delete' && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontSize: '3rem',
+                    marginBottom: '1rem'
+                  }}>⚠️</div>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    marginBottom: '1rem',
+                    color: '#1f2937'
+                  }}>Are you sure you want to delete this habit?</h3>
+                  <p style={{
+                    color: '#6b7280',
+                    marginBottom: '1.5rem',
+                    lineHeight: '1.5'
+                  }}>
+                    This action cannot be undone. All progress data for "{selectedHabit.name}" will be permanently deleted for all group members.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div style={{
+              padding: '1.5rem',
+              borderTop: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '0.75rem'
+            }}>
+              <Button
+                onClick={() => setShowHabitModal(false)}
+                variant="outline"
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  border: '2px solid #e5e7eb',
+                  background: 'white',
+                  color: '#6b7280',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '500',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </Button>
+              
+              {modalType === 'edit' && (
+                <Button
+                  onClick={saveHabitChanges}
+                  disabled={!editFormData.name.trim()}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: !editFormData.name.trim() 
+                      ? '#d1d5db' 
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: !editFormData.name.trim() ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Save Changes
+                </Button>
+              )}
+              
+              {modalType === 'delete' && (
+                <Button
+                  onClick={confirmDeleteHabit}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Delete Habit
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </>
   )
