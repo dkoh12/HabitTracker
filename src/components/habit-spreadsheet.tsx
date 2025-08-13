@@ -13,21 +13,16 @@ interface HabitSpreadsheetProps {
 }
 
 export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  // Navigation state - this controls which week/month we're viewing
+  const [currentDate, setCurrentDate] = useState(() => new Date())
   const [dateRange, setDateRange] = useState<7 | 30>(7)
 
-  // Debug: Log when component re-renders and what habits data we have
-  console.log('🔄 HabitSpreadsheet render:', { 
-    habitsCount: habits.length,
-    firstHabitEntries: habits[0]?.habitEntries?.length || 0,
-    timestamp: new Date().toISOString()
-  })
-
-  // Calculate date range based on current date and range selection
+  // Calculate date range based on navigation state and range selection
   const getDateRange = () => {
     if (dateRange === 7) {
-      const weekStart = startOfWeek(currentDate)
-      const weekEnd = endOfWeek(currentDate)
+      // Use the navigation currentDate for week calculation
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
+      const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 })
       return { start: weekStart, end: weekEnd }
     } else {
       // For 30 days, show last 30 days from current date
@@ -38,20 +33,18 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
     }
   }
 
+  // Calculate the date range and generate dates array
   const { start: startDate, end: endDate } = getDateRange()
-
-  // Generate array of dates for the range
-  const getDatesArray = () => {
-    const dates = []
+  
+  const dates = (() => {
+    const datesArray = []
     let currentDay = new Date(startDate)
     while (currentDay <= endDate) {
-      dates.push(format(currentDay, 'yyyy-MM-dd'))
+      datesArray.push(format(currentDay, 'yyyy-MM-dd'))
       currentDay = addDays(currentDay, 1)
     }
-    return dates
-  }
-
-  const dates = getDatesArray()
+    return datesArray
+  })()
 
   const getEntryValue = (habitId: string, date: string) => {
     const habit = habits.find(h => h.id === habitId)
@@ -64,59 +57,41 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
       return entryDateStr === date
     })
     
-    const value = entry?.value || 0
-    console.log('🎯 getEntryValue:', { habitId: habit.name, date, entryFound: !!entry, allEntries: habit.habitEntries.map(e => ({ date: e.date, value: e.value })), returnValue: value })
-    return value
+    return entry?.value || 0
   }
 
   const handleCellClick = (habitId: string, date: string) => {
-    console.log('🔥 CELL CLICKED!', { habitId, date })
-    
     const currentValue = getEntryValue(habitId, date)
-    const habit = habits.find(h => h.id === habitId)
-    
-    console.log('🔥 Current state:', { 
-      currentValue, 
-      habitName: habit?.name
-    })
-    
     let newValue: number
 
     // Simple rotation: 0 → 3 → 2 → 1 → 0
     // 0 = none, 1 = red (failed), 2 = yellow (partial), 3 = green (completed)
     if (currentValue === 0) {
-      // none → green
-      newValue = 3
-      console.log('🔥 none → green:', newValue)
+      newValue = 3 // none → green
     } else if (currentValue === 3) {
-      // green → yellow
-      newValue = 2
-      console.log('🔥 green → yellow:', newValue)
+      newValue = 2 // green → yellow
     } else if (currentValue === 2) {
-      // yellow → red
-      newValue = 1
-      console.log('🔥 yellow → red:', newValue)
+      newValue = 1 // yellow → red
     } else if (currentValue === 1) {
-      // red → none
-      newValue = 0
-      console.log('🔥 red → none:', newValue)
+      newValue = 0 // red → none
     } else {
-      // fallback → green
-      newValue = 3
-      console.log('🔥 fallback → green:', newValue)
+      newValue = 3 // fallback → green
     }
 
-    console.log('🔥 Calling onUpdateEntry with:', { habitId, date, value: newValue })
     onUpdateEntry(habitId, date, newValue)
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    // Fix timezone issue: parse as local date instead of UTC
+    const [year, month, day] = dateString.split('-').map(Number)
+    const date = new Date(year, month - 1, day) // month is 0-indexed
     return format(date, 'MMM d')
   }
 
   const formatDateHeader = (dateString: string) => {
-    const date = new Date(dateString)
+    // Fix timezone issue: parse as local date instead of UTC
+    const [year, month, day] = dateString.split('-').map(Number)
+    const date = new Date(year, month - 1, day) // month is 0-indexed
     return {
       day: format(date, 'd'),
       weekday: format(date, 'EEE'),
@@ -466,7 +441,10 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
               <tbody>
                 {dates.map((date, dateIndex) => {
                   const dateInfo = formatDateHeader(date)
-                  const isToday = format(new Date(), 'yyyy-MM-dd') === date
+                  // Check if this date is today
+                  const today = new Date()
+                  const todayString = format(today, 'yyyy-MM-dd')
+                  const isToday = date === todayString
                   
                   return (
                     <tr key={date} style={{
@@ -503,7 +481,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                             fontSize: '0.875rem',
                             fontWeight: isToday ? '700' : '600'
                           }}>
-                            {dateInfo.month} {dateInfo.day}
+                            {dateInfo.month} {dateInfo.day} {isToday && '(today)'}
                           </div>
                           <div style={{
                             fontSize: '0.75rem',
