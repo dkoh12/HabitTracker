@@ -16,7 +16,12 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   const [currentDate, setCurrentDate] = useState(new Date())
   const [dateRange, setDateRange] = useState<7 | 30>(7)
 
-  console.log('🔥 HabitSpreadsheet rendering with habits:', habits.length)
+  // Debug: Log when component re-renders and what habits data we have
+  console.log('🔄 HabitSpreadsheet render:', { 
+    habitsCount: habits.length,
+    firstHabitEntries: habits[0]?.habitEntries?.length || 0,
+    timestamp: new Date().toISOString()
+  })
 
   // Calculate date range based on current date and range selection
   const getDateRange = () => {
@@ -52,57 +57,56 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
     const habit = habits.find(h => h.id === habitId)
     if (!habit) return 0
 
-    const entry = habit.habitEntries.find(
-      e => format(new Date(e.date), 'yyyy-MM-dd') === date
-    )
-    return entry?.value || 0
+    // Simple date matching - find entry that matches the date string
+    const entry = habit.habitEntries.find(e => {
+      // Just compare the first 10 characters (YYYY-MM-DD) of both dates
+      const entryDateStr = e.date.toString().substring(0, 10)
+      return entryDateStr === date
+    })
+    
+    const value = entry?.value || 0
+    console.log('🎯 getEntryValue:', { habitId: habit.name, date, entryFound: !!entry, allEntries: habit.habitEntries.map(e => ({ date: e.date, value: e.value })), returnValue: value })
+    return value
   }
 
-  // Track entry state for red vs none distinction
-  const [entryStates, setEntryStates] = useState<Record<string, Record<string, boolean>>>({}) // habitId -> date -> hasEntry
-
   const handleCellClick = (habitId: string, date: string) => {
+    console.log('🔥 CELL CLICKED!', { habitId, date })
+    
     const currentValue = getEntryValue(habitId, date)
     const habit = habits.find(h => h.id === habitId)
-    const targetValue = habit?.target || 1
-    const entryKey = `${habitId}-${date}`
-    const hasEntry = entryStates[habitId]?.[date] || currentValue > 0
-
+    
+    console.log('🔥 Current state:', { 
+      currentValue, 
+      habitName: habit?.name
+    })
+    
     let newValue: number
-    let newHasEntry = true
 
-    // Rotation order: none → green → yellow → red → none
-    if (!hasEntry && currentValue === 0) {
-      // none → green (completed)
-      newValue = targetValue
-      newHasEntry = true
-    } else if (currentValue >= targetValue) {
-      // green (completed) → yellow (partial)
-      newValue = Math.max(1, Math.floor(targetValue / 2))
-      newHasEntry = true
-    } else if (currentValue > 0 && currentValue < targetValue) {
-      // yellow (partial) → red (attempted but failed)
+    // Simple rotation: 0 → 3 → 2 → 1 → 0
+    // 0 = none, 1 = red (failed), 2 = yellow (partial), 3 = green (completed)
+    if (currentValue === 0) {
+      // none → green
+      newValue = 3
+      console.log('🔥 none → green:', newValue)
+    } else if (currentValue === 3) {
+      // green → yellow
+      newValue = 2
+      console.log('🔥 green → yellow:', newValue)
+    } else if (currentValue === 2) {
+      // yellow → red
+      newValue = 1
+      console.log('🔥 yellow → red:', newValue)
+    } else if (currentValue === 1) {
+      // red → none
       newValue = 0
-      newHasEntry = true
-    } else if (currentValue === 0 && hasEntry) {
-      // red (attempted but failed) → none (no entry)
-      newValue = 0
-      newHasEntry = false
+      console.log('🔥 red → none:', newValue)
     } else {
-      // fallback to green
-      newValue = targetValue
-      newHasEntry = true
+      // fallback → green
+      newValue = 3
+      console.log('🔥 fallback → green:', newValue)
     }
 
-    // Update entry state tracking
-    setEntryStates(prev => ({
-      ...prev,
-      [habitId]: {
-        ...prev[habitId],
-        [date]: newHasEntry
-      }
-    }))
-
+    console.log('🔥 Calling onUpdateEntry with:', { habitId, date, value: newValue })
     onUpdateEntry(habitId, date, newValue)
   }
 
@@ -149,14 +153,11 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   }
 
   const getCompletionIcon = (value: number, target: number, habitId: string, date: string) => {
-    const hasEntry = entryStates[habitId]?.[date] || value > 0
-    
-    if (!hasEntry && value === 0) {
+    // Simple value-based system: 0=none, 1=red, 2=yellow, 3=green
+    if (value === 0) {
       // No entry - gray circle
       return <Circle style={{ width: '20px', height: '20px', color: '#d1d5db' }} />
-    }
-    
-    if (value >= target) {
+    } else if (value === 3) {
       // Completed - green checkmark
       return <CheckCircle2 style={{ 
         width: '20px', 
@@ -164,7 +165,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
         color: '#10b981',
         filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.4))'
       }} />
-    } else if (value > 0) {
+    } else if (value === 2) {
       // Partial progress - yellow circle with dot
       return (
         <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -185,8 +186,8 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
           </div>
         </div>
       )
-    } else if (value === 0 && hasEntry) {
-      // Attempted but failed - red X
+    } else if (value === 1) {
+      // Failed attempt - red X
       return <XCircle style={{ width: '20px', height: '20px', color: '#ef4444' }} />
     } else {
       // Fallback - gray circle
@@ -194,16 +195,32 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
     }
   }
 
-  const getCellColor = (value: number, target: number) => {
-    if (value === 0) return '#ffffff' // white for no entry
-    if (value >= target) return '#dcfce7' // light green for completed
-    return '#fef3c7' // light yellow for partial
+  const getCellColor = (value: number, target: number, habitId: string, date: string) => {
+    // Simple value-based system: 0=none, 1=red, 2=yellow, 3=green
+    if (value === 0) {
+      return '#ffffff' // white for no entry
+    } else if (value === 1) {
+      return '#fecaca' // light red for failed attempt
+    } else if (value === 2) {
+      return '#fef3c7' // light yellow for partial
+    } else if (value === 3) {
+      return '#dcfce7' // light green for completed
+    }
+    return '#ffffff' // fallback to white
   }
 
-  const getCellTextColor = (value: number, target: number) => {
-    if (value === 0) return '#9ca3af' // gray for no entry
-    if (value >= target) return '#166534' // dark green for completed
-    return '#92400e' // dark yellow for partial
+  const getCellTextColor = (value: number, target: number, habitId: string, date: string) => {
+    // Simple value-based system: 0=none, 1=red, 2=yellow, 3=green
+    if (value === 0) {
+      return '#9ca3af' // gray for no entry
+    } else if (value === 1) {
+      return '#dc2626' // red for failed attempt
+    } else if (value === 2) {
+      return '#92400e' // dark yellow for partial
+    } else if (value === 3) {
+      return '#166534' // dark green for completed
+    }
+    return '#9ca3af' // fallback to gray
   }
 
   return (
@@ -501,8 +518,8 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                       {habits.map(habit => {
                         const value = getEntryValue(habit.id, date)
                         const target = habit.target || 1
-                        const cellBg = getCellColor(value, target)
-                        const textColor = getCellTextColor(value, target)
+                        const cellBg = getCellColor(value, target, habit.id, date)
+                        const textColor = getCellTextColor(value, target, habit.id, date)
                         
                         return (
                           <td key={habit.id} style={{
@@ -520,11 +537,13 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                           }}
                           onClick={() => handleCellClick(habit.id, date)}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #10b981'
-                            e.currentTarget.style.transform = 'scale(1.05)'
+                            e.currentTarget.style.boxShadow = 'inset 0 0 0 1px #10b981'
+                            e.currentTarget.style.border = '1px solid #10b981'
+                            e.currentTarget.style.transform = 'scale(1.02)'
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.boxShadow = 'none'
+                            e.currentTarget.style.border = '1px solid #d1d5db'
                             e.currentTarget.style.transform = 'scale(1)'
                           }}
                           title={`${habit.name} on ${formatDate(date)}: ${value}${habit.unit || ''} (Target: ${target}${habit.unit || ''}) - Click to cycle: Green → Yellow → Red → None`}

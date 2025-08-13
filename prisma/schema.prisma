@@ -1,6 +1,3 @@
-// This is your Prisma schema file.
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,147 +8,128 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  name      String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  habits       Habit[]
-  habitEntries HabitEntry[]
-  groupMembers GroupMember[]
-  groupsOwned  Group[]       @relation("GroupOwner")
+  id                  String                  @id @default(cuid())
+  email               String                  @unique
+  username            String                  @unique
+  password            String
+  name                String?
+  avatar              String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  groupsOwned         Group[]                 @relation("GroupOwner")
+  groupMembers        GroupMember[]
+  habits              Habit[]
+  habitEntries        HabitEntry[]
   createdSharedHabits SharedGroupHabit[]
-  sharedHabitEntries SharedGroupHabitEntry[]
+  sharedHabitEntries  SharedGroupHabitEntry[]
 }
 
 model Habit {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  color       String   @default("#3B82F6")
-  frequency   String   @default("daily") // daily, weekly, monthly
-  target      Int      @default(1)       // target count per frequency period
-  unit        String?  // e.g., "minutes", "glasses", "pages"
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  color        String       @default("#3B82F6")
+  frequency    String       @default("daily")
+  target       Int          @default(1)
+  unit         String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   userId       String
+  groupHabits  GroupHabit[]
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   habitEntries HabitEntry[]
-  groupHabits  GroupHabit[]
 }
 
 model HabitEntry {
   id        String   @id @default(cuid())
   date      DateTime
-  value     Int      @default(1) // How many times completed
+  value     Int      @default(1)
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  userId  String
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  habitId String
-  habit   Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, habitId, date])
 }
 
 model Group {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  inviteCode  String   @unique @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
+  id           String             @id @default(cuid())
+  name         String
+  description  String?
+  inviteCode   String             @unique @default(cuid())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   ownerId      String
-  owner        User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members      GroupMember[]
+  owner        User               @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   groupHabits  GroupHabit[]
+  members      GroupMember[]
   sharedHabits SharedGroupHabit[]
 }
 
 model GroupMember {
-  id       String      @id @default(cuid())
-  role     GroupRole   @default(Member)
-  joinedAt DateTime    @default(now())
-
-  // Relations
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groupId String
-  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id       String    @id @default(cuid())
+  role     GroupRole @default(Member)
+  joinedAt DateTime  @default(now())
+  userId   String
+  groupId  String
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
-}
-
-enum GroupRole {
-  Member
-  Admin
 }
 
 model GroupHabit {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
-  // Relations
-  groupId String
-  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  habitId String
-  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  groupId   String
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, habitId])
 }
 
 model SharedGroupHabit {
-  id          String   @id @default(cuid())
+  id          String                  @id @default(cuid())
   name        String
   description String?
-  color       String   @default("#3B82F6")
-  frequency   String   @default("daily") // daily, weekly, monthly
-  target      Int      @default(1)       // target count per frequency period
-  unit        String?  // e.g., "minutes", "pages", "chapters"
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  groupId String
-  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  color       String                  @default("#3B82F6")
+  frequency   String                  @default("daily")
+  target      Int                     @default(1)
+  unit        String?
+  isActive    Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  groupId     String
   createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  
-  // Entries for this shared habit
-  entries SharedGroupHabitEntry[]
+  createdBy   User                    @relation(fields: [createdById], references: [id])
+  group       Group                   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  entries     SharedGroupHabitEntry[]
 
-  // Ensure each group can only have one habit with a given name
   @@unique([groupId, name])
 }
 
 model SharedGroupHabitEntry {
-  id        String   @id @default(cuid())
-  date      DateTime
-  value     Int      @default(1) // How many times completed
-  notes     String?
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  userId  String
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String           @id @default(cuid())
+  date          DateTime
+  value         Int              @default(1)
+  notes         String?
+  completed     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  userId        String
   sharedHabitId String
   sharedHabit   SharedGroupHabit @relation(fields: [sharedHabitId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, sharedHabitId, date])
+}
+
+enum GroupRole {
+  Member
+  Admin
 }

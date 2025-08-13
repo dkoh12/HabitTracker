@@ -83,7 +83,10 @@ export default function Home() {
         console.log('📊 API response data:', result)
         
         // Refresh habits data to update UI
-        fetchHabits()
+        await fetchHabits()
+        
+        // Force a small delay to ensure React re-renders
+        await new Promise(resolve => setTimeout(resolve, 50))
       } else {
         const error = await response.text()
         console.error('❌ API error:', response.status, error)
@@ -544,6 +547,7 @@ export default function Home() {
           />
 
           <HabitSpreadsheet
+            key={JSON.stringify(habits.map(h => ({ id: h.id, entries: h.habitEntries.length })))}
             habits={habits}
             onUpdateEntry={updateHabitEntry}
           />

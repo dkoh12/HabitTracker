@@ -28,29 +28,47 @@ export const POST = withAuth(async (request, { user }) => {
       )
     }
 
-    // Create or update habit entry
-    const entry = await prisma.habitEntry.upsert({
-      where: {
-        userId_habitId_date: {
+    // Handle the entry based on value
+    let entry
+    
+    // Parse the date string in UTC for consistent storage (copied from group habits)
+    const entryDate = new Date(date + 'T00:00:00.000Z')
+    
+    if (value === 0) {
+      // If value is 0 (none state), delete the entry if it exists
+      await prisma.habitEntry.deleteMany({
+        where: {
           userId: user.id,
           habitId,
-          date: new Date(date)
+          date: entryDate
         }
-      },
-      update: {
-        value: value || 1,
-        notes
-      },
-      create: {
-        userId: user.id,
-        habitId,
-        date: new Date(date),
-        value: value || 1,
-        notes
-      }
-    })
+      })
+      entry = null
+    } else {
+      // Create or update habit entry
+      entry = await prisma.habitEntry.upsert({
+        where: {
+          userId_habitId_date: {
+            userId: user.id,
+            habitId,
+            date: entryDate
+          }
+        },
+        update: {
+          value: value,
+          notes
+        },
+        create: {
+          userId: user.id,
+          habitId,
+          date: entryDate,
+          value: value,
+          notes
+        }
+      })
+    }
 
-    return NextResponse.json(entry, { status: 201 })
+    return NextResponse.json(entry || { deleted: true }, { status: 201 })
   } catch (error) {
     console.error('Create habit entry error:', error)
     return NextResponse.json(
