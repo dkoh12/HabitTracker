@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Navigation } from '@/components/navigation'
 import { HabitCalendar } from '@/components/habit-calendar'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
@@ -14,6 +14,12 @@ export default function Dashboard() {
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  
+  // Statistics filtering and comparison state
+  const [selectedHabits, setSelectedHabits] = useState<string[]>([])
+  const [viewMode, setViewMode] = useState('combined') // 'combined', 'individual', 'comparison'
+  const [timeFilter, setTimeFilter] = useState('30') // '7', '30', '90', 'all'
+  const [sortBy, setSortBy] = useState('name') // 'name', 'success_rate', 'streak', 'days'
   const fetchHabits = useCallback(async () => {
     console.log('🔄 fetchHabits called')
     try {
@@ -40,6 +46,11 @@ export default function Dashboard() {
   const { session, status } = useAuthValidation({
     onValidationSuccess: fetchHabits
   })
+
+  // Update selectedHabits when habits change
+  useEffect(() => {
+    setSelectedHabits(habits.map(h => h.id))
+  }, [habits])
   const createHabit = async (habitData: HabitFormData) => {
     try {
       const response = await fetch('/api/habits', {
@@ -220,10 +231,6 @@ export default function Dashboard() {
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <HabitCalendar
-            habits={habits}
-            onUpdateEntry={updateHabitEntry}
-          />
           <HabitSpreadsheet
             key={JSON.stringify(habits.map(h => ({ id: h.id, entries: h.habitEntries.length })))}
             habits={habits}
@@ -326,413 +333,499 @@ export default function Dashboard() {
             </Card>
           )}
           
-          {/* Habit Statistics Section */}
-          {habits.length > 0 && (
-            <div style={{
-              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-              borderRadius: '24px',
-              padding: '3rem',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
-              border: '1px solid #f1f5f9'
-            }}>
-              <div style={{
-                textAlign: 'center',
-                marginBottom: '3rem'
-              }}>
-                <h2 style={{
-                  fontSize: '2.5rem',
-                  fontWeight: '800',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  marginBottom: '1rem'
-                }}>Your Progress Analytics</h2>
-                <p style={{
-                  fontSize: '1.1rem',
-                  color: '#64748b',
-                  maxWidth: '600px',
-                  margin: '0 auto'
-                }}>
-                  Track your habit journey with detailed insights and visual progress indicators
-                </p>
-              </div>
+          {/* Enhanced Habit Statistics Section with Filtering and Comparison */}
+          {habits.length > 0 && (() => {
 
-              {habits.map((habit, habitIndex) => {
-                const stats = getDetailedHabitStats(habit)
-                return (
-                  <div
-                    key={habit.id}
-                    style={{
-                      marginBottom: habitIndex === habits.length - 1 ? '0' : '4rem',
-                      padding: '2.5rem',
-                      background: 'white',
-                      borderRadius: '20px',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
-                      border: `2px solid ${habit.color}15`
-                    }}
-                  >
-                    {/* Habit Header with Key Metrics */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '2.5rem',
-                      flexWrap: 'wrap',
-                      gap: '1rem'
-                    }}>
+            const filteredHabits = habits
+              .filter(habit => selectedHabits.includes(habit.id))
+              .sort((a, b) => {
+                const statsA = getDetailedHabitStats(a)
+                const statsB = getDetailedHabitStats(b)
+                
+                switch (sortBy) {
+                  case 'success_rate':
+                    return statsB.successRate - statsA.successRate
+                  case 'streak':
+                    return statsB.currentStreak - statsA.currentStreak
+                  case 'days':
+                    return statsB.successfulDays - statsA.successfulDays
+                  default:
+                    return a.name.localeCompare(b.name)
+                }
+              })
+
+            const allStats = filteredHabits.map(habit => ({ habit, stats: getDetailedHabitStats(habit) }))
+
+            return (
+              <div style={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                borderRadius: '24px',
+                padding: '3rem',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
+                border: '1px solid #f1f5f9'
+              }}>
+                {/* Header with Controls */}
+                <div style={{
+                  textAlign: 'center',
+                  marginBottom: '3rem'
+                }}>
+                  <h2 style={{
+                    fontSize: '2.5rem',
+                    fontWeight: '800',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    marginBottom: '1rem'
+                  }}>Progress Analytics Dashboard</h2>
+                  <p style={{
+                    fontSize: '1.1rem',
+                    color: '#64748b',
+                    maxWidth: '600px',
+                    margin: '0 auto 2rem auto'
+                  }}>
+                    Compare habits, analyze trends, and track your progress with advanced filtering and overlay features
+                  </p>
+
+                  {/* Control Panel */}
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '1.5rem',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    background: 'white',
+                    padding: '2rem',
+                    borderRadius: '16px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    {/* View Mode Toggle */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>View Mode</span>
                       <div style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
+                        background: '#f3f4f6',
+                        borderRadius: '12px',
+                        padding: '4px'
                       }}>
-                        <div
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            backgroundColor: habit.color,
-                            boxShadow: `0 0 0 6px ${habit.color}20`
-                          }}
-                        />
-                        <div>
-                          <h3 style={{
-                            fontWeight: '700',
-                            fontSize: '1.8rem',
-                            color: '#1f2937',
-                            margin: 0,
-                            marginBottom: '0.25rem'
-                          }}>{habit.name}</h3>
-                          {habit.description && (
-                            <p style={{
-                              color: '#6b7280',
-                              fontSize: '1rem',
-                              margin: 0
-                            }}>{habit.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div style={{
-                        display: 'flex',
-                        gap: '0.5rem',
-                        alignItems: 'center'
-                      }}>
-                        {Array.from({ length: Math.min(stats.successfulDays, 10) }).map((_, i) => (
-                          <Star key={i} className="w-5 h-5" style={{ color: '#fbbf24', fill: '#fbbf24' }} />
+                        {[
+                          { value: 'combined', label: 'Combined', icon: '📊' },
+                          { value: 'individual', label: 'Individual', icon: '📈' },
+                          { value: 'comparison', label: 'Compare', icon: '⚖️' }
+                        ].map(mode => (
+                          <button
+                            key={mode.value}
+                            onClick={() => setViewMode(mode.value)}
+                            style={{
+                              padding: '0.75rem 1.25rem',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: viewMode === mode.value ? 'white' : 'transparent',
+                              color: viewMode === mode.value ? '#1f2937' : '#6b7280',
+                              fontWeight: '600',
+                              fontSize: '0.9rem',
+                              cursor: 'pointer',
+                              boxShadow: viewMode === mode.value ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
+                            }}
+                          >
+                            <span>{mode.icon}</span>
+                            {mode.label}
+                          </button>
                         ))}
-                        {stats.successfulDays > 10 && (
-                          <span style={{
-                            fontSize: '1.1rem',
-                            fontWeight: '700',
-                            color: '#fbbf24',
-                            marginLeft: '0.5rem'
-                          }}>+{stats.successfulDays - 10}</span>
-                        )}
                       </div>
                     </div>
 
-                    {/* Key Metrics Row */}
+                    {/* Time Filter */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>Time Range</span>
+                      <select
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value)}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid #d1d5db',
+                          background: 'white',
+                          fontSize: '0.9rem',
+                          fontWeight: '600',
+                          color: '#1f2937',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="all">All Time</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Options */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>Sort By</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        style={{
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid #d1d5db',
+                          background: 'white',
+                          fontSize: '0.9rem',
+                          fontWeight: '600',
+                          color: '#1f2937',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="name">Name</option>
+                        <option value="success_rate">Success Rate</option>
+                        <option value="streak">Current Streak</option>
+                        <option value="days">Total Days</option>
+                      </select>
+                    </div>
+
+                    {/* Habit Selection */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>Select Habits</span>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                        maxWidth: '300px'
+                      }}>
+                        {habits.map(habit => (
+                          <button
+                            key={habit.id}
+                            onClick={() => {
+                              setSelectedHabits(prev => 
+                                prev.includes(habit.id) 
+                                  ? prev.filter(id => id !== habit.id)
+                                  : [...prev, habit.id]
+                              )
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.5rem 1rem',
+                              borderRadius: '20px',
+                              background: selectedHabits.includes(habit.id) 
+                                ? `linear-gradient(135deg, ${habit.color}20 0%, ${habit.color}10 100%)`
+                                : '#f3f4f6',
+                              color: selectedHabits.includes(habit.id) ? habit.color : '#6b7280',
+                              fontSize: '0.8rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              border: selectedHabits.includes(habit.id) ? `2px solid ${habit.color}40` : '2px solid transparent'
+                            }}
+                          >
+                            <div style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
+                              backgroundColor: habit.color,
+                              opacity: selectedHabits.includes(habit.id) ? 1 : 0.5
+                            }} />
+                            {habit.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content based on view mode */}
+                {viewMode === 'combined' && (
+                  <div>
+                    {/* Combined Overview Metrics */}
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                       gap: '1.5rem',
                       marginBottom: '3rem'
                     }}>
                       <div style={{
                         textAlign: 'center',
-                        padding: '1.5rem',
-                        background: `linear-gradient(135deg, ${habit.color}10 0%, ${habit.color}05 100%)`,
-                        borderRadius: '16px',
-                        border: `1px solid ${habit.color}20`
+                        padding: '2rem',
+                        background: 'linear-gradient(135deg, #3b82f620 0%, #3b82f610 100%)',
+                        borderRadius: '20px',
+                        border: '2px solid #3b82f630'
                       }}>
                         <div style={{
-                          fontSize: '2.5rem',
-                          fontWeight: '900',
-                          color: habit.color,
-                          marginBottom: '0.5rem'
-                        }}>{stats.successfulDays}</div>
-                        <div style={{
-                          fontSize: '0.9rem',
-                          color: '#6b7280',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>Successful Days</div>
-                      </div>
-                      
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '1.5rem',
-                        background: 'linear-gradient(135deg, #10b98110 0%, #10b98105 100%)',
-                        borderRadius: '16px',
-                        border: '1px solid #10b98120'
-                      }}>
-                        <div style={{
-                          fontSize: '2.5rem',
-                          fontWeight: '900',
-                          color: '#10b981',
-                          marginBottom: '0.5rem'
-                        }}>{stats.successRate}%</div>
-                        <div style={{
-                          fontSize: '0.9rem',
-                          color: '#6b7280',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>Success Rate</div>
-                      </div>
-                      
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '1.5rem',
-                        background: 'linear-gradient(135deg, #3b82f610 0%, #3b82f605 100%)',
-                        borderRadius: '16px',
-                        border: '1px solid #3b82f620'
-                      }}>
-                        <div style={{
-                          fontSize: '2.5rem',
+                          fontSize: '3rem',
                           fontWeight: '900',
                           color: '#3b82f6',
                           marginBottom: '0.5rem'
-                        }}>{stats.currentStreak}</div>
+                        }}>{allStats.reduce((sum, { stats }) => sum + stats.successfulDays, 0)}</div>
                         <div style={{
-                          fontSize: '0.9rem',
+                          fontSize: '1rem',
                           color: '#6b7280',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>Current Streak</div>
+                          fontWeight: '600'
+                        }}>Total Successful Days</div>
                       </div>
                       
                       <div style={{
                         textAlign: 'center',
-                        padding: '1.5rem',
-                        background: 'linear-gradient(135deg, #8b5cf610 0%, #8b5cf605 100%)',
-                        borderRadius: '16px',
-                        border: '1px solid #8b5cf620'
+                        padding: '2rem',
+                        background: 'linear-gradient(135deg, #10b98120 0%, #10b98110 100%)',
+                        borderRadius: '20px',
+                        border: '2px solid #10b98130'
                       }}>
                         <div style={{
-                          fontSize: '2.5rem',
+                          fontSize: '3rem',
+                          fontWeight: '900',
+                          color: '#10b981',
+                          marginBottom: '0.5rem'
+                        }}>{Math.round(allStats.reduce((sum, { stats }) => sum + stats.successRate, 0) / allStats.length)}%</div>
+                        <div style={{
+                          fontSize: '1rem',
+                          color: '#6b7280',
+                          fontWeight: '600'
+                        }}>Average Success Rate</div>
+                      </div>
+                      
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '2rem',
+                        background: 'linear-gradient(135deg, #8b5cf620 0%, #8b5cf610 100%)',
+                        borderRadius: '20px',
+                        border: '2px solid #8b5cf630'
+                      }}>
+                        <div style={{
+                          fontSize: '3rem',
                           fontWeight: '900',
                           color: '#8b5cf6',
                           marginBottom: '0.5rem'
-                        }}>{stats.bestStreak}</div>
+                        }}>{Math.max(...allStats.map(({ stats }) => stats.currentStreak))}</div>
                         <div style={{
-                          fontSize: '0.9rem',
+                          fontSize: '1rem',
                           color: '#6b7280',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>Best Streak</div>
+                          fontWeight: '600'
+                        }}>Longest Current Streak</div>
                       </div>
                     </div>
+                  </div>
+                )}
 
-                    {/* Progress Chart */}
+                {viewMode === 'comparison' && filteredHabits.length >= 2 && (
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '20px',
+                    padding: '2.5rem',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <h4 style={{
+                      fontSize: '1.5rem',
+                      fontWeight: '700',
+                      color: '#1f2937',
+                      marginBottom: '2rem',
+                      textAlign: 'center'
+                    }}>Habit Comparison Dashboard</h4>
+                    
+                    {/* Comparison metrics */}
                     <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: `120px repeat(${filteredHabits.length}, 1fr)`,
+                      gap: '1rem',
                       marginBottom: '3rem'
                     }}>
-                      <h4 style={{
-                        fontSize: '1.3rem',
-                        fontWeight: '700',
-                        color: '#1f2937',
-                        marginBottom: '1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}>
-                        <TrendingUp className="w-5 h-5" style={{ color: habit.color }} />
-                        30-Day Progress Chart
-                      </h4>
-                      <div style={{
-                        background: '#f8fafc',
-                        borderRadius: '16px',
-                        padding: '2rem',
-                        border: '1px solid #e2e8f0'
-                      }}>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(7, 1fr)',
-                          gap: '0.75rem',
-                          marginBottom: '1rem'
+                      {/* Header row */}
+                      <div style={{ fontWeight: '700', color: '#6b7280', fontSize: '0.9rem' }}>Metric</div>
+                      {filteredHabits.map(habit => (
+                        <div key={habit.id} style={{
+                          textAlign: 'center',
+                          padding: '1rem',
+                          background: `linear-gradient(135deg, ${habit.color}10 0%, ${habit.color}05 100%)`,
+                          borderRadius: '12px',
+                          border: `1px solid ${habit.color}20`
                         }}>
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                            <div key={day} style={{
-                              textAlign: 'center',
-                              fontSize: '0.8rem',
-                              fontWeight: '600',
-                              color: '#6b7280',
-                              paddingBottom: '0.5rem'
-                            }}>{day}</div>
-                          ))}
-                        </div>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(7, 1fr)',
-                          gap: '0.75rem'
-                        }}>
-                          {stats.last30Days.map((day, i) => {
-                            const isToday = day.date.toDateString() === new Date().toDateString()
-                            const intensity = day.value / Math.max(...stats.last30Days.map(d => d.value || 1))
-                            return (
-                              <div
-                                key={i}
-                                style={{
-                                  aspectRatio: '1',
-                                  borderRadius: '12px',
-                                  backgroundColor: day.completed 
-                                    ? `${habit.color}${Math.round(intensity * 255).toString(16).padStart(2, '0')}`
-                                    : '#f1f5f9',
-                                  border: isToday ? `3px solid ${habit.color}` : '1px solid #e2e8f0',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '0.8rem',
-                                  fontWeight: '700',
-                                  color: day.completed ? 'white' : '#94a3b8',
-                                  position: 'relative',
-                                  transition: 'all 0.2s ease',
-                                  cursor: 'pointer'
-                                }}
-                                title={`${day.date.toLocaleDateString()}: ${day.completed ? `Completed (${day.value})` : 'Not completed'}`}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.transform = 'scale(1.1)'
-                                  e.currentTarget.style.zIndex = '10'
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.transform = 'scale(1)'
-                                  e.currentTarget.style.zIndex = '1'
-                                }}
-                              >
-                                {day.date.getDate()}
-                                {day.completed && (
-                                  <div style={{
-                                    position: 'absolute',
-                                    top: '2px',
-                                    right: '2px',
-                                    width: '6px',
-                                    height: '6px',
-                                    borderRadius: '50%',
-                                    backgroundColor: '#fbbf24',
-                                    border: '1px solid white'
-                                  }} />
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          gap: '2rem',
-                          marginTop: '1.5rem',
-                          fontSize: '0.9rem',
-                          color: '#6b7280'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            marginBottom: '0.5rem'
+                          }}>
                             <div style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '4px',
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '50%',
                               backgroundColor: habit.color
                             }} />
-                            Completed
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{
-                              width: '16px',
-                              height: '16px',
-                              borderRadius: '4px',
-                              backgroundColor: '#f1f5f9',
-                              border: '1px solid #e2e8f0'
-                            }} />
-                            Missed
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              backgroundColor: '#fbbf24'
-                            }} />
-                            Today
+                            <span style={{
+                              fontWeight: '700',
+                              fontSize: '1rem',
+                              color: '#1f2937'
+                            }}>{habit.name}</span>
                           </div>
                         </div>
-                      </div>
+                      ))}
+                      
+                      {/* Success Rate Row */}
+                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Success Rate</div>
+                      {allStats.map(({ habit, stats }) => (
+                        <div key={`success-${habit.id}`} style={{
+                          textAlign: 'center',
+                          padding: '1.5rem',
+                          background: 'white',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{
+                            fontSize: '2rem',
+                            fontWeight: '900',
+                            color: habit.color,
+                            marginBottom: '0.5rem'
+                          }}>{stats.successRate}%</div>
+                          <div style={{
+                            width: '100%',
+                            height: '8px',
+                            backgroundColor: '#f1f5f9',
+                            borderRadius: '4px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${stats.successRate}%`,
+                              height: '100%',
+                              backgroundColor: habit.color,
+                              borderRadius: '4px'
+                            }} />
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Current Streak Row */}
+                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Current Streak</div>
+                      {allStats.map(({ habit, stats }) => (
+                        <div key={`streak-${habit.id}`} style={{
+                          textAlign: 'center',
+                          padding: '1.5rem',
+                          background: 'white',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{
+                            fontSize: '2rem',
+                            fontWeight: '900',
+                            color: habit.color,
+                            marginBottom: '0.5rem'
+                          }}>{stats.currentStreak}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>days</div>
+                        </div>
+                      ))}
+                      
+                      {/* Total Days Row */}
+                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Total Days</div>
+                      {allStats.map(({ habit, stats }) => (
+                        <div key={`days-${habit.id}`} style={{
+                          textAlign: 'center',
+                          padding: '1.5rem',
+                          background: 'white',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{
+                            fontSize: '2rem',
+                            fontWeight: '900',
+                            color: habit.color,
+                            marginBottom: '0.5rem'
+                          }}>{stats.successfulDays}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>completed</div>
+                        </div>
+                      ))}
                     </div>
-
-                    {/* Weekly Progress Bar */}
-                    <div>
-                      <h4 style={{
-                        fontSize: '1.3rem',
+                    
+                    {/* Overlay progress comparison */}
+                    <div style={{
+                      background: '#f8fafc',
+                      borderRadius: '16px',
+                      padding: '2rem',
+                      border: '1px solid #e2e8f0'
+                    }}>
+                      <h5 style={{
+                        fontSize: '1.2rem',
                         fontWeight: '700',
                         color: '#1f2937',
                         marginBottom: '1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}>
-                        <Target className="w-5 h-5" style={{ color: habit.color }} />
-                        Weekly Consistency
-                      </h4>
+                        textAlign: 'center'
+                      }}>Progress Overlay - Last 30 Days</h5>
+                      
                       <div style={{
-                        background: '#f8fafc',
-                        borderRadius: '16px',
-                        padding: '2rem',
-                        border: '1px solid #e2e8f0'
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(7, 1fr)',
+                        gap: '0.75rem',
+                        marginBottom: '1rem'
                       }}>
-                        {/* Week progress bars for last 4 weeks */}
-                        {Array.from({ length: 4 }).map((_, weekIndex) => {
-                          const weekStart = new Date()
-                          weekStart.setDate(weekStart.getDate() - (weekIndex * 7) - 6)
-                          const weekDays = Array.from({ length: 7 }).map((_, dayIndex) => {
-                            const date = new Date(weekStart)
-                            date.setDate(date.getDate() + dayIndex)
-                            const dateStr = date.toISOString().split('T')[0]
-                            const entry = habit.habitEntries.find(e => e.date.toString().split('T')[0] === dateStr)
-                            return { date, completed: (entry?.value || 0) > 0 }
-                          })
-                          const weekCompletion = weekDays.filter(d => d.completed).length
-                          const completionRate = (weekCompletion / 7) * 100
-
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                          <div key={day} style={{
+                            textAlign: 'center',
+                            fontSize: '0.8rem',
+                            fontWeight: '600',
+                            color: '#6b7280',
+                            paddingBottom: '0.5rem'
+                          }}>{day}</div>
+                        ))}
+                      </div>
+                      
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(7, 1fr)',
+                        gap: '0.75rem'
+                      }}>
+                        {Array.from({ length: 30 }).map((_, i) => {
+                          const date = new Date()
+                          date.setDate(date.getDate() - (29 - i))
+                          const isToday = date.toDateString() === new Date().toDateString()
+                          
                           return (
-                            <div key={weekIndex} style={{
-                              marginBottom: weekIndex === 3 ? '0' : '1.5rem'
-                            }}>
-                              <div style={{
+                            <div
+                              key={i}
+                              style={{
+                                aspectRatio: '1',
+                                borderRadius: '12px',
+                                border: isToday ? '3px solid #3b82f6' : '1px solid #e2e8f0',
+                                position: 'relative',
+                                background: '#ffffff',
                                 display: 'flex',
-                                justifyContent: 'space-between',
                                 alignItems: 'center',
-                                marginBottom: '0.75rem'
-                              }}>
-                                <span style={{
-                                  fontSize: '0.9rem',
-                                  fontWeight: '600',
-                                  color: '#6b7280'
-                                }}>
-                                  Week of {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                                <span style={{
-                                  fontSize: '0.9rem',
-                                  fontWeight: '700',
-                                  color: completionRate >= 70 ? '#10b981' : completionRate >= 40 ? '#f59e0b' : '#ef4444'
-                                }}>
-                                  {weekCompletion}/7 days ({Math.round(completionRate)}%)
-                                </span>
-                              </div>
+                                justifyContent: 'center',
+                                fontSize: '0.8rem',
+                                fontWeight: '700',
+                                color: '#6b7280'
+                              }}
+                            >
+                              {date.getDate()}
+                              {/* Habit completion dots */}
                               <div style={{
-                                width: '100%',
-                                height: '12px',
-                                backgroundColor: '#e5e7eb',
-                                borderRadius: '6px',
-                                overflow: 'hidden'
+                                position: 'absolute',
+                                top: '2px',
+                                right: '2px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '1px'
                               }}>
-                                <div style={{
-                                  width: `${completionRate}%`,
-                                  height: '100%',
-                                  background: `linear-gradient(90deg, ${habit.color} 0%, ${habit.color}dd 100%)`,
-                                  borderRadius: '6px',
-                                  transition: 'width 0.8s ease'
-                                }} />
+                                {filteredHabits.map((habit, habitIndex) => {
+                                  const dateStr = date.toISOString().split('T')[0]
+                                  const entry = habit.habitEntries.find(e => e.date.toString().split('T')[0] === dateStr)
+                                  const completed = (entry?.value || 0) > 0
+                                  
+                                  return (
+                                    <div
+                                      key={habit.id}
+                                      style={{
+                                        width: '4px',
+                                        height: '4px',
+                                        borderRadius: '50%',
+                                        backgroundColor: completed ? habit.color : '#e5e7eb'
+                                      }}
+                                    />
+                                  )
+                                })}
                               </div>
                             </div>
                           )
@@ -740,10 +833,125 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
+                )}
+
+                {viewMode === 'individual' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                    {allStats.map(({ habit, stats }) => (
+                      <div
+                        key={habit.id}
+                        style={{
+                          padding: '2.5rem',
+                          background: 'white',
+                          borderRadius: '20px',
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
+                          border: `2px solid ${habit.color}15`
+                        }}
+                      >
+                        {/* Individual habit content - simplified version of original */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1rem',
+                          marginBottom: '2rem'
+                        }}>
+                          <div
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              backgroundColor: habit.color,
+                              boxShadow: `0 0 0 6px ${habit.color}20`
+                            }}
+                          />
+                          <div>
+                            <h3 style={{
+                              fontWeight: '700',
+                              fontSize: '1.8rem',
+                              color: '#1f2937',
+                              margin: 0
+                            }}>{habit.name}</h3>
+                          </div>
+                        </div>
+
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                          gap: '1.5rem'
+                        }}>
+                          <div style={{
+                            textAlign: 'center',
+                            padding: '1.5rem',
+                            background: `linear-gradient(135deg, ${habit.color}10 0%, ${habit.color}05 100%)`,
+                            borderRadius: '16px',
+                            border: `1px solid ${habit.color}20`
+                          }}>
+                            <div style={{
+                              fontSize: '2.5rem',
+                              fontWeight: '900',
+                              color: habit.color,
+                              marginBottom: '0.5rem'
+                            }}>{stats.successfulDays}</div>
+                            <div style={{
+                              fontSize: '0.9rem',
+                              color: '#6b7280',
+                              fontWeight: '600'
+                            }}>Successful Days</div>
+                          </div>
+                          
+                          <div style={{
+                            textAlign: 'center',
+                            padding: '1.5rem',
+                            background: 'linear-gradient(135deg, #10b98110 0%, #10b98105 100%)',
+                            borderRadius: '16px',
+                            border: '1px solid #10b98120'
+                          }}>
+                            <div style={{
+                              fontSize: '2.5rem',
+                              fontWeight: '900',
+                              color: '#10b981',
+                              marginBottom: '0.5rem'
+                            }}>{stats.successRate}%</div>
+                            <div style={{
+                              fontSize: '0.9rem',
+                              color: '#6b7280',
+                              fontWeight: '600'
+                            }}>Success Rate</div>
+                          </div>
+                          
+                          <div style={{
+                            textAlign: 'center',
+                            padding: '1.5rem',
+                            background: 'linear-gradient(135deg, #3b82f610 0%, #3b82f605 100%)',
+                            borderRadius: '16px',
+                            border: '1px solid #3b82f620'
+                          }}>
+                            <div style={{
+                              fontSize: '2.5rem',
+                              fontWeight: '900',
+                              color: '#3b82f6',
+                              marginBottom: '0.5rem'
+                            }}>{stats.currentStreak}</div>
+                            <div style={{
+                              fontSize: '0.9rem',
+                              color: '#6b7280',
+                              fontWeight: '600'
+                            }}>Current Streak</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+          
+          {/* HabitCalendar moved to bottom */}
+          <HabitCalendar
+            habits={habits}
+            onUpdateEntry={updateHabitEntry}
+          />
         </div>
       </div>
       
