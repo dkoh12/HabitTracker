@@ -58,109 +58,143 @@ export default function Home() {
   }, [])
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div>
       <Navigation />
       
-      {/* Main Visual Hub Section - Centered */}
+      {/* Main Visual Hub Section - Light Background */}
       <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        position: 'relative',
+        overflow: 'hidden',
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '60vh',
-        padding: '4rem 1rem 2rem 1rem',
+        padding: '4rem 1rem',
       }}>
         <div style={{
           position: 'relative',
-          width: '500px',
-          height: '500px',
+          width: '800px',
+          height: '800px',
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          {/* Circular images arranged around HabitTracker */}
+          {/* Connection lines from center to each image */}
           {[
             { src: '/images/studying.avif', alt: 'Studying', angle: 0 },
             { src: '/images/reading.avif', alt: 'Reading', angle: 45 },
             { src: '/images/exercising.avif', alt: 'Exercising', angle: 90 },
-            { src: '/images/running.jpg', alt: 'Running', angle: 135 },
-            { src: '/images/cooking.jpg', alt: 'Cooking', angle: 180 },
-            { src: '/images/cooking2.jpg', alt: 'Cooking 2', angle: 225 },
+            { src: '/images/exercising.jpg', alt: 'Exercise Training', angle: 135 },
+            { src: '/images/running.jpg', alt: 'Running', angle: 180 },
+            { src: '/images/cooking.jpg', alt: 'Cooking', angle: 225 },
             { src: '/images/painting.jpg', alt: 'Painting', angle: 270 },
             { src: '/images/instrument.jpg', alt: 'Playing Instrument', angle: 315 }
           ].map((img, idx) => {
-            const radius = 200;
+            const centerToCenterDistance = 300;
+            const imageSize = 200;
             const rad = (img.angle * Math.PI) / 180;
-            const x = radius * Math.cos(rad);
-            const y = radius * Math.sin(rad);
+            const x = centerToCenterDistance * Math.cos(rad);
+            const y = centerToCenterDistance * Math.sin(rad);
+            
             return (
-              <div key={img.alt} style={{
-                position: 'absolute',
-                left: `calc(50% + ${x}px - 60px)`,
-                top: `calc(50% + ${y}px - 60px)`,
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                boxShadow: '0 8px 24px rgba(59,130,246,0.15)',
-                background: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                border: '6px solid #3b82f6',
-              }}>
-                <img
-                  src={img.src}
-                  alt={img.alt}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                />
+              <div key={`line-${img.alt}`}>
+                {/* Connection line */}
+                <div style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  width: `${centerToCenterDistance}px`,
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #3b82f6 0%, rgba(59, 130, 246, 0.3) 100%)',
+                  transformOrigin: '0 50%',
+                  transform: `rotate(${img.angle}deg)`,
+                  zIndex: 1,
+                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                }} />
+                
+                {/* Outer image circle */}
+                <div style={{
+                  position: 'absolute',
+                  left: `calc(50% + ${x}px - ${imageSize / 2}px)`,
+                  top: `calc(50% + ${y}px - ${imageSize / 2}px)`,
+                  width: `${imageSize}px`,
+                  height: `${imageSize}px`,
+                  borderRadius: '50%',
+                  boxShadow: '0 12px 32px rgba(59,130,246,0.2)',
+                  background: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  border: '6px solid #3b82f6',
+                  zIndex: 3,
+                }}>
+                  <img
+                    src={img.src}
+                    alt={img.alt}
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover', 
+                      borderRadius: '50%',
+                      objectPosition: img.src === '/images/studying.avif' ? 'center 20%' : 'center center'
+                    }}
+                  />
+                </div>
               </div>
             );
           })}
+          
           {/* Center HabitTracker logo/text */}
           <div style={{
             position: 'absolute',
             left: '50%',
             top: '50%',
             transform: 'translate(-50%, -50%)',
-            width: '180px',
-            height: '180px',
+            width: '240px',
+            height: '240px',
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-            boxShadow: '0 12px 32px rgba(59,130,246,0.25)',
+            boxShadow: '0 16px 40px rgba(59,130,246,0.4)',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
             fontWeight: '900',
-            fontSize: '2rem',
+            fontSize: '2.2rem',
             textAlign: 'center',
             border: '8px solid white',
-            zIndex: 2
+            zIndex: 4,
+            padding: '1rem'
           }}>
-            HabitTracker<br />
-            <span style={{ fontSize: '1rem', fontWeight: '600', color: '#e0f2fe' }}>Achieve Every Habit</span>
+            <div style={{ marginBottom: '0.5rem' }}>HabitTracker</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#e0f2fe' }}>Achieve Every Habit</div>
           </div>
         </div>
       </div>
 
-      {/* Headline, Description, Buttons, Stats - Now Below Main Visual */}
+      {/* Headline, Description, Buttons, Stats Section - Dark Background */}
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        maxWidth: '900px',
-        margin: '0 auto',
-        color: 'white',
-        padding: '2rem 1rem 4rem 1rem',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        {/* Headline, Description, Buttons, Stats */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          maxWidth: '900px',
+          margin: '0 auto',
+          color: 'white',
+          padding: '2rem 1rem 4rem 1rem',
+        }}>
         <h1 style={{
           fontSize: 'clamp(3rem, 7vw, 5.5rem)',
           fontWeight: '900',
@@ -362,7 +396,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-
+      </div>
+      
       {/* Challenge Categories Section */}
       <div style={{
         padding: '6rem 1rem',
