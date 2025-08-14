@@ -169,12 +169,12 @@ export default function SignUp() {
         {/* Right side - Sign Up Form */}
         <div style={{
           flex: 1,
-          padding: '48px',
+          padding: '48px 56px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <div style={{ width: '100%', maxWidth: '400px' }}>
+          <div style={{ width: '100%', maxWidth: '380px' }}>
             {/* Mobile logo */}
             <div style={{ textAlign: 'center', marginBottom: '32px' }} className="lg:hidden">
               <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '16px' }}>
@@ -230,11 +230,14 @@ export default function SignUp() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     style={{
                       paddingLeft: '44px',
+                      paddingRight: '16px',
                       height: '48px',
                       border: '2px solid #e5e7eb',
                       borderRadius: '12px',
                       fontSize: '16px',
-                      backgroundColor: '#ffffff'
+                      backgroundColor: '#ffffff',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="Enter your full name"
                   />
@@ -260,11 +263,14 @@ export default function SignUp() {
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     style={{
                       paddingLeft: '44px',
+                      paddingRight: '16px',
                       height: '48px',
                       border: '2px solid #e5e7eb',
                       borderRadius: '12px',
                       fontSize: '16px',
-                      backgroundColor: '#ffffff'
+                      backgroundColor: '#ffffff',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="Choose a username"
                     required
@@ -292,11 +298,14 @@ export default function SignUp() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     style={{
                       paddingLeft: '44px',
+                      paddingRight: '16px',
                       height: '48px',
                       border: '2px solid #e5e7eb',
                       borderRadius: '12px',
                       fontSize: '16px',
-                      backgroundColor: '#ffffff'
+                      backgroundColor: '#ffffff',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="Enter your email"
                     required
@@ -324,11 +333,14 @@ export default function SignUp() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     style={{
                       paddingLeft: '44px',
+                      paddingRight: '16px',
                       height: '48px',
                       border: '2px solid #e5e7eb',
                       borderRadius: '12px',
                       fontSize: '16px',
-                      backgroundColor: '#ffffff'
+                      backgroundColor: '#ffffff',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="Create a strong password"
                     required

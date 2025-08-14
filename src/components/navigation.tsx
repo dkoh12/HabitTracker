@@ -12,8 +12,6 @@ export function Navigation() {
   const pathname = usePathname()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
-  if (!session) return null
-
   const isActive = (path: string) => {
     if (path === '/') {
       return pathname === '/'
@@ -35,7 +33,76 @@ export function Navigation() {
     transition: 'all 0.2s ease'
   })
 
-  if (!session) return null
+  // If user is not logged in, show simplified navbar
+  if (!session) {
+    return (
+      <nav style={{
+        borderBottom: '1px solid #e5e7eb',
+        background: 'white',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '0 1rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            height: '4rem'
+          }}>
+            <Link href="/" style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textDecoration: 'none'
+            }}>
+              HabitTracker
+            </Link>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem'
+            }}>
+              <Link href="/auth/signin">
+                <Button style={{
+                  background: 'transparent',
+                  color: '#667eea',
+                  border: '1px solid #667eea',
+                  padding: '0.5rem 1.25rem',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}>
+                  Login
+                </Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1.25rem',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}>
+                  Sign Up
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+    )
+  }
 
   return (
     <nav style={{
