@@ -205,15 +205,11 @@ export default function Home() {
           WebkitTextFillColor: 'transparent',
           textAlign: 'center',
         }}>
-          Build Better Habits with HabitTracker<br />
-          <span style={{ 
-            fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
+          Build Better Habits with <span style={{ 
             background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
-          }}>
-            Transform Your Life
-          </span>
+          }}>HabitTracker</span>
         </h1>
 
         <p style={{
@@ -247,24 +243,28 @@ export default function Home() {
           marginBottom: '3rem',
         }}>
           {session ? (
-            <Link href="/dashboard">
-              <Button style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '1.5rem 3rem',
-                borderRadius: '12px',
-                fontSize: '1.2rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                boxShadow: '0 20px 40px rgba(59, 130, 246, 0.4)',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.8rem',
-                textTransform: 'uppercase',
-                letterSpacing: '1px'
-              }}>
+            <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+              <Button 
+                className="continue-journey-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1.8rem 3.5rem',
+                  borderRadius: '12px',
+                  fontSize: '1.3rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 20px 40px rgba(59, 130, 246, 0.4)',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
                 Continue Your Journey
                 <ArrowRight className="w-5 h-5" />
               </Button>
@@ -318,8 +318,7 @@ export default function Home() {
           display: 'flex',
           justifyContent: 'center',
           gap: '2rem',
-          flexWrap: 'wrap',
-          alignItems: 'stretch',
+          alignItems: 'flex-start',
           maxWidth: '600px',
         }}>
           <div style={{
@@ -328,8 +327,11 @@ export default function Home() {
             borderRadius: '16px',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             textAlign: 'center',
-            minWidth: '140px',
-            flex: '1',
+            width: '160px',
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             backdropFilter: 'blur(10px)'
           }}>
             <div style={{
@@ -343,7 +345,8 @@ export default function Home() {
               color: '#cbd5e1',
               fontWeight: '600',
               textTransform: 'uppercase',
-              letterSpacing: '1px'
+              letterSpacing: '1px',
+              lineHeight: '1.2'
             }}>Days to Excellence</div>
           </div>
           <div style={{
@@ -352,8 +355,11 @@ export default function Home() {
             borderRadius: '16px',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             textAlign: 'center',
-            minWidth: '140px',
-            flex: '1',
+            width: '160px',
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             backdropFilter: 'blur(10px)'
           }}>
             <div style={{
@@ -367,7 +373,8 @@ export default function Home() {
               color: '#cbd5e1',
               fontWeight: '600',
               textTransform: 'uppercase',
-              letterSpacing: '1px'
+              letterSpacing: '1px',
+              lineHeight: '1.2'
             }}>Elite Members</div>
           </div>
           <div style={{
@@ -376,8 +383,11 @@ export default function Home() {
             borderRadius: '16px',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             textAlign: 'center',
-            minWidth: '140px',
-            flex: '1',
+            width: '160px',
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             backdropFilter: 'blur(10px)'
           }}>
             <div style={{
@@ -391,7 +401,8 @@ export default function Home() {
               color: '#cbd5e1',
               fontWeight: '600',
               textTransform: 'uppercase',
-              letterSpacing: '1px'
+              letterSpacing: '1px',
+              lineHeight: '1.2'
             }}>Success Rate</div>
           </div>
         </div>
@@ -790,6 +801,58 @@ export default function Home() {
           0% { transform: scale(1); }
           50% { transform: scale(1.05); }
           100% { transform: scale(1); }
+        }
+
+        @keyframes shine {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+
+        @keyframes magicalGlow {
+          0% { 
+            border-color: #3b82f6; 
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.4), 0 15px 30px rgba(59, 130, 246, 0.3);
+          }
+          20% { 
+            border-color: #06b6d4; 
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.6), 0 0 40px rgba(6, 182, 212, 0.4), 0 15px 30px rgba(59, 130, 246, 0.3);
+          }
+          40% { 
+            border-color: #10b981; 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6), 0 0 40px rgba(16, 185, 129, 0.4), 0 15px 30px rgba(59, 130, 246, 0.3);
+          }
+          60% { 
+            border-color: #8b5cf6; 
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.6), 0 0 40px rgba(139, 92, 246, 0.4), 0 15px 30px rgba(59, 130, 246, 0.3);
+          }
+          80% { 
+            border-color: #f59e0b; 
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.6), 0 0 40px rgba(245, 158, 11, 0.4), 0 15px 30px rgba(59, 130, 246, 0.3);
+          }
+          100% { 
+            border-color: #3b82f6; 
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.4), 0 15px 30px rgba(59, 130, 246, 0.3);
+          }
+        }
+
+        .continue-journey-btn:hover {
+          transform: scale(1.15) !important;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #60a5fa 100%) !important;
+          background-size: 200% 100% !important;
+          animation: shine 1.5s ease-in-out infinite, magicalGlow 3s ease-in-out infinite !important;
+          border: 3px solid #3b82f6 !important;
+          filter: brightness(1.1) !important;
+        }
+
+        .continue-journey-btn:hover::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: shine 2s ease-in-out infinite;
         }
       `}</style>
     </div>
