@@ -220,9 +220,7 @@ export default function Home() {
           fontWeight: '900',
           marginBottom: '1.5rem',
           lineHeight: '1.1',
-          background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
+          color: 'white',
           textAlign: 'center',
         }}>
           Build Better Habits with <span style={{ 
