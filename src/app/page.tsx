@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,38 @@ import {
 export default function Home() {
   const { data: session } = useSession()
   const [randomAvatar, setRandomAvatar] = useState<string>('')
+
+  // Memoize the hub images calculation for better performance
+  const hubImages = useMemo(() => [
+    { src: '/images/studying.avif', alt: 'Studying', angle: 0 },
+    { src: '/images/reading.avif', alt: 'Reading', angle: 45 },
+    { src: '/images/exercising.avif', alt: 'Exercising', angle: 90 },
+    { src: '/images/exercising.jpg', alt: 'Exercise Training', angle: 135 },
+    { src: '/images/running.jpg', alt: 'Running', angle: 180 },
+    { src: '/images/cooking.jpg', alt: 'Cooking', angle: 225 },
+    { src: '/images/painting.jpg', alt: 'Painting', angle: 270 },
+    { src: '/images/instrument.jpg', alt: 'Playing Instrument', angle: 315 }
+  ], [])
+
+  // Pre-calculate positions for better performance
+  const imagePositions = useMemo(() => {
+    const centerToCenterDistance = 300;
+    const imageSize = 200;
+    
+    return hubImages.map(img => {
+      const rad = (img.angle * Math.PI) / 180;
+      const x = centerToCenterDistance * Math.cos(rad);
+      const y = centerToCenterDistance * Math.sin(rad);
+      
+      return {
+        ...img,
+        x,
+        y,
+        centerToCenterDistance,
+        imageSize
+      }
+    })
+  }, [hubImages])
 
   useEffect(() => {
     const avatarFiles = [
@@ -83,22 +115,7 @@ export default function Home() {
           justifyContent: 'center',
         }}>
           {/* Connection lines from center to each image */}
-          {[
-            { src: '/images/studying.avif', alt: 'Studying', angle: 0 },
-            { src: '/images/reading.avif', alt: 'Reading', angle: 45 },
-            { src: '/images/exercising.avif', alt: 'Exercising', angle: 90 },
-            { src: '/images/exercising.jpg', alt: 'Exercise Training', angle: 135 },
-            { src: '/images/running.jpg', alt: 'Running', angle: 180 },
-            { src: '/images/cooking.jpg', alt: 'Cooking', angle: 225 },
-            { src: '/images/painting.jpg', alt: 'Painting', angle: 270 },
-            { src: '/images/instrument.jpg', alt: 'Playing Instrument', angle: 315 }
-          ].map((img, idx) => {
-            const centerToCenterDistance = 300;
-            const imageSize = 200;
-            const rad = (img.angle * Math.PI) / 180;
-            const x = centerToCenterDistance * Math.cos(rad);
-            const y = centerToCenterDistance * Math.sin(rad);
-            
+          {imagePositions.map((img, idx) => {
             return (
               <div key={`line-${img.alt}`}>
                 {/* Connection line */}
@@ -106,22 +123,23 @@ export default function Home() {
                   position: 'absolute',
                   left: '50%',
                   top: '50%',
-                  width: `${centerToCenterDistance}px`,
+                  width: `${img.centerToCenterDistance}px`,
                   height: '4px',
                   background: 'linear-gradient(90deg, #3b82f6 0%, rgba(59, 130, 246, 0.3) 100%)',
                   transformOrigin: '0 50%',
                   transform: `rotate(${img.angle}deg)`,
                   zIndex: 1,
-                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+                  willChange: 'transform'
                 }} />
                 
                 {/* Outer image circle */}
                 <div style={{
                   position: 'absolute',
-                  left: `calc(50% + ${x}px - ${imageSize / 2}px)`,
-                  top: `calc(50% + ${y}px - ${imageSize / 2}px)`,
-                  width: `${imageSize}px`,
-                  height: `${imageSize}px`,
+                  left: `calc(50% + ${img.x}px - ${img.imageSize / 2}px)`,
+                  top: `calc(50% + ${img.y}px - ${img.imageSize / 2}px)`,
+                  width: `${img.imageSize}px`,
+                  height: `${img.imageSize}px`,
                   borderRadius: '50%',
                   boxShadow: '0 12px 32px rgba(59,130,246,0.2)',
                   background: 'white',
@@ -131,10 +149,12 @@ export default function Home() {
                   overflow: 'hidden',
                   border: '6px solid #3b82f6',
                   zIndex: 3,
+                  willChange: 'transform'
                 }}>
                   <img
                     src={img.src}
                     alt={img.alt}
+                    loading="lazy"
                     style={{ 
                       width: '100%', 
                       height: '100%', 
