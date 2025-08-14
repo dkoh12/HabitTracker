@@ -484,46 +484,13 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     }
   }
 
-  if (status === 'loading' || loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderTop: '4px solid white',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto'
-          }}></div>
-          <p style={{ 
-            marginTop: '1rem', 
-            color: 'white',
-            fontSize: '1.1rem',
-            fontWeight: '500'
-          }}>Loading group details...</p>
-        </div>
-      </div>
-    )
-  }
+  // Skip loading screen - render immediately when session exists
+  if (status === 'loading') return null
 
   if (!session || !group) return null
 
   return (
     <>
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
       <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'

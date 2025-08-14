@@ -146,19 +146,8 @@ export default function CreateHabitPage({ params }: CreateHabitPageProps) {
     router.push(`/groups/${groupId}`)
   }
 
-  if (status === 'loading') {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{ color: 'white', fontSize: '1.125rem' }}>Loading...</div>
-      </div>
-    )
-  }
+  // Skip loading screen - render immediately when session exists
+  if (status === 'loading') return null
 
   return (
     <div style={{

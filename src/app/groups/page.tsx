@@ -800,24 +800,7 @@ export default function Groups() {
           ))}
         </div>
 
-        {loading && (
-          <Card style={{
-            background: 'white',
-            borderRadius: '16px',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-          }}>
-            <CardContent style={{
-              textAlign: 'center',
-              padding: '3rem 2rem'
-            }}>
-              <div style={{
-                fontSize: '1.125rem',
-                color: '#6b7280'
-              }}>Loading groups...</div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Only show "No groups yet" after loading is complete */}
 
         {groups.length === 0 && !loading && (
           <Card style={{
@@ -886,13 +869,6 @@ export default function Groups() {
           </Card>
         )}
       </div>
-      
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   )
 }

@@ -232,7 +232,7 @@ export default function Dashboard() {
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <HabitSpreadsheet
-            key={JSON.stringify(habits.map(h => ({ id: h.id, entries: h.habitEntries.length })))}
+            key={habits.map(h => h.id).join(',')}
             habits={habits}
             onUpdateEntry={updateHabitEntry}
           />
