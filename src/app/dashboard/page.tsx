@@ -3,16 +3,13 @@ import { useState, useCallback, useEffect } from 'react'
 import { Navigation } from '@/components/navigation'
 import { HabitCalendar } from '@/components/habit-calendar'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
-import { HabitForm } from '@/components/habit-form'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { HabitWithEntries, HabitFormData } from '@/types'
-import { Plus, Star, TrendingUp, Target, Activity } from 'lucide-react'
+import { HabitWithEntries } from '@/types'
+import { Star, TrendingUp, Target, Activity } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 export default function Dashboard() {
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
-  const [showHabitForm, setShowHabitForm] = useState(false)
   const [loading, setLoading] = useState(true)
   
   // Statistics filtering and comparison state
@@ -51,23 +48,7 @@ export default function Dashboard() {
   useEffect(() => {
     setSelectedHabits(habits.map(h => h.id))
   }, [habits])
-  const createHabit = async (habitData: HabitFormData) => {
-    try {
-      const response = await fetch('/api/habits', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(habitData)
-      })
-      if (response.ok) {
-        setShowHabitForm(false)
-        fetchHabits()
-      }
-    } catch (error) {
-      console.error('Error creating habit:', error)
-    }
-  }
+
   const updateHabitEntry = async (habitId: string, date: string, value: number) => {
     console.log('🚀 updateHabitEntry called:', { habitId, date, value })
     try {
@@ -203,33 +184,7 @@ export default function Dashboard() {
               fontSize: '1.1rem'
             }}>Track your daily habits and build consistency</p>
           </div>
-          <Button onClick={() => setShowHabitForm(true)} style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '12px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-            transition: 'all 0.3s ease'
-          }}>
-            <Plus className="w-4 h-4" />
-            New Habit
-          </Button>
         </div>
-        {showHabitForm && (
-          <div style={{ marginBottom: '2rem' }}>
-            <HabitForm
-              onSubmit={createHabit}
-              onCancel={() => setShowHabitForm(false)}
-            />
-          </div>
-        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <HabitSpreadsheet
             key={habits.map(h => h.id).join(',')}

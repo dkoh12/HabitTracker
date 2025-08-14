@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,6 @@ import {
 
 export default function Home() {
   const { data: session } = useSession()
-  const [randomAvatar, setRandomAvatar] = useState<string>('')
 
   // Memoize the hub images calculation for better performance
   const hubImages = useMemo(() => [
@@ -53,41 +52,6 @@ export default function Home() {
       }
     })
   }, [hubImages])
-
-  useEffect(() => {
-    const avatarFiles = [
-      'avatar_1826783377633780368.jpg',
-      'avatar_1826783377633780374.jpg',
-      'avatar_1826783377633780381.jpg',
-      'avatar_1826783377633780386.jpg',
-      'avatar_1826783377633780393.jpg',
-      'avatar_1826783377633780401.jpg',
-      'avatar_1826783377633780406.jpg',
-      'avatar_1826783377633780411.jpg',
-      'avatar_1826783377633780417.jpg',
-      'avatar_1826783377633780422.jpg',
-      'avatar_1826783377633780427.jpg',
-      'avatar_1826783377633780434.jpg',
-      'avatar_1826783377633780439.jpg',
-      'avatar_1826783377633780444.jpg',
-      'avatar_1826783377633780449.jpg',
-      'avatar_1826783377633780454.jpg',
-      'avatar_1826783377633780460.jpg',
-      'avatar_1826783377633780465.jpg',
-      'avatar_1826783377633780468.jpg',
-      'avatar_1826783377633780473.jpg',
-      'avatar_1826783377633780476.jpg',
-      'avatar_1826783377633780484.jpg',
-      'avatar_1826783377633780490.jpg',
-      'avatar_1826783377633780493.jpg',
-      'avatar_1826783377633780499.jpg',
-      'avatar_1826783377633780506.jpg'
-    ]
-
-    const randomIndex = Math.floor(Math.random() * avatarFiles.length)
-    const selectedAvatar = avatarFiles[randomIndex]
-    setRandomAvatar(`/uploads/default_avatar/${selectedAvatar}`)
-  }, [])
 
   return (
     <div>
@@ -220,7 +184,9 @@ export default function Home() {
           fontWeight: '900',
           marginBottom: '1.5rem',
           lineHeight: '1.1',
-          color: 'white',
+          background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
           textAlign: 'center',
         }}>
           Build Better Habits with <span style={{ 
