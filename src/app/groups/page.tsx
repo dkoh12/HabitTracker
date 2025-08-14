@@ -135,12 +135,8 @@ export default function Groups() {
               fontSize: '1rem',
               fontWeight: '600',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
               transition: 'all 0.3s ease'
             }}>
-              <UserPlus className="w-4 h-4" />
               Join Group
             </Button>
             <Button onClick={() => setShowCreateForm(true)} style={{
@@ -152,13 +148,9 @@ export default function Groups() {
               fontSize: '1rem',
               fontWeight: '600',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
               boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
               transition: 'all 0.3s ease'
             }}>
-              <Plus className="w-4 h-4" />
               Create Group
             </Button>
           </div>
@@ -182,7 +174,7 @@ export default function Groups() {
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
-              }}>🏗️ Create New Group</CardTitle>
+              }}>Create New Group</CardTitle>
             </CardHeader>
             <CardContent style={{ padding: '1.5rem' }}>
               <form onSubmit={createGroup} style={{
@@ -339,7 +331,7 @@ export default function Groups() {
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
-              }}>🤝 Join Group</CardTitle>
+              }}>Join Group</CardTitle>
             </CardHeader>
             <CardContent style={{ padding: '1.5rem' }}>
               <form onSubmit={joinGroup} style={{
