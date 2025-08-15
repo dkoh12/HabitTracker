@@ -5,9 +5,11 @@ import { HabitCalendar } from '@/components/habit-calendar'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HabitWithEntries } from '@/types'
-import { Star, TrendingUp, Target, Activity } from 'lucide-react'
+import { Star, TrendingUp, Target, Activity, Calendar, BarChart3, Zap, Award, TrendingDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
+import { format, subDays, parseISO, startOfDay, differenceInDays, isToday, isYesterday, subWeeks, startOfWeek, endOfWeek } from 'date-fns'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
 export default function Dashboard() {
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [loading, setLoading] = useState(true)
@@ -17,6 +19,11 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState('combined') // 'combined', 'individual', 'comparison'
   const [timeFilter, setTimeFilter] = useState('30') // '7', '30', '90', 'all'
   const [sortBy, setSortBy] = useState('name') // 'name', 'success_rate', 'streak', 'days'
+  
+  // Chart filtering state
+  const [visibleHabitsDaily, setVisibleHabitsDaily] = useState<string[]>([])
+  const [visibleHabitsWeekly, setVisibleHabitsWeekly] = useState<string[]>([])
+  
   const fetchHabits = useCallback(async () => {
     console.log('🔄 fetchHabits called')
     try {
@@ -47,6 +54,8 @@ export default function Dashboard() {
   // Update selectedHabits when habits change
   useEffect(() => {
     setSelectedHabits(habits.map(h => h.id))
+    setVisibleHabitsDaily(habits.map(h => h.name))
+    setVisibleHabitsWeekly(habits.map(h => h.name))
   }, [habits])
 
   const updateHabitEntry = async (habitId: string, date: string, value: number) => {
@@ -147,6 +156,192 @@ export default function Dashboard() {
       bestStreak,
       last30Days
     }
+  }
+
+  // Enhanced analytics functions
+  const getTrendAnalysis = (habit: HabitWithEntries) => {
+    const last14Days = subDays(new Date(), 13)
+    const last7Days = subDays(new Date(), 6)
+    
+    const week1Entries = habit.habitEntries.filter(entry => {
+      const entryDate = parseISO(entry.date.toString())
+      return entryDate >= last14Days && entryDate < last7Days
+    })
+    
+    const week2Entries = habit.habitEntries.filter(entry => {
+      const entryDate = parseISO(entry.date.toString())
+      return entryDate >= last7Days
+    })
+    
+    const week1Success = week1Entries.filter(e => e.value > 0).length / 7 * 100
+    const week2Success = week2Entries.filter(e => e.value > 0).length / 7 * 100
+    
+    const trend = week2Success - week1Success
+    
+    return {
+      trend,
+      improving: trend > 5,
+      declining: trend < -5,
+      stable: Math.abs(trend) <= 5,
+      week1Success: Math.round(week1Success),
+      week2Success: Math.round(week2Success)
+    }
+  }
+
+  const getMotivationalInsights = (habit: HabitWithEntries) => {
+    const stats = getDetailedHabitStats(habit)
+    const trend = getTrendAnalysis(habit)
+    
+    const insights = []
+    
+    if (stats.currentStreak >= 7) {
+      insights.push({
+        type: 'achievement',
+        icon: Award,
+        message: `Amazing! ${stats.currentStreak} day streak!`,
+        color: 'text-yellow-600'
+      })
+    }
+    
+    if (trend.improving) {
+      insights.push({
+        type: 'trending',
+        icon: TrendingUp,
+        message: `You're improving! +${trend.trend.toFixed(0)}% this week`,
+        color: 'text-green-600'
+      })
+    }
+    
+    if (stats.successRate >= 90) {
+      insights.push({
+        type: 'mastery',
+        icon: Star,
+        message: `Master level: ${stats.successRate}% success rate!`,
+        color: 'text-purple-600'
+      })
+    }
+    
+    if (stats.currentStreak === 0 && stats.successRate > 50) {
+      insights.push({
+        type: 'motivation',
+        icon: Zap,
+        message: "Time to restart your streak!",
+        color: 'text-blue-600'
+      })
+    }
+    
+    return insights
+  }
+
+  const getWeeklyProgress = () => {
+    const weekStart = startOfWeek(new Date())
+    const weekEnd = endOfWeek(new Date())
+    
+    return habits.map(habit => {
+      const weekEntries = habit.habitEntries.filter(entry => {
+        const entryDate = parseISO(entry.date.toString())
+        return entryDate >= weekStart && entryDate <= weekEnd
+      })
+      
+      const completedDays = weekEntries.filter(e => e.value > 0).length
+      const percentage = (completedDays / 7) * 100
+      
+      return {
+        habit,
+        completedDays,
+        totalDays: 7,
+        percentage: Math.round(percentage),
+        trend: getTrendAnalysis(habit)
+      }
+    }).sort((a, b) => b.percentage - a.percentage)
+  }
+
+  // Chart data preparation functions
+  const getProgressChartData = () => {
+    const last30Days = []
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = format(date, 'MMM dd')
+      
+      const dayData: any = { date: dateStr, day: format(date, 'yyyy-MM-dd') }
+      
+      habits.forEach(habit => {
+        const entry = habit.habitEntries.find(e => 
+          format(parseISO(e.date.toString()), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+        )
+        dayData[habit.name] = entry?.value || 0
+      })
+      
+      last30Days.push(dayData)
+    }
+    return last30Days
+  }
+
+  const getSuccessRateData = () => {
+    return habits.map(habit => {
+      const stats = getDetailedHabitStats(habit)
+      return {
+        name: habit.name,
+        successRate: stats.successRate,
+        completedDays: stats.successfulDays,
+        totalDays: stats.totalTrackedDays,
+        color: habit.color
+      }
+    })
+  }
+
+  const getStreakComparisonData = () => {
+    return habits.map(habit => {
+      const stats = getDetailedHabitStats(habit)
+      return {
+        name: habit.name,
+        currentStreak: stats.currentStreak,
+        bestStreak: stats.bestStreak,
+        color: habit.color
+      }
+    })
+  }
+
+  const getWeeklyTrendData = () => {
+    const weeks = []
+    for (let i = 11; i >= 0; i--) {
+      const weekStart = subWeeks(startOfWeek(new Date()), i)
+      const weekEnd = endOfWeek(weekStart)
+      const weekLabel = `Week ${12 - i} (${format(weekStart, 'MMM dd')})`
+      
+      const weekData: any = { week: weekLabel }
+      
+      habits.forEach(habit => {
+        const weekEntries = habit.habitEntries.filter(entry => {
+          const entryDate = parseISO(entry.date.toString())
+          return entryDate >= weekStart && entryDate <= weekEnd
+        })
+        const successRate = weekEntries.length > 0 ? 
+          (weekEntries.filter(e => e.value > 0).length / 7) * 100 : 0
+        weekData[habit.name] = Math.round(successRate)
+      })
+      
+      weeks.push(weekData)
+    }
+    return weeks
+  }
+
+  // Chart filtering functions
+  const toggleHabitVisibilityDaily = (habitName: string) => {
+    setVisibleHabitsDaily(prev => 
+      prev.includes(habitName) 
+        ? prev.filter(name => name !== habitName)
+        : [...prev, habitName]
+    )
+  }
+
+  const toggleHabitVisibilityWeekly = (habitName: string) => {
+    setVisibleHabitsWeekly(prev => 
+      prev.includes(habitName) 
+        ? prev.filter(name => name !== habitName)
+        : [...prev, habitName]
+    )
   }
   
   // Don't show loading screen for session loading - let page render immediately
@@ -288,619 +483,412 @@ export default function Dashboard() {
             </Card>
           )}
           
-          {/* Enhanced Habit Statistics Section with Filtering and Comparison */}
-          {habits.length > 0 && (() => {
-
-            const filteredHabits = habits
-              .filter(habit => selectedHabits.includes(habit.id))
-              .sort((a, b) => {
-                const statsA = getDetailedHabitStats(a)
-                const statsB = getDetailedHabitStats(b)
-                
-                switch (sortBy) {
-                  case 'success_rate':
-                    return statsB.successRate - statsA.successRate
-                  case 'streak':
-                    return statsB.currentStreak - statsA.currentStreak
-                  case 'days':
-                    return statsB.successfulDays - statsA.successfulDays
-                  default:
-                    return a.name.localeCompare(b.name)
-                }
-              })
-
-            const allStats = filteredHabits.map(habit => ({ habit, stats: getDetailedHabitStats(habit) }))
-
-            return (
+          {/* Analytics Dashboard with Charts */}
+          {habits.length > 0 && (
+            <div style={{
+              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+              borderRadius: '24px',
+              padding: '3rem',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
+              border: '1px solid #f1f5f9'
+            }}>
               <div style={{
-                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
-                borderRadius: '24px',
-                padding: '3rem',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
-                border: '1px solid #f1f5f9'
+                textAlign: 'center',
+                marginBottom: '3rem'
               }}>
-                {/* Header with Controls */}
+                <h2 style={{
+                  fontSize: '2.5rem',
+                  fontWeight: '800',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  marginBottom: '1rem'
+                }}>Progress Analytics Dashboard</h2>
+                <p style={{
+                  fontSize: '1.1rem',
+                  color: '#64748b',
+                  maxWidth: '600px',
+                  margin: '0 auto'
+                }}>
+                  Visual insights and trends for your habits over time
+                </p>
+              </div>
+
+              {/* Charts Grid */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2rem',
+                marginBottom: '2rem'
+              }}>
+                {/* Daily Progress Line Chart - Full Width */}
+                <Card style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+                }}>
+                  <CardHeader>
+                    <CardTitle style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: '#1f2937'
+                    }}>
+                      Daily Progress (Last 30 Days)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <LineChart data={getProgressChartData()}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          label={{ 
+                            value: 'Habit Value', 
+                            angle: -90, 
+                            position: 'insideLeft',
+                            style: { textAnchor: 'middle', fill: '#6b7280', fontSize: '12px' }
+                          }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                          }}
+                          formatter={(value: any, name: string) => [
+                            `${value} ${value === 1 ? '(completed)' : value === 0 ? '(not done)' : '(value logged)'}`,
+                            name
+                          ]}
+                        />
+                        <Legend 
+                          onClick={(e) => {
+                            if (e.dataKey) {
+                              toggleHabitVisibilityDaily(e.dataKey as string)
+                            }
+                          }}
+                          wrapperStyle={{ cursor: 'pointer' }}
+                        />
+                        {habits.map((habit, index) => (
+                          <Line 
+                            key={habit.id}
+                            type="monotone" 
+                            dataKey={habit.name} 
+                            stroke={habit.color}
+                            strokeWidth={3}
+                            dot={{ fill: habit.color, strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, stroke: habit.color, strokeWidth: 2 }}
+                            hide={!visibleHabitsDaily.includes(habit.name)}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Weekly Trends Area Chart - Full Width */}
+                <Card style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+                }}>
+                  <CardHeader>
+                    <CardTitle style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: '#1f2937'
+                    }}>
+                      Weekly Success Trends (12 Weeks)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <AreaChart data={getWeeklyTrendData()}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="week" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          domain={[0, 100]}
+                          label={{ 
+                            value: 'Weekly Success Rate (%)', 
+                            angle: -90, 
+                            position: 'insideLeft',
+                            style: { textAnchor: 'middle', fill: '#6b7280', fontSize: '12px' }
+                          }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                          }}
+                          formatter={(value) => [`${value}%`, 'Success Rate']}
+                        />
+                        <Legend 
+                          onClick={(e) => {
+                            if (e.dataKey) {
+                              toggleHabitVisibilityWeekly(e.dataKey as string)
+                            }
+                          }}
+                          wrapperStyle={{ cursor: 'pointer' }}
+                        />
+                        {habits.map((habit, index) => (
+                          <Area
+                            key={habit.id}
+                            type="monotone"
+                            dataKey={habit.name}
+                            stackId="1"
+                            stroke={habit.color}
+                            fill={habit.color}
+                            fillOpacity={0.3}
+                            hide={!visibleHabitsWeekly.includes(habit.name)}
+                          />
+                        ))}
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Bottom Row of Charts */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+                gap: '2rem',
+                marginBottom: '2rem'
+              }}>
+                {/* Success Rate Bar Chart */}
+                <Card style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+                }}>
+                  <CardHeader>
+                    <CardTitle style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: '#1f2937'
+                    }}>
+                      Success Rate Comparison
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={getSuccessRateData()} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="name" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          domain={[0, 100]}
+                          label={{ 
+                            value: 'Success Rate (%)', 
+                            angle: -90, 
+                            position: 'insideLeft',
+                            style: { textAnchor: 'middle', fill: '#6b7280', fontSize: '12px' }
+                          }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                          }}
+                          formatter={(value) => [`${value}%`, 'Success Rate']}
+                        />
+                        <Bar dataKey="successRate" radius={[4, 4, 0, 0]}>
+                          {getSuccessRateData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Streak Comparison */}
+                <Card style={{
+                  background: 'white',
+                  borderRadius: '16px',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
+                }}>
+                  <CardHeader>
+                    <CardTitle style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: '#1f2937'
+                    }}>
+                      Current vs Best Streaks
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={getStreakComparisonData()} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="name" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          label={{ 
+                            value: 'Days', 
+                            angle: -90, 
+                            position: 'insideLeft',
+                            style: { textAnchor: 'middle', fill: '#6b7280', fontSize: '12px' }
+                          }}
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                          }}
+                        />
+                        <Legend />
+                        <Bar dataKey="currentStreak" fill="#3b82f6" name="Current Streak" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="bestStreak" fill="#e5e7eb" name="Best Streak" radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Summary Statistics Cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1.5rem',
+                marginTop: '2rem'
+              }}>
                 <div style={{
                   textAlign: 'center',
-                  marginBottom: '3rem'
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                  borderRadius: '16px',
+                  border: '2px solid #3b82f625'
                 }}>
-                  <h2 style={{
-                    fontSize: '2.5rem',
-                    fontWeight: '800',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    marginBottom: '1rem'
-                  }}>Progress Analytics Dashboard</h2>
-                  <p style={{
-                    fontSize: '1.1rem',
-                    color: '#64748b',
-                    maxWidth: '600px',
-                    margin: '0 auto 2rem auto'
-                  }}>
-                    Compare habits, analyze trends, and track your progress with advanced filtering and overlay features
-                  </p>
-
-                  {/* Control Panel */}
                   <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '1.5rem',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    background: 'white',
-                    padding: '2rem',
-                    borderRadius: '16px',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
-                    border: '1px solid #e2e8f0'
+                    fontSize: '2.5rem',
+                    fontWeight: '900',
+                    color: '#3b82f6',
+                    marginBottom: '0.5rem'
                   }}>
-                    {/* View Mode Toggle */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>View Mode</span>
-                      <div style={{
-                        display: 'flex',
-                        background: '#f3f4f6',
-                        borderRadius: '12px',
-                        padding: '4px'
-                      }}>
-                        {[
-                          { value: 'combined', label: 'Combined', icon: '📊' },
-                          { value: 'individual', label: 'Individual', icon: '📈' },
-                          { value: 'comparison', label: 'Compare', icon: '⚖️' }
-                        ].map(mode => (
-                          <button
-                            key={mode.value}
-                            onClick={() => setViewMode(mode.value)}
-                            style={{
-                              padding: '0.75rem 1.25rem',
-                              borderRadius: '8px',
-                              border: 'none',
-                              background: viewMode === mode.value ? 'white' : 'transparent',
-                              color: viewMode === mode.value ? '#1f2937' : '#6b7280',
-                              fontWeight: '600',
-                              fontSize: '0.9rem',
-                              cursor: 'pointer',
-                              boxShadow: viewMode === mode.value ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none',
-                              transition: 'all 0.2s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem'
-                            }}
-                          >
-                            <span>{mode.icon}</span>
-                            {mode.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Time Filter */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>Time Range</span>
-                      <select
-                        value={timeFilter}
-                        onChange={(e) => setTimeFilter(e.target.value)}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          background: 'white',
-                          fontSize: '0.9rem',
-                          fontWeight: '600',
-                          color: '#1f2937',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="7">Last 7 Days</option>
-                        <option value="30">Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                        <option value="all">All Time</option>
-                      </select>
-                    </div>
-
-                    {/* Sort Options */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>Sort By</span>
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          background: 'white',
-                          fontSize: '0.9rem',
-                          fontWeight: '600',
-                          color: '#1f2937',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="name">Name</option>
-                        <option value="success_rate">Success Rate</option>
-                        <option value="streak">Current Streak</option>
-                        <option value="days">Total Days</option>
-                      </select>
-                    </div>
-
-                    {/* Habit Selection */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#6b7280' }}>Select Habits</span>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '0.5rem',
-                        maxWidth: '300px'
-                      }}>
-                        {habits.map(habit => (
-                          <button
-                            key={habit.id}
-                            onClick={() => {
-                              setSelectedHabits(prev => 
-                                prev.includes(habit.id) 
-                                  ? prev.filter(id => id !== habit.id)
-                                  : [...prev, habit.id]
-                              )
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                              padding: '0.5rem 1rem',
-                              borderRadius: '20px',
-                              background: selectedHabits.includes(habit.id) 
-                                ? `linear-gradient(135deg, ${habit.color}20 0%, ${habit.color}10 100%)`
-                                : '#f3f4f6',
-                              color: selectedHabits.includes(habit.id) ? habit.color : '#6b7280',
-                              fontSize: '0.8rem',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              border: selectedHabits.includes(habit.id) ? `2px solid ${habit.color}40` : '2px solid transparent'
-                            }}
-                          >
-                            <div style={{
-                              width: '12px',
-                              height: '12px',
-                              borderRadius: '50%',
-                              backgroundColor: habit.color,
-                              opacity: selectedHabits.includes(habit.id) ? 1 : 0.5
-                            }} />
-                            {habit.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    {habits.reduce((sum, habit) => sum + getDetailedHabitStats(habit).successfulDays, 0)}
                   </div>
+                  <div style={{
+                    fontSize: '1rem',
+                    color: '#1f2937',
+                    fontWeight: '600'
+                  }}>Total Successful Days</div>
                 </div>
 
-                {/* Content based on view mode */}
-                {viewMode === 'combined' && (
-                  <div>
-                    {/* Combined Overview Metrics */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '1.5rem',
-                      marginBottom: '3rem'
-                    }}>
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '2rem',
-                        background: 'linear-gradient(135deg, #3b82f620 0%, #3b82f610 100%)',
-                        borderRadius: '20px',
-                        border: '2px solid #3b82f630'
-                      }}>
-                        <div style={{
-                          fontSize: '3rem',
-                          fontWeight: '900',
-                          color: '#3b82f6',
-                          marginBottom: '0.5rem'
-                        }}>{allStats.reduce((sum, { stats }) => sum + stats.successfulDays, 0)}</div>
-                        <div style={{
-                          fontSize: '1rem',
-                          color: '#6b7280',
-                          fontWeight: '600'
-                        }}>Total Successful Days</div>
-                      </div>
-                      
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '2rem',
-                        background: 'linear-gradient(135deg, #10b98120 0%, #10b98110 100%)',
-                        borderRadius: '20px',
-                        border: '2px solid #10b98130'
-                      }}>
-                        <div style={{
-                          fontSize: '3rem',
-                          fontWeight: '900',
-                          color: '#10b981',
-                          marginBottom: '0.5rem'
-                        }}>{Math.round(allStats.reduce((sum, { stats }) => sum + stats.successRate, 0) / allStats.length)}%</div>
-                        <div style={{
-                          fontSize: '1rem',
-                          color: '#6b7280',
-                          fontWeight: '600'
-                        }}>Average Success Rate</div>
-                      </div>
-                      
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '2rem',
-                        background: 'linear-gradient(135deg, #8b5cf620 0%, #8b5cf610 100%)',
-                        borderRadius: '20px',
-                        border: '2px solid #8b5cf630'
-                      }}>
-                        <div style={{
-                          fontSize: '3rem',
-                          fontWeight: '900',
-                          color: '#8b5cf6',
-                          marginBottom: '0.5rem'
-                        }}>{Math.max(...allStats.map(({ stats }) => stats.currentStreak))}</div>
-                        <div style={{
-                          fontSize: '1rem',
-                          color: '#6b7280',
-                          fontWeight: '600'
-                        }}>Longest Current Streak</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {viewMode === 'comparison' && filteredHabits.length >= 2 && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                  borderRadius: '16px',
+                  border: '2px solid #10b98125'
+                }}>
                   <div style={{
-                    background: 'white',
-                    borderRadius: '20px',
-                    padding: '2.5rem',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
-                    border: '1px solid #e2e8f0'
+                    fontSize: '2.5rem',
+                    fontWeight: '900',
+                    color: '#10b981',
+                    marginBottom: '0.5rem'
                   }}>
-                    <h4 style={{
-                      fontSize: '1.5rem',
-                      fontWeight: '700',
-                      color: '#1f2937',
-                      marginBottom: '2rem',
-                      textAlign: 'center'
-                    }}>Habit Comparison Dashboard</h4>
-                    
-                    {/* Comparison metrics */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: `120px repeat(${filteredHabits.length}, 1fr)`,
-                      gap: '1rem',
-                      marginBottom: '3rem'
-                    }}>
-                      {/* Header row */}
-                      <div style={{ fontWeight: '700', color: '#6b7280', fontSize: '0.9rem' }}>Metric</div>
-                      {filteredHabits.map(habit => (
-                        <div key={habit.id} style={{
-                          textAlign: 'center',
-                          padding: '1rem',
-                          background: `linear-gradient(135deg, ${habit.color}10 0%, ${habit.color}05 100%)`,
-                          borderRadius: '12px',
-                          border: `1px solid ${habit.color}20`
-                        }}>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.5rem',
-                            marginBottom: '0.5rem'
-                          }}>
-                            <div style={{
-                              width: '12px',
-                              height: '12px',
-                              borderRadius: '50%',
-                              backgroundColor: habit.color
-                            }} />
-                            <span style={{
-                              fontWeight: '700',
-                              fontSize: '1rem',
-                              color: '#1f2937'
-                            }}>{habit.name}</span>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Success Rate Row */}
-                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Success Rate</div>
-                      {allStats.map(({ habit, stats }) => (
-                        <div key={`success-${habit.id}`} style={{
-                          textAlign: 'center',
-                          padding: '1.5rem',
-                          background: 'white',
-                          borderRadius: '12px',
-                          border: '1px solid #e2e8f0'
-                        }}>
-                          <div style={{
-                            fontSize: '2rem',
-                            fontWeight: '900',
-                            color: habit.color,
-                            marginBottom: '0.5rem'
-                          }}>{stats.successRate}%</div>
-                          <div style={{
-                            width: '100%',
-                            height: '8px',
-                            backgroundColor: '#f1f5f9',
-                            borderRadius: '4px',
-                            overflow: 'hidden'
-                          }}>
-                            <div style={{
-                              width: `${stats.successRate}%`,
-                              height: '100%',
-                              backgroundColor: habit.color,
-                              borderRadius: '4px'
-                            }} />
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Current Streak Row */}
-                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Current Streak</div>
-                      {allStats.map(({ habit, stats }) => (
-                        <div key={`streak-${habit.id}`} style={{
-                          textAlign: 'center',
-                          padding: '1.5rem',
-                          background: 'white',
-                          borderRadius: '12px',
-                          border: '1px solid #e2e8f0'
-                        }}>
-                          <div style={{
-                            fontSize: '2rem',
-                            fontWeight: '900',
-                            color: habit.color,
-                            marginBottom: '0.5rem'
-                          }}>{stats.currentStreak}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>days</div>
-                        </div>
-                      ))}
-                      
-                      {/* Total Days Row */}
-                      <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Total Days</div>
-                      {allStats.map(({ habit, stats }) => (
-                        <div key={`days-${habit.id}`} style={{
-                          textAlign: 'center',
-                          padding: '1.5rem',
-                          background: 'white',
-                          borderRadius: '12px',
-                          border: '1px solid #e2e8f0'
-                        }}>
-                          <div style={{
-                            fontSize: '2rem',
-                            fontWeight: '900',
-                            color: habit.color,
-                            marginBottom: '0.5rem'
-                          }}>{stats.successfulDays}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>completed</div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Overlay progress comparison */}
-                    <div style={{
-                      background: '#f8fafc',
-                      borderRadius: '16px',
-                      padding: '2rem',
-                      border: '1px solid #e2e8f0'
-                    }}>
-                      <h5 style={{
-                        fontSize: '1.2rem',
-                        fontWeight: '700',
-                        color: '#1f2937',
-                        marginBottom: '1.5rem',
-                        textAlign: 'center'
-                      }}>Progress Overlay - Last 30 Days</h5>
-                      
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(7, 1fr)',
-                        gap: '0.75rem',
-                        marginBottom: '1rem'
-                      }}>
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                          <div key={day} style={{
-                            textAlign: 'center',
-                            fontSize: '0.8rem',
-                            fontWeight: '600',
-                            color: '#6b7280',
-                            paddingBottom: '0.5rem'
-                          }}>{day}</div>
-                        ))}
-                      </div>
-                      
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(7, 1fr)',
-                        gap: '0.75rem'
-                      }}>
-                        {Array.from({ length: 30 }).map((_, i) => {
-                          const date = new Date()
-                          date.setDate(date.getDate() - (29 - i))
-                          const isToday = date.toDateString() === new Date().toDateString()
-                          
-                          return (
-                            <div
-                              key={i}
-                              style={{
-                                aspectRatio: '1',
-                                borderRadius: '12px',
-                                border: isToday ? '3px solid #3b82f6' : '1px solid #e2e8f0',
-                                position: 'relative',
-                                background: '#ffffff',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.8rem',
-                                fontWeight: '700',
-                                color: '#6b7280'
-                              }}
-                            >
-                              {date.getDate()}
-                              {/* Habit completion dots */}
-                              <div style={{
-                                position: 'absolute',
-                                top: '2px',
-                                right: '2px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '1px'
-                              }}>
-                                {filteredHabits.map((habit, habitIndex) => {
-                                  const dateStr = date.toISOString().split('T')[0]
-                                  const entry = habit.habitEntries.find(e => e.date.toString().split('T')[0] === dateStr)
-                                  const completed = (entry?.value || 0) > 0
-                                  
-                                  return (
-                                    <div
-                                      key={habit.id}
-                                      style={{
-                                        width: '4px',
-                                        height: '4px',
-                                        borderRadius: '50%',
-                                        backgroundColor: completed ? habit.color : '#e5e7eb'
-                                      }}
-                                    />
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
+                    {Math.round(habits.reduce((sum, habit) => sum + getDetailedHabitStats(habit).successRate, 0) / habits.length)}%
                   </div>
-                )}
+                  <div style={{
+                    fontSize: '1rem',
+                    color: '#1f2937',
+                    fontWeight: '600'
+                  }}>Average Success Rate</div>
+                </div>
 
-                {viewMode === 'individual' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-                    {allStats.map(({ habit, stats }) => (
-                      <div
-                        key={habit.id}
-                        style={{
-                          padding: '2.5rem',
-                          background: 'white',
-                          borderRadius: '20px',
-                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
-                          border: `2px solid ${habit.color}15`
-                        }}
-                      >
-                        {/* Individual habit content - simplified version of original */}
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '1rem',
-                          marginBottom: '2rem'
-                        }}>
-                          <div
-                            style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              backgroundColor: habit.color,
-                              boxShadow: `0 0 0 6px ${habit.color}20`
-                            }}
-                          />
-                          <div>
-                            <h3 style={{
-                              fontWeight: '700',
-                              fontSize: '1.8rem',
-                              color: '#1f2937',
-                              margin: 0
-                            }}>{habit.name}</h3>
-                          </div>
-                        </div>
-
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                          gap: '1.5rem'
-                        }}>
-                          <div style={{
-                            textAlign: 'center',
-                            padding: '1.5rem',
-                            background: `linear-gradient(135deg, ${habit.color}10 0%, ${habit.color}05 100%)`,
-                            borderRadius: '16px',
-                            border: `1px solid ${habit.color}20`
-                          }}>
-                            <div style={{
-                              fontSize: '2.5rem',
-                              fontWeight: '900',
-                              color: habit.color,
-                              marginBottom: '0.5rem'
-                            }}>{stats.successfulDays}</div>
-                            <div style={{
-                              fontSize: '0.9rem',
-                              color: '#6b7280',
-                              fontWeight: '600'
-                            }}>Successful Days</div>
-                          </div>
-                          
-                          <div style={{
-                            textAlign: 'center',
-                            padding: '1.5rem',
-                            background: 'linear-gradient(135deg, #10b98110 0%, #10b98105 100%)',
-                            borderRadius: '16px',
-                            border: '1px solid #10b98120'
-                          }}>
-                            <div style={{
-                              fontSize: '2.5rem',
-                              fontWeight: '900',
-                              color: '#10b981',
-                              marginBottom: '0.5rem'
-                            }}>{stats.successRate}%</div>
-                            <div style={{
-                              fontSize: '0.9rem',
-                              color: '#6b7280',
-                              fontWeight: '600'
-                            }}>Success Rate</div>
-                          </div>
-                          
-                          <div style={{
-                            textAlign: 'center',
-                            padding: '1.5rem',
-                            background: 'linear-gradient(135deg, #3b82f610 0%, #3b82f605 100%)',
-                            borderRadius: '16px',
-                            border: '1px solid #3b82f620'
-                          }}>
-                            <div style={{
-                              fontSize: '2.5rem',
-                              fontWeight: '900',
-                              color: '#3b82f6',
-                              marginBottom: '0.5rem'
-                            }}>{stats.currentStreak}</div>
-                            <div style={{
-                              fontSize: '0.9rem',
-                              color: '#6b7280',
-                              fontWeight: '600'
-                            }}>Current Streak</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  borderRadius: '16px',
+                  border: '2px solid #f59e0b25'
+                }}>
+                  <div style={{
+                    fontSize: '2.5rem',
+                    fontWeight: '900',
+                    color: '#f59e0b',
+                    marginBottom: '0.5rem'
+                  }}>
+                    {Math.max(...habits.map(habit => getDetailedHabitStats(habit).currentStreak))}
                   </div>
-                )}
+                  <div style={{
+                    fontSize: '1rem',
+                    color: '#1f2937',
+                    fontWeight: '600'
+                  }}>Longest Current Streak</div>
+                </div>
+
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%)',
+                  borderRadius: '16px',
+                  border: '2px solid #8b5cf625'
+                }}>
+                  <div style={{
+                    fontSize: '2.5rem',
+                    fontWeight: '900',
+                    color: '#8b5cf6',
+                    marginBottom: '0.5rem'
+                  }}>
+                    {habits.length}
+                  </div>
+                  <div style={{
+                    fontSize: '1rem',
+                    color: '#1f2937',
+                    fontWeight: '600'
+                  }}>Active Habits</div>
+                </div>
               </div>
-            )
-          })()}
+            </div>
+          )}
           
           {/* HabitCalendar moved to bottom */}
           <HabitCalendar
