@@ -8,7 +8,7 @@ import {
   Star, 
   Flame, 
   Target, 
-  Calendar, 
+  Calendar,
   TrendingUp, 
   Crown, 
   Medal, 
@@ -18,11 +18,18 @@ import {
   Zap,
   Heart,
   BookOpen,
-  Clock
+  Clock,
+  Moon,
+  Users,
+  UserCheck,
+  UserPlus,
+  ChevronDown
 } from 'lucide-react'
 
 export default function BadgesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [showMoreEarned, setShowMoreEarned] = useState(false)
+  const [showMoreNotEarned, setShowMoreNotEarned] = useState(false)
   const [userStats] = useState({
     totalPoints: 850,
     badgesEarned: 8,
@@ -226,6 +233,169 @@ export default function BadgesPage() {
       rarity: 'rare',
       requirement: '100% completion for 7 days',
       earned: false
+    },
+
+    // Additional Achievement Badges
+    {
+      id: 'habit_collector_v2',
+      name: 'Habit Collector',
+      description: 'Create 10 different habits',
+      category: 'achievement',
+      icon: BookOpen,
+      color: '#3b82f6',
+      points: 150,
+      rarity: 'uncommon',
+      requirement: 'Create 10 habits',
+      earned: false
+    },
+    {
+      id: 'early_bird_v2',
+      name: 'Early Bird',
+      description: 'Complete morning habits for 7 days',
+      category: 'special',
+      icon: Clock,
+      color: '#f59e0b',
+      points: 200,
+      rarity: 'rare',
+      requirement: 'Complete morning habits for 7 days',
+      earned: false
+    },
+    {
+      id: 'night_owl',
+      name: 'Night Owl',
+      description: 'Complete evening habits for 7 days',
+      category: 'special',
+      icon: Moon,
+      color: '#6366f1',
+      points: 200,
+      rarity: 'rare',
+      requirement: 'Complete evening habits for 7 days',
+      earned: false
+    },
+
+    // Group Activity Badges
+    {
+      id: 'social_butterfly',
+      name: 'Social Butterfly',
+      description: 'Join your first group',
+      category: 'group',
+      icon: Users,
+      color: '#10b981',
+      points: 100,
+      rarity: 'common',
+      requirement: 'Join a group',
+      earned: true,
+      earnedDate: '2025-08-05'
+    },
+    {
+      id: 'team_player',
+      name: 'Team Player',
+      description: 'Complete 10 group habits',
+      category: 'group',
+      icon: UserCheck,
+      color: '#8b5cf6',
+      points: 250,
+      rarity: 'uncommon',
+      requirement: 'Complete 10 group habits',
+      earned: false
+    },
+    {
+      id: 'group_leader',
+      name: 'Group Leader',
+      description: 'Create and manage a group',
+      category: 'group',
+      icon: Crown,
+      color: '#dc2626',
+      points: 300,
+      rarity: 'rare',
+      requirement: 'Create a group',
+      earned: false
+    },
+    {
+      id: 'motivator',
+      name: 'Motivator',
+      description: 'Invite 5 friends to join groups',
+      category: 'group',
+      icon: UserPlus,
+      color: '#f59e0b',
+      points: 200,
+      rarity: 'uncommon',
+      requirement: 'Invite 5 friends',
+      earned: false
+    },
+    {
+      id: 'group_streak',
+      name: 'Group Streak Master',
+      description: 'Maintain a 14-day streak in group habits',
+      category: 'group',
+      icon: Flame,
+      color: '#ef4444',
+      points: 400,
+      rarity: 'epic',
+      requirement: 'Complete group habits for 14 days straight',
+      earned: false
+    },
+    {
+      id: 'community_champion',
+      name: 'Community Champion',
+      description: 'Be active in 3 different groups',
+      category: 'group',
+      icon: Shield,
+      color: '#7c3aed',
+      points: 500,
+      rarity: 'epic',
+      requirement: 'Active in 3 groups',
+      earned: false
+    },
+
+    // More Special Badges
+    {
+      id: 'weekend_warrior',
+      name: 'Weekend Warrior',
+      description: 'Complete habits on weekends for 4 weeks',
+      category: 'special',
+      icon: Zap,
+      color: '#059669',
+      points: 250,
+      rarity: 'rare',
+      requirement: 'Weekend completion for 4 weeks',
+      earned: false
+    },
+    {
+      id: 'comeback_kid',
+      name: 'Comeback Kid',
+      description: 'Restart a habit after a break',
+      category: 'special',
+      icon: Target,
+      color: '#dc2626',
+      points: 150,
+      rarity: 'uncommon',
+      requirement: 'Restart after missing 3+ days',
+      earned: false
+    },
+    {
+      id: 'diversity_master',
+      name: 'Diversity Master',
+      description: 'Complete habits in 5 different categories',
+      category: 'achievement',
+      icon: Star,
+      color: '#8b5cf6',
+      points: 300,
+      rarity: 'rare',
+      requirement: 'Complete habits in 5 categories',
+      earned: false
+    },
+    {
+      id: 'lightning_fast',
+      name: 'Lightning Fast',
+      description: 'Complete all daily habits in under 1 hour',
+      category: 'special',
+      icon: Zap,
+      color: '#fbbf24',
+      points: 200,
+      rarity: 'uncommon',
+      requirement: 'Complete all habits within 1 hour',
+      earned: false
     }
   ]
 
@@ -235,6 +405,7 @@ export default function BadgesPage() {
     { id: 'streak', name: 'Streak', icon: Flame },
     { id: 'consistency', name: 'Consistency', icon: Target },
     { id: 'achievement', name: 'Achievement', icon: Trophy },
+    { id: 'group', name: 'Group', icon: Users },
     { id: 'special', name: 'Special', icon: Zap }
   ]
 
@@ -578,151 +749,388 @@ export default function BadgesPage() {
           })}
         </div>
 
-        {/* Badges Grid - Sorted by Rarity within Categories */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: '1.5rem'
-        }}>
-          {filteredBadges.map(badge => {
-            const IconComponent = badge.icon
-            return (
-              <Card
-                key={badge.id}
-                style={{
-                  background: badge.earned 
-                    ? `linear-gradient(135deg, ${badge.color}10 0%, ${badge.color}05 100%)`
-                    : '#f8fafc',
-                  border: badge.earned 
-                    ? `2px solid ${badge.color}40`
-                    : '1px solid #e5e7eb',
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  position: 'relative',
-                  opacity: badge.earned ? 1 : 0.75,
-                  boxShadow: badge.earned ? getRarityGlow(badge.rarity) : '0 2px 4px rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer'
-                }}
-              >
-                {/* Rarity Indicator */}
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '12px',
-                  background: getRarityColor(badge.rarity),
-                  color: 'white',
-                  fontSize: '0.7rem',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  {badge.rarity}
-                </div>
-
-                {/* Badge Icon */}
-                <div style={{
-                  width: '70px',
-                  height: '70px',
-                  borderRadius: '50%',
-                  background: badge.earned 
-                    ? `linear-gradient(135deg, ${badge.color} 0%, ${badge.color}dd 100%)`
-                    : '#e5e7eb',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1rem',
-                  boxShadow: badge.earned ? `0 8px 16px ${badge.color}40` : 'none'
-                }}>
-                  <IconComponent 
-                    size={35}
-                    style={{ 
-                      color: badge.earned ? 'white' : '#9ca3af' 
-                    }} 
-                  />
-                </div>
-
-                {/* Badge Info */}
-                <div>
-                  <h3 style={{
-                    fontSize: '1.25rem',
-                    fontWeight: '600',
-                    color: badge.earned ? badge.color : '#6b7280',
-                    marginBottom: '0.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    {badge.name}
-                    {badge.earned && (
-                      <CheckCircle2 size={16} style={{ color: badge.color }} />
-                    )}
-                  </h3>
-                  
-                  <p style={{
-                    color: '#6b7280',
-                    fontSize: '0.9rem',
-                    marginBottom: '1rem',
-                    lineHeight: '1.5'
-                  }}>
-                    {badge.description}
-                  </p>
-
-                  {/* Points and Category */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '1rem'
-                  }}>
+        {/* Earned Badges Section */}
+        <div style={{ marginBottom: '3rem' }}>
+          <h2 style={{
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: '#10b981',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <CheckCircle2 size={24} />
+            Badges Earned ({filteredBadges.filter(badge => badge.earned).length})
+          </h2>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '1.5rem'
+          }}>
+            {filteredBadges
+              .filter(badge => badge.earned)
+              .sort((a, b) => getRarityWeight(a.rarity) - getRarityWeight(b.rarity))
+              .slice(0, showMoreEarned ? undefined : 3)
+              .map(badge => {
+                const IconComponent = badge.icon
+                return (
+                  <Card
+                    key={badge.id}
+                    style={{
+                      background: `linear-gradient(135deg, ${badge.color}10 0%, ${badge.color}05 100%)`,
+                      border: `2px solid ${badge.color}40`,
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      position: 'relative',
+                      boxShadow: getRarityGlow(badge.rarity),
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {/* Rarity Indicator */}
                     <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '12px',
+                      background: getRarityColor(badge.rarity),
+                      color: 'white',
+                      fontSize: '0.7rem',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {badge.rarity}
+                    </div>
+
+                    {/* Badge Icon */}
+                    <div style={{
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${badge.color} 0%, ${badge.color}dd 100%)`,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.8rem',
-                      color: '#9ca3af'
+                      justifyContent: 'center',
+                      marginBottom: '1rem',
+                      boxShadow: `0 8px 16px ${badge.color}40`
                     }}>
-                      <Star size={14} />
-                      <span>{badge.points} points</span>
+                      <IconComponent 
+                        size={35}
+                        style={{ color: 'white' }} 
+                      />
                     </div>
+
+                    {/* Badge Info */}
+                    <div>
+                      <h3 style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: badge.color,
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        {badge.name}
+                        <CheckCircle2 size={16} style={{ color: badge.color }} />
+                      </h3>
+                      
+                      <p style={{
+                        color: '#6b7280',
+                        fontSize: '0.9rem',
+                        marginBottom: '1rem',
+                        lineHeight: '1.5'
+                      }}>
+                        {badge.description}
+                      </p>
+
+                      {/* Points and Category */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontSize: '0.8rem',
+                          color: '#9ca3af'
+                        }}>
+                          <Star size={14} />
+                          <span>{badge.points} points</span>
+                        </div>
+                        <div style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#f3f4f6',
+                          borderRadius: '12px',
+                          fontSize: '0.7rem',
+                          color: '#6b7280',
+                          textTransform: 'capitalize'
+                        }}>
+                          {badge.category}
+                        </div>
+                      </div>
+
+                      {/* Requirement */}
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#9ca3af',
+                        fontStyle: 'italic',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {badge.requirement}
+                      </div>
+
+                      {/* Earned Date */}
+                      {badge.earnedDate && (
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: badge.color,
+                          fontWeight: '500'
+                        }}>
+                          Earned: {new Date(badge.earnedDate).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )
+              })}
+          </div>
+          
+          {/* Show More Button for Earned Badges */}
+          {filteredBadges.filter(badge => badge.earned).length > 3 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              marginTop: '1.5rem' 
+            }}>
+              <button
+                onClick={() => setShowMoreEarned(!showMoreEarned)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1.5rem',
+                  background: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = '#059669'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = '#10b981'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                {showMoreEarned ? 'Show Less' : `Show ${filteredBadges.filter(badge => badge.earned).length - 3} More`}
+                <ChevronDown 
+                  size={16} 
+                  style={{ 
+                    transform: showMoreEarned ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                  }} 
+                />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Not Earned Badges Section */}
+        <div>
+          <h2 style={{
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: '#8b5cf6',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <Target size={24} />
+            Badges to Earn ({filteredBadges.filter(badge => !badge.earned).length})
+          </h2>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '1.5rem'
+          }}>
+            {filteredBadges
+              .filter(badge => !badge.earned)
+              .sort((a, b) => getRarityWeight(a.rarity) - getRarityWeight(b.rarity))
+              .slice(0, showMoreNotEarned ? undefined : 3)
+              .map(badge => {
+                const IconComponent = badge.icon
+                return (
+                  <Card
+                    key={badge.id}
+                    style={{
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      position: 'relative',
+                      opacity: 0.75,
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {/* Rarity Indicator */}
                     <div style={{
-                      padding: '0.25rem 0.5rem',
-                      background: '#f3f4f6',
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      padding: '0.25rem 0.75rem',
                       borderRadius: '12px',
+                      background: getRarityColor(badge.rarity),
+                      color: 'white',
                       fontSize: '0.7rem',
-                      color: '#6b7280',
-                      textTransform: 'capitalize'
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
                     }}>
-                      {badge.category}
+                      {badge.rarity}
                     </div>
-                  </div>
 
-                  {/* Requirement */}
-                  <div style={{
-                    fontSize: '0.8rem',
-                    color: '#9ca3af',
-                    fontStyle: 'italic',
-                    marginBottom: badge.earned ? '0.5rem' : '0'
-                  }}>
-                    {badge.requirement}
-                  </div>
-
-                  {/* Earned Date */}
-                  {badge.earned && badge.earnedDate && (
+                    {/* Badge Icon */}
                     <div style={{
-                      fontSize: '0.75rem',
-                      color: badge.color,
-                      fontWeight: '500'
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '50%',
+                      background: '#e5e7eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '1rem'
                     }}>
-                      Earned: {new Date(badge.earnedDate).toLocaleDateString()}
+                      <IconComponent 
+                        size={35}
+                        style={{ color: '#9ca3af' }} 
+                      />
                     </div>
-                  )}
-                </div>
-              </Card>
-            )
-          })}
+
+                    {/* Badge Info */}
+                    <div>
+                      <h3 style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: '#6b7280',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {badge.name}
+                      </h3>
+                      
+                      <p style={{
+                        color: '#6b7280',
+                        fontSize: '0.9rem',
+                        marginBottom: '1rem',
+                        lineHeight: '1.5'
+                      }}>
+                        {badge.description}
+                      </p>
+
+                      {/* Points and Category */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '1rem'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontSize: '0.8rem',
+                          color: '#9ca3af'
+                        }}>
+                          <Star size={14} />
+                          <span>{badge.points} points</span>
+                        </div>
+                        <div style={{
+                          padding: '0.25rem 0.5rem',
+                          background: '#f3f4f6',
+                          borderRadius: '12px',
+                          fontSize: '0.7rem',
+                          color: '#6b7280',
+                          textTransform: 'capitalize'
+                        }}>
+                          {badge.category}
+                        </div>
+                      </div>
+
+                      {/* Requirement */}
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#9ca3af',
+                        fontStyle: 'italic'
+                      }}>
+                        {badge.requirement}
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+          </div>
+          
+          {/* Show More Button for Not Earned Badges */}
+          {filteredBadges.filter(badge => !badge.earned).length > 3 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              marginTop: '1.5rem' 
+            }}>
+              <button
+                onClick={() => setShowMoreNotEarned(!showMoreNotEarned)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1.5rem',
+                  background: '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = '#7c3aed'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = '#8b5cf6'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+              >
+                {showMoreNotEarned ? 'Show Less' : `Show ${filteredBadges.filter(badge => !badge.earned).length - 3} More`}
+                <ChevronDown 
+                  size={16} 
+                  style={{ 
+                    transform: showMoreNotEarned ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                  }} 
+                />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
