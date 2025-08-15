@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers } from '@/types'
 import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp, Edit3, Trash2, Eye } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 interface GroupDetailProps {
@@ -62,6 +63,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState(30) // Last 30 days
   const [selectedLeaderboardHabit, setSelectedLeaderboardHabit] = useState('overall') // Filter for leaderboard
+  const [selectedChartHabit, setSelectedChartHabit] = useState('overall') // Filter for daily progress chart
+  const [selectedChartTimeRange, setSelectedChartTimeRange] = useState(7) // Time range for daily progress chart
   const [groupId, setGroupId] = useState<string | null>(null)
   const [showAllMembers, setShowAllMembers] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState<GroupHabitData | null>(null)
@@ -2087,7 +2090,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       border: '1px solid #e5e7eb'
                     }}>
                       <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>
-                        📊 You vs Group Performance
+                        You vs Group Performance
                       </h3>
                       {(() => {
                         const currentUserStats = memberStats.find(m => m.id === currentUserId);
@@ -2097,45 +2100,43 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         const userVsGroup = currentUserStats.completionRate - groupAverage;
                         
                         return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr 1fr',
+                            gap: '1rem'
+                          }}>
                             <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: '1rem'
+                              padding: '1.5rem',
+                              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                              borderRadius: '8px',
+                              border: '2px solid #3b82f6',
+                              textAlign: 'center'
                             }}>
-                              <div style={{
-                                padding: '1.5rem',
-                                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                                borderRadius: '8px',
-                                border: '2px solid #3b82f6',
-                                textAlign: 'center'
-                              }}>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e40af', marginBottom: '0.5rem' }}>
-                                  {currentUserStats.completionRate}%
-                                </div>
-                                <div style={{ fontSize: '0.875rem', color: '#1e40af', fontWeight: '500' }}>
-                                  Your Performance
-                                </div>
+                              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e40af', marginBottom: '0.5rem' }}>
+                                {currentUserStats.completionRate}%
                               </div>
-                              
-                              <div style={{
-                                padding: '1.5rem',
-                                background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-                                borderRadius: '8px',
-                                border: '1px solid #9ca3af',
-                                textAlign: 'center'
-                              }}>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
-                                  {groupAverage}%
-                                </div>
-                                <div style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
-                                  Group Average
-                                </div>
+                              <div style={{ fontSize: '0.875rem', color: '#1e40af', fontWeight: '500' }}>
+                                Your Performance
                               </div>
                             </div>
                             
                             <div style={{
-                              padding: '1rem',
+                              padding: '1.5rem',
+                              background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                              borderRadius: '8px',
+                              border: '1px solid #9ca3af',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
+                                {groupAverage}%
+                              </div>
+                              <div style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
+                                Group Average
+                              </div>
+                            </div>
+                            
+                            <div style={{
+                              padding: '1.5rem',
                               background: userVsGroup > 0 
                                 ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'
                                 : userVsGroup < 0
@@ -2150,14 +2151,14 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               textAlign: 'center'
                             }}>
                               <div style={{ 
-                                fontSize: '1.5rem', 
+                                fontSize: '2.5rem', 
                                 fontWeight: 'bold',
                                 color: userVsGroup > 0 
                                   ? '#059669'
                                   : userVsGroup < 0
                                   ? '#dc2626'
                                   : '#d97706',
-                                marginBottom: '0.25rem'
+                                marginBottom: '0.5rem'
                               }}>
                                 {userVsGroup > 0 ? '+' : ''}{userVsGroup}%
                               </div>
@@ -2171,10 +2172,10 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                 fontWeight: '500'
                               }}>
                                 {userVsGroup > 0 
-                                  ? '🎉 Above group average!'
+                                  ? 'Above group average!'
                                   : userVsGroup < 0
-                                  ? '💪 Room for improvement!'
-                                  : '👍 Right on average!'}
+                                  ? 'Room for improvement!'
+                                  : 'Right on average!'}
                               </div>
                             </div>
                           </div>
@@ -2190,7 +2191,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       border: '1px solid #e5e7eb'
                     }}>
                       <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>
-                        🎯 Habit Performance Breakdown
+                        Habit Performance Breakdown
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {habitStats.map(habit => {
@@ -2308,109 +2309,198 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       padding: '1.5rem',
                       border: '1px solid #e5e7eb'
                     }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>
-                        📈 Daily Progress: You vs Group
-                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', margin: 0 }}>
+                          📈 Daily Progress: You vs Group
+                        </h3>
+                        
+                        {/* Chart Filters */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                          {/* Habit Filter */}
+                          {spreadsheetData.habits.length > 1 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Habit:</span>
+                              <select
+                                value={selectedChartHabit}
+                                onChange={(e) => setSelectedChartHabit(e.target.value)}
+                                style={{
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '6px',
+                                  border: '2px solid #e5e7eb',
+                                  fontSize: '0.875rem',
+                                  fontWeight: '500',
+                                  color: '#374151',
+                                  background: 'white',
+                                  cursor: 'pointer',
+                                  minWidth: '120px'
+                                }}
+                              >
+                                <option value="overall">Overall</option>
+                                {spreadsheetData.habits.map(habit => (
+                                  <option key={habit.id} value={habit.id}>
+                                    {habit.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          
+                          {/* Time Range Filter */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Range:</span>
+                            <select
+                              value={selectedChartTimeRange}
+                              onChange={(e) => setSelectedChartTimeRange(parseInt(e.target.value))}
+                              style={{
+                                padding: '0.5rem 0.75rem',
+                                borderRadius: '6px',
+                                border: '2px solid #e5e7eb',
+                                fontSize: '0.875rem',
+                                fontWeight: '500',
+                                color: '#374151',
+                                background: 'white',
+                                cursor: 'pointer',
+                                minWidth: '100px'
+                              }}
+                            >
+                              <option value={7}>7 days</option>
+                              <option value={14}>14 days</option>
+                              <option value={30}>30 days</option>
+                              <option value={60}>60 days</option>
+                              <option value={90}>90 days</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div style={{
-                        display: 'flex',
-                        alignItems: 'end',
-                        gap: '4px',
-                        height: '240px',
-                        padding: '1rem',
                         background: 'white',
                         borderRadius: '8px',
                         border: '1px solid #e5e7eb',
-                        overflowX: 'auto'
+                        padding: '1rem',
+                        height: '500px'
                       }}>
-                        {dailyProgress.map((day, index) => {
-                          const userDayProgress = (() => {
-                            let totalPercentagePoints = 0;
-                            let userDayEntries = 0;
-                            let userDayCompleted = 0;
-                            let userDayPartial = 0;
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={(() => {
+                              // Sort daily progress by date descending (most recent first), then take the selected range
+                              const sortedDailyProgress = [...dailyProgress].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                              
+                              // Filter daily progress data based on selected time range and habit
+                              const filteredDailyProgress = sortedDailyProgress
+                                .slice(0, selectedChartTimeRange) // Take the first N days (most recent)
+                                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Sort back to ascending for display
+                                .map(day => {
+                                  let groupCompletionRate = day.completionRate;
+                                  
+                                  if (selectedChartHabit !== 'overall') {
+                                    // Calculate for specific habit
+                                    const selectedHabitData = spreadsheetData.habits.find(h => h.id === selectedChartHabit);
+                                    if (selectedHabitData) {
+                                      let totalPercentagePoints = 0;
+                                      let dayEntries = 0;
 
-                            spreadsheetData.habits.forEach(habit => {
-                              const entry = spreadsheetData.entries[day.date]?.[currentUserId]?.[habit.id];
-                              if (entry && entry.value > 0) {
-                                userDayEntries++;
-                                
-                                // Calculate normalized percentage for this entry
-                                const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
-                                totalPercentagePoints += normalizedPercentage;
-                                
-                                if (entry.value >= habit.target) {
-                                  userDayCompleted++;
-                                } else {
-                                  userDayPartial++;
-                                }
-                              }
-                            });
+                                      allMembers.forEach(member => {
+                                        const entry = spreadsheetData.entries[day.date]?.[member.id]?.[selectedHabitData.id];
+                                        if (entry && entry.value > 0) {
+                                          dayEntries++;
+                                          const normalizedPercentage = Math.min((entry.value / selectedHabitData.target) * 100, 100);
+                                          totalPercentagePoints += normalizedPercentage;
+                                        }
+                                      });
 
-                            const totalPossiblePercentage = spreadsheetData.habits.length * 100;
-                            const userDayRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
-                            return Math.round(userDayRate);
-                          })();
+                                      const totalPossiblePercentage = allMembers.length * 100;
+                                      groupCompletionRate = totalPossiblePercentage > 0 ? Math.round((totalPercentagePoints / totalPossiblePercentage) * 100) : 0;
+                                    } else {
+                                      groupCompletionRate = 0;
+                                    }
+                                  }
 
-                          const maxRate = Math.max(...dailyProgress.map(d => Math.max(d.completionRate, 100)));
-                          const groupHeight = maxRate > 0 ? (day.completionRate / maxRate) * 180 : 0;
-                          const userHeight = maxRate > 0 ? (userDayProgress / maxRate) * 180 : 0;
-                          
-                          return (
-                            <div key={day.date} style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                              minWidth: '60px'
-                            }}>
-                              <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: '500', textAlign: 'center' }}>
-                                <div>You: {userDayProgress}%</div>
-                                <div>Grp: {day.completionRate}%</div>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'end', gap: '2px', height: '180px' }}>
-                                {/* Group bar */}
-                                <div style={{
-                                  width: '12px',
-                                  height: `${groupHeight}px`,
-                                  background: 'linear-gradient(180deg, #9ca3af 0%, #6b7280 100%)',
-                                  borderRadius: '6px 6px 0 0',
-                                  minHeight: '4px',
-                                  opacity: 0.7
-                                }} />
-                                {/* User bar */}
-                                <div style={{
-                                  width: '12px',
-                                  height: `${userHeight}px`,
-                                  background: userDayProgress >= day.completionRate
-                                    ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)'
-                                    : 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)',
-                                  borderRadius: '6px 6px 0 0',
-                                  minHeight: '4px'
-                                }} />
-                              </div>
-                              <div style={{ 
-                                fontSize: '0.625rem', 
-                                color: '#6b7280',
-                                transform: 'rotate(-45deg)',
-                                transformOrigin: 'center',
-                                whiteSpace: 'nowrap',
-                                marginTop: '10px'
-                              }}>
-                                {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.875rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div style={{ width: '12px', height: '12px', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', borderRadius: '2px' }} />
-                          <span style={{ color: '#374151' }}>Your Progress</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div style={{ width: '12px', height: '12px', background: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)', borderRadius: '2px', opacity: 0.7 }} />
-                          <span style={{ color: '#374151' }}>Group Average</span>
-                        </div>
+                                  // Calculate user's daily progress for selected habit/overall
+                                  const userDailyProgress = (() => {
+                                    let userTotalPercentagePoints = 0;
+
+                                    if (selectedChartHabit === 'overall') {
+                                      spreadsheetData.habits.forEach(habit => {
+                                        const entry = spreadsheetData.entries[day.date]?.[currentUserId]?.[habit.id];
+                                        if (entry && entry.value > 0) {
+                                          const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                                          userTotalPercentagePoints += normalizedPercentage;
+                                        }
+                                      });
+
+                                      const userTotalPossiblePercentage = spreadsheetData.habits.length * 100;
+                                      return userTotalPossiblePercentage > 0 ? Math.round((userTotalPercentagePoints / userTotalPossiblePercentage) * 100) : 0;
+                                    } else {
+                                      const selectedHabitData = spreadsheetData.habits.find(h => h.id === selectedChartHabit);
+                                      if (!selectedHabitData) return 0;
+
+                                      const entry = spreadsheetData.entries[day.date]?.[currentUserId]?.[selectedHabitData.id];
+                                      if (entry && entry.value > 0) {
+                                        const normalizedPercentage = Math.min((entry.value / selectedHabitData.target) * 100, 100);
+                                        return Math.round(normalizedPercentage);
+                                      }
+                                      return 0;
+                                    }
+                                  })();
+
+                                  return {
+                                    date: new Date(day.date).toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    }),
+                                    'Your Progress': userDailyProgress,
+                                    'Group Average': groupCompletionRate
+                                  };
+                                });
+
+                              return filteredDailyProgress;
+                            })()}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 5,
+                            }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis 
+                              dataKey="date" 
+                              stroke="#6b7280"
+                              fontSize={12}
+                              angle={-45}
+                              textAnchor="end"
+                              height={80}
+                            />
+                            <YAxis 
+                              stroke="#6b7280"
+                              fontSize={12}
+                              domain={[0, 100]}
+                              tickFormatter={(value) => `${value}%`}
+                            />
+                            <Tooltip 
+                              formatter={(value, name) => [`${value}%`, name]}
+                              labelStyle={{ color: '#374151' }}
+                              contentStyle={{ 
+                                backgroundColor: '#f9fafb', 
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px'
+                              }}
+                            />
+                            <Legend />
+                            <Bar 
+                              dataKey="Group Average" 
+                              fill="#9ca3af" 
+                              opacity={0.6}
+                              name="Group Average"
+                            />
+                            <Bar 
+                              dataKey="Your Progress" 
+                              fill="#10b981"
+                              name="Your Progress"
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
                   </div>
