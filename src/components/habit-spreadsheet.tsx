@@ -364,7 +364,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
           </div>
         ) : (
           <div style={{ 
-            overflowX: 'auto',
+            overflowX: habits.length > 4 ? 'auto' : 'visible',
             border: '1px solid #e5e7eb',
             borderTop: 'none'
           }}>
@@ -516,22 +516,34 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                           }}
                           onClick={() => handleCellClick(habit.id, date)}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.outline = '2px solid #10b981'
-                            e.currentTarget.style.outlineOffset = '-2px'
+                            e.currentTarget.style.border = '2px solid #10b981'
                             e.currentTarget.style.position = 'relative'
                             e.currentTarget.style.zIndex = '20'
                             e.currentTarget.style.transform = 'scale(1.02)'
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.outline = 'none'
-                            e.currentTarget.style.outlineOffset = '0'
+                            e.currentTarget.style.border = '1px solid #e5e7eb'
                             e.currentTarget.style.position = 'static'
                             e.currentTarget.style.zIndex = 'auto'
                             e.currentTarget.style.transform = 'scale(1)'
                           }}
-                          title={value === 0 ? 'No entry' : `${value}/${target}${habit.unit ? ` ${habit.unit}` : ''} (${Math.round((value / target) * 100)}%)`}
                           >
-                            {getCompletionIcon(value, target, habit.id, date)}
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '0.25rem'
+                            }}>
+                              {getCompletionIcon(value, target, habit.id, date)}
+                              {value > 0 && (
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: '#6b7280'
+                                }}>
+                                  {value}{habit.unit && ` ${habit.unit}`}
+                                </span>
+                              )}
+                            </div>
                           </td>
                         )
                       })}

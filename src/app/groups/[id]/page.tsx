@@ -339,42 +339,37 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       const habit = spreadsheetData?.habits.find(h => h.id === habitId)
       const targetValue = habit?.target || 1
       
-      let newValue: number
-      let completed: boolean
-      
-      // Enhanced cycling: No Entry -> Completed -> Partial -> Not Started -> No Entry
-      if (!currentEntry) {
-        // No entry -> Go to completed
-        newValue = targetValue
-        completed = true
-        console.log('State: No Entry -> Completed')
-      } else if (currentEntry.completed || currentEntry.value >= targetValue) {
-        // Completed -> Go to partial progress
-        newValue = Math.max(1, Math.floor(targetValue / 2))
-        completed = false
-        console.log('State: Completed -> Partial Progress')
-      } else if (currentEntry.value > 0 && currentEntry.value < targetValue && !currentEntry.completed) {
-        // Partial progress -> Go to not started (red X)
-        newValue = 0
-        completed = false
-        console.log('State: Partial Progress -> Not Started (red X)')
-      } else if (currentEntry.value === 0 && !currentEntry.completed) {
-        // Not started (red X) -> Go back to no entry (remove entry completely)
-        // We'll handle this by deleting the entry in the API
-        newValue = -1 // Special value to indicate deletion
-        completed = false
-        console.log('State: Not Started -> Delete Entry')
-      } else {
-        // Fallback: go to completed
-        newValue = targetValue
-        completed = true
-        console.log('State: Fallback -> Completed')
+      // Prompt user for custom input like in dashboard spreadsheet
+      const formatDate = (dateString: string) => {
+        const date = new Date(dateString + 'T12:00:00') // Parse as local date at noon
+        return date.toLocaleDateString('en-US', { 
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric' 
+        })
       }
+      
+      const currentValue = currentEntry?.value || 0
+      const inputValue = prompt(
+        `Enter value for ${habit?.name} on ${formatDate(date)}:\n(Target: ${targetValue}${habit?.unit ? ` ${habit.unit}` : ''})`,
+        currentValue.toString()
+      )
+      
+      // If user cancels, don't update
+      if (inputValue === null) return
+      
+      const newValue = parseFloat(inputValue)
+      if (isNaN(newValue) || newValue < 0) {
+        alert('Please enter a valid number (0 or greater)')
+        return
+      }
+      
+      const completed = newValue >= targetValue
 
       console.log('Sending API request:', { date, value: newValue, completed })
 
-      if (newValue === -1) {
-        // Delete the entry
+      if (newValue === 0) {
+        // Delete the entry if value is 0
         const response = await fetch(`/api/groups/${groupId}/shared-habits/${habitId}/entries`, {
           method: 'DELETE',
           headers: {
@@ -457,26 +452,48 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         filter: 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))'
       }} />
     } else if (entry.value > 0) {
-      console.log('Partial progress - showing yellow circle')
-      return (
-        <div style={{ position: 'relative' }}>
-          <Circle style={{ width: '28px', height: '28px', color: '#f59e0b' }} />
+      const percentage = (entry.value / habit.target) * 100
+      if (percentage >= 50) {
+        console.log('Partial progress (>=50%) - showing yellow circle')
+        return (
+          <div style={{ position: 'relative' }}>
+            <Circle style={{ width: '28px', height: '28px', color: '#f59e0b' }} />
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                width: '10px',
+                height: '10px',
+                background: '#f59e0b',
+                borderRadius: '50%'
+              }}></div>
+            </div>
+          </div>
+        )
+      } else {
+        console.log('Getting started (<50%) - showing yellow triangle')
+        return (
           <div style={{
-            position: 'absolute',
-            inset: 0,
+            width: '28px',
+            height: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
             <div style={{
-              width: '10px',
-              height: '10px',
-              background: '#f59e0b',
-              borderRadius: '50%'
+              width: 0,
+              height: 0,
+              borderLeft: '10px solid transparent',
+              borderRight: '10px solid transparent',
+              borderBottom: '17px solid #f59e0b'
             }}></div>
           </div>
-        </div>
-      )
+        )
+      }
     } else {
       // Entry exists but value is 0 - show red X
       console.log('Not started - showing red X')
@@ -1370,13 +1387,19 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                   }}
                                   onMouseEnter={(e) => {
                                     if (isCurrentUser) {
-                                      e.currentTarget.style.backgroundColor = '#f3f4f6'
+                                      e.currentTarget.style.outline = '2px solid #10b981'
+                                      e.currentTarget.style.outlineOffset = '-1px'
+                                      e.currentTarget.style.position = 'relative'
+                                      e.currentTarget.style.zIndex = '20'
                                       e.currentTarget.style.transform = 'scale(1.02)'
                                     }
                                   }}
                                   onMouseLeave={(e) => {
                                     if (isCurrentUser) {
-                                      e.currentTarget.style.backgroundColor = 'transparent'
+                                      e.currentTarget.style.outline = 'none'
+                                      e.currentTarget.style.outlineOffset = '0'
+                                      e.currentTarget.style.position = 'static'
+                                      e.currentTarget.style.zIndex = 'auto'
                                       e.currentTarget.style.transform = 'scale(1)'
                                     } else {
                                       e.currentTarget.style.backgroundColor = '#f9fafb'
@@ -1431,22 +1454,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '4px',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
-                  }}>
-                    ✓
-                  </div>
-                  Click on your own cells to cycle through progress states:
+                  Legend
                 </div>
                 <div style={{
                   display: 'flex',
@@ -1511,23 +1519,33 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     fontSize: '0.875rem',
                     color: '#374151',
                     fontWeight: '500'
-                  }}>Partial Progress</span>
+                  }}>Partial Progress (≥50% of target)</span>
                 </div>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
-                  <XCircle style={{
+                  <div style={{
                     width: '28px',
                     height: '28px',
-                    color: '#ef4444'
-                  }} />
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <div style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: '10px solid transparent',
+                      borderRight: '10px solid transparent',
+                      borderBottom: '17px solid #f59e0b'
+                    }}></div>
+                  </div>
                   <span style={{
                     fontSize: '0.875rem',
                     color: '#374151',
                     fontWeight: '500'
-                  }}>Not Started</span>
+                  }}>Getting Started (&lt;50% of target)</span>
                 </div>
               </div>
                 </>
