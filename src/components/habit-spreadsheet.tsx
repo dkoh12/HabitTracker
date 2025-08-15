@@ -5,7 +5,7 @@ import { format, startOfWeek, endOfWeek, addDays, subWeeks, addWeeks } from 'dat
 import { HabitWithEntries } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, Table as TableIcon, CheckCircle2, XCircle, Circle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Table as TableIcon, CheckCircle2, XCircle, Circle, Triangle } from 'lucide-react'
 
 interface HabitSpreadsheetProps {
   habits: HabitWithEntries[]
@@ -165,37 +165,40 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
         </div>
       )
     } else {
-      // Some progress but less than 50% of target - red X
-      return <XCircle style={{ width: '20px', height: '20px', color: '#ef4444' }} />
+      // Some progress but less than 50% of target - yellow triangle (getting started)
+      return <Triangle style={{ 
+        width: '20px', 
+        height: '20px', 
+        color: '#f59e0b',
+        fill: '#f59e0b'
+      }} />
     }
   }
 
   const getCellColor = (value: number, target: number, habitId: string, date: string) => {
-    // Simple value-based system: 0=none, 1=red, 2=yellow, 3=green
+    // Match the logic from getCompletionIcon to keep background consistent with icon
     if (value === 0) {
       return '#ffffff' // white for no entry
-    } else if (value === 1) {
-      return '#fecaca' // light red for failed attempt
-    } else if (value === 2) {
-      return '#fef3c7' // light yellow for partial
-    } else if (value === 3) {
-      return '#dcfce7' // light green for completed
+    } else if (value >= target) {
+      return '#dcfce7' // light green for completed (target met or exceeded)
+    } else if (value >= target * 0.5) {
+      return '#fef3c7' // light yellow for partial progress (50%+ of target)
+    } else {
+      return '#fecaca' // light red for minimal progress (less than 50% of target)
     }
-    return '#ffffff' // fallback to white
   }
 
   const getCellTextColor = (value: number, target: number, habitId: string, date: string) => {
-    // Simple value-based system: 0=none, 1=red, 2=yellow, 3=green
+    // Match the logic from getCompletionIcon to keep text color consistent with icon
     if (value === 0) {
       return '#9ca3af' // gray for no entry
-    } else if (value === 1) {
-      return '#dc2626' // red for failed attempt
-    } else if (value === 2) {
-      return '#92400e' // dark yellow for partial
-    } else if (value === 3) {
-      return '#166534' // dark green for completed
+    } else if (value >= target) {
+      return '#166534' // dark green for completed (target met or exceeded)
+    } else if (value >= target * 0.5) {
+      return '#92400e' // dark yellow for partial progress (50%+ of target)
+    } else {
+      return '#92400e' // yellow for minimal progress (less than 50% of target)
     }
-    return '#9ca3af' // fallback to gray
   }
 
   return (
@@ -496,7 +499,6 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                       {habits.map(habit => {
                         const value = getEntryValue(habit.id, date)
                         const target = habit.target || 1
-                        const cellBg = getCellColor(value, target, habit.id, date)
                         const textColor = getCellTextColor(value, target, habit.id, date)
                         
                         return (
@@ -506,7 +508,6 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                             textAlign: 'center',
                             verticalAlign: 'middle',
                             cursor: 'pointer',
-                            background: cellBg,
                             color: textColor,
                             fontWeight: '600',
                             fontSize: '0.875rem',
@@ -599,15 +600,20 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                   }}></div>
                 </div>
               </div>
-              <span style={{ color: '#92400e' }}>Partial Progress</span>
+              <span style={{ color: '#92400e' }}>Partial Progress (≥50% of target)</span>
             </div>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem'
             }}>
-              <XCircle style={{ width: '16px', height: '16px', color: '#ef4444' }} />
-              <span style={{ color: '#dc2626' }}>Not Started</span>
+              <Triangle style={{ 
+                width: '16px', 
+                height: '16px', 
+                color: '#f59e0b',
+                fill: '#f59e0b'
+              }} />
+              <span style={{ color: '#92400e' }}>Getting Started (&lt;50% of target)</span>
             </div>
           </div>
         )}
