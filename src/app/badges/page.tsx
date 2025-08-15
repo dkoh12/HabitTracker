@@ -755,12 +755,8 @@ export default function BadgesPage() {
             fontSize: '1.5rem',
             fontWeight: 'bold',
             color: '#10b981',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
+            marginBottom: '1.5rem'
           }}>
-            <CheckCircle2 size={24} />
             Badges Earned ({filteredBadges.filter(badge => badge.earned).length})
           </h2>
           
@@ -779,8 +775,8 @@ export default function BadgesPage() {
                   <Card
                     key={badge.id}
                     style={{
-                      background: `linear-gradient(135deg, ${badge.color}10 0%, ${badge.color}05 100%)`,
-                      border: `2px solid ${badge.color}40`,
+                      background: 'white',
+                      border: `2px solid ${badge.color}80`,
                       borderRadius: '16px',
                       padding: '1.5rem',
                       position: 'relative',
@@ -862,7 +858,7 @@ export default function BadgesPage() {
                           fontSize: '0.8rem',
                           color: '#9ca3af'
                         }}>
-                          <Star size={14} />
+                          <Star size={14} style={{ color: '#fbbf24', fill: '#fbbf24' }} />
                           <span>{badge.points} points</span>
                         </div>
                         <div style={{
@@ -955,12 +951,8 @@ export default function BadgesPage() {
             fontSize: '1.5rem',
             fontWeight: 'bold',
             color: '#8b5cf6',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
+            marginBottom: '1.5rem'
           }}>
-            <Target size={24} />
             Badges to Earn ({filteredBadges.filter(badge => !badge.earned).length})
           </h2>
           
