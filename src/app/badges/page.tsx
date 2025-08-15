@@ -30,6 +30,40 @@ export default function BadgesPage() {
     habitsCompleted: 127
   })
 
+  // Tiered system: BRONZE, SILVER, GOLD, DIAMOND, PLATINUM with III, II, I
+  const tiers = [
+    { name: 'BRONZE', color: '#cd7f32' },
+    { name: 'SILVER', color: '#c0c0c0' },
+    { name: 'GOLD', color: '#ffd700' },
+    { name: 'DIAMOND', color: '#4f8ff7' },
+    { name: 'PLATINUM', color: '#9333ea' }
+  ];
+  const numerals = ['III', 'II', 'I'];
+  // Example thresholds for each sub-level (can be adjusted)
+  const tierThresholds = [
+    0, 100, 250,   // BRONZE III, II, I
+    500, 900, 1400, // SILVER III, II, I
+    2000, 2700, 3500, // GOLD III, II, I
+    4400, 5400, 6500, // DIAMOND III, II, I
+    7700, 9000, 10400 // PLATINUM III, II, I
+  ];
+  const userPoints = userStats.totalPoints;
+  let tierIndex = 0;
+  let numeralIndex = 0;
+  let nextThreshold = tierThresholds[tierThresholds.length - 1];
+  for (let i = 0; i < tierThresholds.length; i++) {
+    if (userPoints >= tierThresholds[i]) {
+      tierIndex = Math.floor(i / 3);
+      numeralIndex = i % 3;
+      nextThreshold = tierThresholds[i + 1] || tierThresholds[i];
+    }
+  }
+  const pointsToNext = nextThreshold - userPoints > 0 ? nextThreshold - userPoints : 0;
+  const progressPercent = (userPoints - tierThresholds[tierIndex * 3 + numeralIndex]) /
+    ((nextThreshold - tierThresholds[tierIndex * 3 + numeralIndex]) || 1) * 100;
+  const currentTier = tiers[tierIndex] || tiers[tiers.length - 1];
+  const currentNumeral = numerals[numeralIndex] || numerals[2];
+
   // Badge definitions with categories and requirements
   const badges = [
     // Beginner badges
@@ -247,73 +281,175 @@ export default function BadgesPage() {
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
     }}>
       <Navigation />
-      
+      {/* Rank Badge at Top */}
+      <div style={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        margin: '2rem 0 1.5rem 0',
+      }}>
+        <div style={{ fontSize: 18, fontWeight: 600, color: '#6b7280', marginBottom: 4, letterSpacing: 1 }}>Rank</div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <div style={{
+            position: 'relative',
+            width: 90,
+            height: 90,
+            marginBottom: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Shield
+              size={90}
+              style={{
+                color: currentTier.color,
+                filter: `drop-shadow(0 4px 18px ${currentTier.color}55)`
+              }}
+              strokeWidth={2.5}
+              fill={`url(#shield-gradient-${currentTier.name})`}
+            />
+            {/* SVG gradient for shield fill */}
+            <svg width="0" height="0">
+              <defs>
+                <linearGradient id={`shield-gradient-${currentTier.name}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor={currentTier.color} stopOpacity="1" />
+                  <stop offset="100%" stopColor={currentTier.color} stopOpacity="0.7" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -54%)',
+              color: '#fff',
+              fontWeight: 900,
+              fontSize: 38,
+              letterSpacing: 2,
+              textShadow: '0 2px 12px #0007',
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}>{currentNumeral}</span>
+          </div>
+          <div style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: currentTier.color,
+            letterSpacing: 1,
+            textShadow: '0 1px 4px #0002',
+          }}>
+            {currentTier.name} {currentNumeral}
+          </div>
+        </div>
+      </div>
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
         padding: '2rem 1rem'
       }}>
-        {/* Level System */}
+  {/* All Tiers Overview */}
         <div style={{
-          textAlign: 'center',
-          marginBottom: '3rem'
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '2rem',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
         }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '2rem',
-            flexWrap: 'wrap'
-          }}>
-            {[
-              { name: 'BRONZE', color: '#cd7f32', levels: ['III', 'II', 'I'] },
-              { name: 'SILVER', color: '#c0c0c0', levels: ['III', 'II', 'I'] },
-              { name: 'GOLD', color: '#ffd700', levels: ['III', 'II', 'I'] },
-              { name: 'DIAMOND', color: '#4f8ff7', levels: ['III', 'II', 'I'] },
-              { name: 'PLATINUM', color: '#9333ea', levels: ['III', 'II', 'I'] }
-            ].map((tier, tierIndex) => (
-              <div key={tier.name} style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 'bold',
-                  color: tier.color,
-                  marginBottom: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  border: `2px solid ${tier.color}`,
-                  borderRadius: '8px',
-                  background: 'rgba(255, 255, 255, 0.9)'
-                }}>
-                  {tier.name}
-                </div>
-                <div style={{
-                  display: 'flex',
-                  gap: '0.5rem'
-                }}>
-                  {tier.levels.map((level, levelIndex) => (
+          {tiers.map((tier, tIdx) => (
+            <div key={tier.name} style={{ textAlign: 'center' }}>
+              <div style={{
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                color: tier.color,
+                marginBottom: '0.5rem',
+                padding: '0.25rem 1rem',
+                border: `2px solid ${tier.color}`,
+                borderRadius: '8px',
+                background: 'rgba(255,255,255,0.9)'
+              }}>
+                {tier.name}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                {numerals.map((num, nIdx) => {
+                  const isCurrent = tIdx === tierIndex && nIdx === numeralIndex;
+                  return (
                     <div
-                      key={level}
+                      key={num}
                       style={{
-                        width: '40px',
-                        height: '40px',
+                        width: 38,
+                        height: 38,
                         borderRadius: '50%',
-                        background: `linear-gradient(135deg, ${tier.color} 0%, ${tier.color}dd 100%)`,
+                        background: isCurrent
+                          ? `linear-gradient(135deg, ${tier.color} 0%, #3b82f6 100%)`
+                          : `linear-gradient(135deg, ${tier.color} 0%, ${tier.color}bb 100%)`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#fff',
+                        color: isCurrent ? '#fff' : '#fff',
                         fontWeight: 'bold',
-                        fontSize: '0.8rem',
-                        boxShadow: `0 4px 8px ${tier.color}40`
+                        fontSize: '1rem',
+                        border: isCurrent ? `2.5px solid #3b82f6` : `1.5px solid ${tier.color}`,
+                        boxShadow: isCurrent ? `0 0 12px ${tier.color}cc` : `0 1px 4px ${tier.color}33`,
+                        transition: 'all 0.2s',
+                        letterSpacing: 1,
+                        textShadow: isCurrent ? '0 2px 8px #0006' : '0 1px 2px #0004',
                       }}
                     >
-                      {level}
+                      {num}
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
+        {/* Tier Progress Bar */}
+        <div style={{
+          maxWidth: 500,
+          margin: '0 auto 2rem auto',
+          background: 'white',
+          borderRadius: 16,
+          boxShadow: '0 4px 12px #0001',
+          padding: '2rem',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: currentTier.color }}>
+            {currentTier.name} {currentNumeral}
+          </div>
+          <div style={{ marginBottom: 12, color: '#6b7280', fontWeight: 500 }}>
+            {pointsToNext === 0
+              ? 'Max Tier!'
+              : `${userPoints} / ${nextThreshold} points`}
+          </div>
+          <div style={{
+            width: '100%',
+            height: 18,
+            background: '#f3f4f6',
+            borderRadius: 9,
+            overflow: 'hidden',
+            marginBottom: 8,
+            boxShadow: '0 2px 6px #0001'
+          }}>
+            <div style={{
+              width: `${progressPercent}%`,
+              height: '100%',
+              background: '#3b82f6',
+              borderRadius: 9,
+              transition: 'width 0.5s',
+            }} />
+          </div>
+          {pointsToNext > 0 && (
+            <div style={{ fontSize: 14, color: '#6b7280' }}>
+              {pointsToNext} points to next tier
+            </div>
+          )}
+        </div>
+        {/* ...existing code... */}
 
         {/* Stats Overview */}
         <div style={{
