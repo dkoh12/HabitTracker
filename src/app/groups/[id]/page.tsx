@@ -61,6 +61,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const [spreadsheetData, setSpreadsheetData] = useState<GroupSpreadsheetData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState(30) // Last 30 days
+  const [selectedLeaderboardHabit, setSelectedLeaderboardHabit] = useState('overall') // Filter for leaderboard
   const [groupId, setGroupId] = useState<string | null>(null)
   const [showAllMembers, setShowAllMembers] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState<GroupHabitData | null>(null)
@@ -508,6 +509,30 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
   return (
     <>
+      <style jsx>{`
+        @keyframes goldBorderPulse {
+          0% {
+            border-color: #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(217, 119, 6, 0.6), 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          25% {
+            border-color: #fbbf24;
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 0 50px rgba(245, 158, 11, 0.7), 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          50% {
+            border-color: #fcd34d;
+            box-shadow: 0 0 30px rgba(252, 211, 77, 1), 0 0 60px rgba(251, 191, 36, 0.8), 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          75% {
+            border-color: #fbbf24;
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.9), 0 0 50px rgba(245, 158, 11, 0.7), 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          100% {
+            border-color: #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(217, 119, 6, 0.6), 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+        }
+      `}</style>
       <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
@@ -1550,6 +1575,847 @@ export default function GroupDetail({ params }: GroupDetailProps) {
               </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Group Statistics */}
+        {spreadsheetData && spreadsheetData.habits.length > 0 && (
+          <Card style={{
+            marginTop: '2rem',
+            background: 'white',
+            borderRadius: '16px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            overflow: 'hidden'
+          }}>
+            <CardHeader style={{
+              padding: '1.5rem',
+              borderBottom: '1px solid #f3f4f6',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
+            }}>
+              <CardTitle style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                color: '#1f2937',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18"/>
+                  <path d="m19 9-5 5-4-4-3 3"/>
+                </svg>
+                Group Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent style={{ padding: '1.5rem' }}>
+              {(() => {
+                const currentUserId = (session?.user as any)?.id;
+                
+                // Prepare data for statistics
+                const allMembers = [
+                  { 
+                    ...group.owner, 
+                    role: 'OWNER',
+                    id: group.owner.id
+                  },
+                  ...spreadsheetData.members.filter(member => member.id !== group.owner.id)
+                ];
+
+                // Calculate overall completion statistics
+                const totalPossibleEntries = spreadsheetData.dates.length * spreadsheetData.habits.length * allMembers.length;
+                let totalEntries = 0;
+                let totalCompleted = 0;
+                let totalPartial = 0;
+
+                // Member-specific statistics
+                const memberStats = allMembers.map(member => {
+                  let totalPercentagePoints = 0;
+                  let memberCompleted = 0;
+                  let memberPartial = 0;
+                  let memberEntries = 0;
+
+                  spreadsheetData.dates.forEach(date => {
+                    spreadsheetData.habits.forEach(habit => {
+                      const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                      if (entry && entry.value > 0) {
+                        memberEntries++;
+                        totalEntries++;
+                        
+                        // Calculate normalized percentage for this entry
+                        const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                        totalPercentagePoints += normalizedPercentage;
+                        
+                        if (entry.value >= habit.target) {
+                          memberCompleted++;
+                          totalCompleted++;
+                        } else {
+                          memberPartial++;
+                          totalPartial++;
+                        }
+                      }
+                    });
+                  });
+
+                  const totalPossiblePercentage = spreadsheetData.dates.length * spreadsheetData.habits.length * 100;
+                  const completionRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
+
+                  return {
+                    ...member,
+                    entries: memberEntries,
+                    completed: memberCompleted,
+                    partial: memberPartial,
+                    completionRate: Math.round(completionRate)
+                  };
+                });
+
+                // Habit-specific statistics
+                const habitStats = spreadsheetData.habits.map(habit => {
+                  let totalPercentagePoints = 0;
+                  let habitCompleted = 0;
+                  let habitPartial = 0;
+                  let habitEntries = 0;
+
+                  spreadsheetData.dates.forEach(date => {
+                    allMembers.forEach(member => {
+                      const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                      if (entry && entry.value > 0) {
+                        habitEntries++;
+                        
+                        // Calculate normalized percentage for this entry
+                        const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                        totalPercentagePoints += normalizedPercentage;
+                        
+                        if (entry.value >= habit.target) {
+                          habitCompleted++;
+                        } else {
+                          habitPartial++;
+                        }
+                      }
+                    });
+                  });
+
+                  const totalPossiblePercentage = spreadsheetData.dates.length * allMembers.length * 100;
+                  const completionRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
+
+                  return {
+                    ...habit,
+                    entries: habitEntries,
+                    completed: habitCompleted,
+                    partial: habitPartial,
+                    completionRate: Math.round(completionRate)
+                  };
+                });
+
+                // Daily progress over time
+                const dailyProgress = spreadsheetData.dates.map(date => {
+                  let totalPercentagePoints = 0;
+                  let dayCompleted = 0;
+                  let dayPartial = 0;
+                  let dayEntries = 0;
+
+                  allMembers.forEach(member => {
+                    spreadsheetData.habits.forEach(habit => {
+                      const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                      if (entry && entry.value > 0) {
+                        dayEntries++;
+                        
+                        // Calculate normalized percentage for this entry
+                        const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                        totalPercentagePoints += normalizedPercentage;
+                        
+                        if (entry.value >= habit.target) {
+                          dayCompleted++;
+                        } else {
+                          dayPartial++;
+                        }
+                      }
+                    });
+                  });
+
+                  const totalPossiblePercentage = allMembers.length * spreadsheetData.habits.length * 100;
+                  const completionRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
+
+                  return {
+                    date,
+                    entries: dayEntries,
+                    completed: dayCompleted,
+                    partial: dayPartial,
+                    completionRate: Math.round(completionRate)
+                  };
+                });
+
+                const overallCompletionRate = totalPossibleEntries > 0 ? Math.round(((totalCompleted + totalPartial) / totalPossibleEntries) * 100) : 0;
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {/* Overview Statistics */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                      gap: '1rem'
+                    }}>
+                      <div style={{
+                        padding: '1.5rem',
+                        background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                        borderRadius: '12px',
+                        border: '1px solid #3b82f6'
+                      }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e40af', marginBottom: '0.5rem' }}>
+                          {overallCompletionRate}%
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#1e40af', fontWeight: '500' }}>
+                          Overall Completion Rate
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        padding: '1.5rem',
+                        background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+                        borderRadius: '12px',
+                        border: '1px solid #10b981'
+                      }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#059669', marginBottom: '0.5rem' }}>
+                          {totalCompleted}
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#059669', fontWeight: '500' }}>
+                          Goals Completed
+                        </div>
+                      </div>
+
+                      <div style={{
+                        padding: '1.5rem',
+                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                        borderRadius: '12px',
+                        border: '1px solid #f59e0b'
+                      }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#d97706', marginBottom: '0.5rem' }}>
+                          {totalPartial}
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#d97706', fontWeight: '500' }}>
+                          Partial Progress
+                        </div>
+                      </div>
+
+                      <div style={{
+                        padding: '1.5rem',
+                        background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                        borderRadius: '12px',
+                        border: '1px solid #6b7280'
+                      }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
+                          {allMembers.length}
+                        </div>
+                        <div style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
+                          Active Members
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Leaderboard */}
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', margin: 0 }}>
+                          🏆 Leaderboard
+                        </h3>
+                        
+                        {/* Habit Filter Dropdown */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '500' }}>Filter by:</span>
+                          <select
+                            value={selectedLeaderboardHabit}
+                            onChange={(e) => setSelectedLeaderboardHabit(e.target.value)}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              borderRadius: '8px',
+                              border: '2px solid #e5e7eb',
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#374151',
+                              background: 'white',
+                              cursor: 'pointer',
+                              minWidth: '150px'
+                            }}
+                          >
+                            <option value="overall">Overall</option>
+                            {spreadsheetData.habits.map(habit => (
+                              <option key={habit.id} value={habit.id}>
+                                {habit.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {(() => {
+                          // Calculate filtered member stats based on selected habit
+                          const filteredMemberStats = allMembers.map(member => {
+                            let totalPercentagePoints = 0;
+                            let memberCompleted = 0;
+                            let memberPartial = 0;
+                            let memberEntries = 0;
+                            let totalPossiblePercentage = 0;
+
+                            if (selectedLeaderboardHabit === 'overall') {
+                              // Overall stats (existing logic)
+                              spreadsheetData.dates.forEach(date => {
+                                spreadsheetData.habits.forEach(habit => {
+                                  const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                                  if (entry && entry.value > 0) {
+                                    memberEntries++;
+                                    const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                                    totalPercentagePoints += normalizedPercentage;
+                                    
+                                    if (entry.value >= habit.target) {
+                                      memberCompleted++;
+                                    } else {
+                                      memberPartial++;
+                                    }
+                                  }
+                                });
+                              });
+                              totalPossiblePercentage = spreadsheetData.dates.length * spreadsheetData.habits.length * 100;
+                            } else {
+                              // Single habit stats
+                              const selectedHabit = spreadsheetData.habits.find(h => h.id === selectedLeaderboardHabit);
+                              if (selectedHabit) {
+                                spreadsheetData.dates.forEach(date => {
+                                  const entry = spreadsheetData.entries[date]?.[member.id]?.[selectedHabit.id];
+                                  if (entry && entry.value > 0) {
+                                    memberEntries++;
+                                    const normalizedPercentage = Math.min((entry.value / selectedHabit.target) * 100, 100);
+                                    totalPercentagePoints += normalizedPercentage;
+                                    
+                                    if (entry.value >= selectedHabit.target) {
+                                      memberCompleted++;
+                                    } else {
+                                      memberPartial++;
+                                    }
+                                  }
+                                });
+                                totalPossiblePercentage = spreadsheetData.dates.length * 100;
+                              }
+                            }
+
+                            const completionRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
+
+                            return {
+                              ...member,
+                              entries: memberEntries,
+                              completed: memberCompleted,
+                              partial: memberPartial,
+                              completionRate: Math.round(completionRate)
+                            };
+                          });
+
+                          return filteredMemberStats
+                            .sort((a, b) => b.completionRate - a.completionRate)
+                            .map((member, index) => {
+                              const isCurrentUser = member.id === currentUserId;
+                              const isTopThree = index < 3;
+                              
+                              // Medal colors for top 3
+                              const medalColors = {
+                                0: { bg: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', border: '#d97706', text: '#92400e' }, // Gold
+                                1: { bg: 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)', border: '#9ca3af', text: '#374151' }, // Silver
+                                2: { bg: 'linear-gradient(135deg, #cd7c2f 0%, #a16207 100%)', border: '#92400e', text: '#451a03' }  // Bronze
+                              };
+                              
+                              // Background and border colors
+                              let cardStyle;
+                              if (isTopThree && isCurrentUser) {
+                                // Current user in top 3: medal color with special glow effect
+                                const medalColor = (medalColors as any)[index];
+                                cardStyle = {
+                                  background: medalColor.bg,
+                                  border: index === 0 
+                                    ? `3px solid #f59e0b`
+                                    : `3px solid ${medalColor.border}`,
+                                  boxShadow: index === 0 
+                                    ? `0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(217, 119, 6, 0.6), 0 4px 12px rgba(0, 0, 0, 0.15)`
+                                    : `0 0 20px ${medalColor.border}40, 0 4px 12px rgba(0, 0, 0, 0.15)`,
+                                  transform: 'scale(1)',
+                                  animation: index === 0 ? 'goldBorderPulse 2s ease-in-out infinite' : 'none'
+                                };
+                              } else if (isTopThree) {
+                                // Other users in top 3: medal colors
+                                const medalColor = (medalColors as any)[index];
+                                cardStyle = {
+                                  background: medalColor.bg,
+                                  border: index === 0 
+                                    ? `2px solid #f59e0b`
+                                    : `2px solid ${medalColor.border}`,
+                                  boxShadow: index === 0 
+                                    ? `0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(217, 119, 6, 0.6)`
+                                    : 'none',
+                                  transform: 'scale(1)',
+                                  animation: index === 0 ? 'goldBorderPulse 2s ease-in-out infinite' : 'none'
+                                };
+                              } else if (isCurrentUser) {
+                                // Current user not in top 3: blue
+                                cardStyle = {
+                                  background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                                  border: '3px solid #3b82f6',
+                                  boxShadow: '0 0 15px rgba(59, 130, 246, 0.3)',
+                                  transform: 'scale(1)'
+                                };
+                              } else {
+                                // Other users not in top 3: white
+                                cardStyle = {
+                                  background: 'white',
+                                  border: '1px solid #e5e7eb',
+                                  boxShadow: 'none',
+                                  transform: 'scale(1)'
+                                };
+                              }
+                              
+                              return (
+                                <div key={member.id} style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '1rem',
+                                  padding: '1rem',
+                                  borderRadius: '8px',
+                                  transition: 'all 0.2s ease',
+                                  ...cardStyle
+                                }}>
+                                  <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '50%',
+                                    background: isTopThree ? 'rgba(255, 255, 255, 0.9)' : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+                                    border: isTopThree ? `2px solid ${(medalColors as any)[index]?.border || '#d1d5db'}` : '2px solid #d1d5db',
+                                    fontSize: '1rem',
+                                    fontWeight: 'bold',
+                                    color: isTopThree ? (medalColors as any)[index]?.text || '#6b7280' : '#6b7280'
+                                  }}>
+                                    {index < 3 ? ['🥇', '🥈', '🥉'][index] : `#${index + 1}`}
+                                  </div>
+                                  
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '180px' }}>
+                                    {member.avatar ? (
+                                      <img
+                                        src={member.avatar}
+                                        alt={member.name || member.email}
+                                        style={{
+                                          width: '32px',
+                                          height: '32px',
+                                          borderRadius: '50%',
+                                          border: isCurrentUser ? '2px solid #3b82f6' : '2px solid #e5e7eb'
+                                        }}
+                                      />
+                                    ) : (
+                                      <div style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '50%',
+                                        background: isCurrentUser 
+                                          ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: isCurrentUser ? '2px solid #3b82f6' : '2px solid #e5e7eb'
+                                      }}>
+                                        <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: '600' }}>
+                                          {(member.name || member.email).charAt(0).toUpperCase()}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span style={{ 
+                                        fontSize: '0.875rem', 
+                                        fontWeight: isCurrentUser ? '700' : '500', 
+                                        color: isTopThree ? '#1f2937' : (isCurrentUser ? '#1e40af' : '#1f2937')
+                                      }}>
+                                        {member.name || member.email.split('@')[0]}
+                                        {isCurrentUser && <span style={{ color: isTopThree ? '#1f2937' : '#3b82f6', marginLeft: '0.25rem' }}>(You)</span>}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{
+                                      flex: 1,
+                                      height: '12px',
+                                      background: isTopThree ? 'rgba(255, 255, 255, 0.7)' : '#f3f4f6',
+                                      borderRadius: '6px',
+                                      overflow: 'hidden',
+                                      position: 'relative'
+                                    }}>
+                                      <div style={{
+                                        width: `${member.completionRate}%`,
+                                        height: '100%',
+                                        background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
+                                        transition: 'width 0.5s ease',
+                                        boxShadow: '0 0 8px rgba(16, 185, 129, 0.3)'
+                                      }} />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' }}>
+                                      <span style={{ 
+                                        fontSize: '1.25rem', 
+                                        fontWeight: 'bold', 
+                                        color: isTopThree ? '#1f2937' : (isCurrentUser ? '#1e40af' : '#1f2937')
+                                      }}>
+                                        {member.completionRate}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            });
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Performance Comparison Chart */}
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>
+                        📊 You vs Group Performance
+                      </h3>
+                      {(() => {
+                        const currentUserStats = memberStats.find(m => m.id === currentUserId);
+                        if (!currentUserStats) return null;
+                        
+                        const groupAverage = Math.round(memberStats.reduce((sum, m) => sum + m.completionRate, 0) / memberStats.length);
+                        const userVsGroup = currentUserStats.completionRate - groupAverage;
+                        
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
+                              gap: '1rem'
+                            }}>
+                              <div style={{
+                                padding: '1.5rem',
+                                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                                borderRadius: '8px',
+                                border: '2px solid #3b82f6',
+                                textAlign: 'center'
+                              }}>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e40af', marginBottom: '0.5rem' }}>
+                                  {currentUserStats.completionRate}%
+                                </div>
+                                <div style={{ fontSize: '0.875rem', color: '#1e40af', fontWeight: '500' }}>
+                                  Your Performance
+                                </div>
+                              </div>
+                              
+                              <div style={{
+                                padding: '1.5rem',
+                                background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                                borderRadius: '8px',
+                                border: '1px solid #9ca3af',
+                                textAlign: 'center'
+                              }}>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
+                                  {groupAverage}%
+                                </div>
+                                <div style={{ fontSize: '0.875rem', color: '#374151', fontWeight: '500' }}>
+                                  Group Average
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div style={{
+                              padding: '1rem',
+                              background: userVsGroup > 0 
+                                ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'
+                                : userVsGroup < 0
+                                ? 'linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)'
+                                : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                              borderRadius: '8px',
+                              border: userVsGroup > 0 
+                                ? '1px solid #10b981'
+                                : userVsGroup < 0
+                                ? '1px solid #ef4444'
+                                : '1px solid #f59e0b',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{ 
+                                fontSize: '1.5rem', 
+                                fontWeight: 'bold',
+                                color: userVsGroup > 0 
+                                  ? '#059669'
+                                  : userVsGroup < 0
+                                  ? '#dc2626'
+                                  : '#d97706',
+                                marginBottom: '0.25rem'
+                              }}>
+                                {userVsGroup > 0 ? '+' : ''}{userVsGroup}%
+                              </div>
+                              <div style={{ 
+                                fontSize: '0.875rem',
+                                color: userVsGroup > 0 
+                                  ? '#059669'
+                                  : userVsGroup < 0
+                                  ? '#dc2626'
+                                  : '#d97706',
+                                fontWeight: '500'
+                              }}>
+                                {userVsGroup > 0 
+                                  ? '🎉 Above group average!'
+                                  : userVsGroup < 0
+                                  ? '💪 Room for improvement!'
+                                  : '👍 Right on average!'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Habit Performance Comparison */}
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>
+                        🎯 Habit Performance Breakdown
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {habitStats.map(habit => {
+                          const currentUserHabitStats = (() => {
+                            let totalPercentagePoints = 0;
+                            let userCompleted = 0;
+                            let userPartial = 0;
+                            let userEntries = 0;
+
+                            spreadsheetData.dates.forEach(date => {
+                              const entry = spreadsheetData.entries[date]?.[currentUserId]?.[habit.id];
+                              if (entry && entry.value > 0) {
+                                userEntries++;
+                                
+                                // Calculate normalized percentage for this entry
+                                const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                                totalPercentagePoints += normalizedPercentage;
+                                
+                                if (entry.value >= habit.target) {
+                                  userCompleted++;
+                                } else {
+                                  userPartial++;
+                                }
+                              }
+                            });
+
+                            const totalPossiblePercentage = spreadsheetData.dates.length * 100;
+                            const userCompletionRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
+                            
+                            return { userCompletionRate: Math.round(userCompletionRate), userCompleted, userPartial, userEntries };
+                          })();
+
+                          return (
+                            <div key={habit.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '1rem',
+                              padding: '1rem',
+                              background: 'white',
+                              borderRadius: '8px',
+                              border: '1px solid #e5e7eb'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '200px' }}>
+                                <div style={{
+                                  width: '12px',
+                                  height: '12px',
+                                  borderRadius: '50%',
+                                  backgroundColor: habit.color,
+                                  flexShrink: 0
+                                }} />
+                                <span style={{ fontSize: '0.875rem', fontWeight: '500', color: '#1f2937' }}>
+                                  {habit.name}
+                                </span>
+                              </div>
+                              
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#6b7280' }}>
+                                  <span>You: {currentUserHabitStats.userCompletionRate}%</span>
+                                  <span>Group: {habit.completionRate}%</span>
+                                </div>
+                                <div style={{ position: 'relative', height: '20px', background: '#f3f4f6', borderRadius: '10px', overflow: 'hidden' }}>
+                                  {/* Group average bar (background) */}
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: `${habit.completionRate}%`,
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, #9ca3af 0%, #6b7280 100%)',
+                                    opacity: 0.3
+                                  }} />
+                                  {/* User progress bar */}
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: '2px',
+                                    left: '2px',
+                                    width: `calc(${Math.min(currentUserHabitStats.userCompletionRate, 100)}% - 4px)`,
+                                    height: 'calc(100% - 4px)',
+                                    background: currentUserHabitStats.userCompletionRate >= habit.completionRate
+                                      ? 'linear-gradient(90deg, #10b981 0%, #059669 100%)'
+                                      : 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
+                                    borderRadius: '8px',
+                                    transition: 'width 0.5s ease'
+                                  }} />
+                                  {/* Comparison indicator */}
+                                  {currentUserHabitStats.userCompletionRate !== habit.completionRate && (
+                                    <div style={{
+                                      position: 'absolute',
+                                      top: '50%',
+                                      left: `${Math.max(currentUserHabitStats.userCompletionRate, habit.completionRate)}%`,
+                                      transform: 'translateY(-50%)',
+                                      fontSize: '0.75rem',
+                                      color: currentUserHabitStats.userCompletionRate > habit.completionRate ? '#10b981' : '#ef4444',
+                                      fontWeight: 'bold'
+                                    }}>
+                                      {currentUserHabitStats.userCompletionRate > habit.completionRate ? '↗' : '↙'}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div style={{ fontSize: '0.75rem', color: '#6b7280', minWidth: '120px', textAlign: 'right' }}>
+                                Target: {habit.target}{habit.unit && ` ${habit.unit}`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Daily Progress Trend Comparison */}
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>
+                        📈 Daily Progress: You vs Group
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'end',
+                        gap: '4px',
+                        height: '240px',
+                        padding: '1rem',
+                        background: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb',
+                        overflowX: 'auto'
+                      }}>
+                        {dailyProgress.map((day, index) => {
+                          const userDayProgress = (() => {
+                            let totalPercentagePoints = 0;
+                            let userDayEntries = 0;
+                            let userDayCompleted = 0;
+                            let userDayPartial = 0;
+
+                            spreadsheetData.habits.forEach(habit => {
+                              const entry = spreadsheetData.entries[day.date]?.[currentUserId]?.[habit.id];
+                              if (entry && entry.value > 0) {
+                                userDayEntries++;
+                                
+                                // Calculate normalized percentage for this entry
+                                const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
+                                totalPercentagePoints += normalizedPercentage;
+                                
+                                if (entry.value >= habit.target) {
+                                  userDayCompleted++;
+                                } else {
+                                  userDayPartial++;
+                                }
+                              }
+                            });
+
+                            const totalPossiblePercentage = spreadsheetData.habits.length * 100;
+                            const userDayRate = totalPossiblePercentage > 0 ? (totalPercentagePoints / totalPossiblePercentage) * 100 : 0;
+                            return Math.round(userDayRate);
+                          })();
+
+                          const maxRate = Math.max(...dailyProgress.map(d => Math.max(d.completionRate, 100)));
+                          const groupHeight = maxRate > 0 ? (day.completionRate / maxRate) * 180 : 0;
+                          const userHeight = maxRate > 0 ? (userDayProgress / maxRate) * 180 : 0;
+                          
+                          return (
+                            <div key={day.date} style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              minWidth: '60px'
+                            }}>
+                              <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: '500', textAlign: 'center' }}>
+                                <div>You: {userDayProgress}%</div>
+                                <div>Grp: {day.completionRate}%</div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'end', gap: '2px', height: '180px' }}>
+                                {/* Group bar */}
+                                <div style={{
+                                  width: '12px',
+                                  height: `${groupHeight}px`,
+                                  background: 'linear-gradient(180deg, #9ca3af 0%, #6b7280 100%)',
+                                  borderRadius: '6px 6px 0 0',
+                                  minHeight: '4px',
+                                  opacity: 0.7
+                                }} />
+                                {/* User bar */}
+                                <div style={{
+                                  width: '12px',
+                                  height: `${userHeight}px`,
+                                  background: userDayProgress >= day.completionRate
+                                    ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)'
+                                    : 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)',
+                                  borderRadius: '6px 6px 0 0',
+                                  minHeight: '4px'
+                                }} />
+                              </div>
+                              <div style={{ 
+                                fontSize: '0.625rem', 
+                                color: '#6b7280',
+                                transform: 'rotate(-45deg)',
+                                transformOrigin: 'center',
+                                whiteSpace: 'nowrap',
+                                marginTop: '10px'
+                              }}>
+                                {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '2rem', fontSize: '0.875rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ width: '12px', height: '12px', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', borderRadius: '2px' }} />
+                          <span style={{ color: '#374151' }}>Your Progress</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ width: '12px', height: '12px', background: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)', borderRadius: '2px', opacity: 0.7 }} />
+                          <span style={{ color: '#374151' }}>Group Average</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         )}
