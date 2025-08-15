@@ -253,30 +253,66 @@ export default function BadgesPage() {
         margin: '0 auto',
         padding: '2rem 1rem'
       }}>
-        {/* Header */}
+        {/* Level System */}
         <div style={{
           textAlign: 'center',
           marginBottom: '3rem'
         }}>
-          <h1 style={{
-            fontSize: '3rem',
-            fontWeight: 'bold',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '1rem'
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '2rem',
+            flexWrap: 'wrap'
           }}>
-            Achievement Badges
-          </h1>
-          <p style={{
-            fontSize: '1.2rem',
-            color: '#6b7280',
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            Earn badges by completing habits, maintaining streaks, and achieving milestones. 
-            Each badge represents your dedication to building better habits!
-          </p>
+            {[
+              { name: 'BRONZE', color: '#cd7f32', levels: ['III', 'II', 'I'] },
+              { name: 'SILVER', color: '#c0c0c0', levels: ['III', 'II', 'I'] },
+              { name: 'GOLD', color: '#ffd700', levels: ['III', 'II', 'I'] },
+              { name: 'DIAMOND', color: '#4f8ff7', levels: ['III', 'II', 'I'] },
+              { name: 'PLATINUM', color: '#9333ea', levels: ['III', 'II', 'I'] }
+            ].map((tier, tierIndex) => (
+              <div key={tier.name} style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 'bold',
+                  color: tier.color,
+                  marginBottom: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  border: `2px solid ${tier.color}`,
+                  borderRadius: '8px',
+                  background: 'rgba(255, 255, 255, 0.9)'
+                }}>
+                  {tier.name}
+                </div>
+                <div style={{
+                  display: 'flex',
+                  gap: '0.5rem'
+                }}>
+                  {tier.levels.map((level, levelIndex) => (
+                    <div
+                      key={level}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${tier.color} 0%, ${tier.color}dd 100%)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        fontSize: '0.8rem',
+                        boxShadow: `0 4px 8px ${tier.color}40`
+                      }}
+                    >
+                      {level}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Stats Overview */}
