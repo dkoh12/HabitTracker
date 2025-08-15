@@ -32,7 +32,8 @@ export default function BadgesPage() {
   const [showMoreEarned, setShowMoreEarned] = useState(false)
   const [showMoreNotEarned, setShowMoreNotEarned] = useState(false)
   const [badges, setBadges] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start with false - no loading screen
+  const [dataLoaded, setDataLoaded] = useState(false) // Track if data has been loaded
   const [userStats, setUserStats] = useState({
     totalPoints: 0,
     badgesEarned: 0,
@@ -43,20 +44,19 @@ export default function BadgesPage() {
   // Fetch badges from API
   const fetchBadgesFromAPI = useCallback(async () => {
     try {
-      setLoading(true)
       const response = await fetch('/api/badges')
       if (response.ok) {
         const data = await response.json()
         setBadges(data.badges)
         setUserStats(data.userStats)
+        setDataLoaded(true) // Mark data as loaded
       } else {
         console.error('Failed to fetch badges')
       }
     } catch (error) {
       console.error('Error fetching badges:', error)
-    } finally {
-      setLoading(false)
     }
+    // No finally block needed - we don't use loading state anymore
   }, [])
 
   // Add unified auth validation and fetch badges from API
@@ -171,33 +171,22 @@ export default function BadgesPage() {
     return iconMap[iconName] || Shield // fallback to Shield if icon not found
   }
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <Navigation />
-        <div style={{ fontSize: '1.5rem', color: '#6b7280' }}>Loading badges...</div>
-      </div>
-    )
-  }
-
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
     }}>
       <Navigation />
-      {/* Rank Badge at Top */}
-      <div style={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+      
+      {/* Show nothing while session is not available or data hasn't loaded yet */}
+      {(!session || !dataLoaded) ? null : (
+        <>
+          {/* Rank Badge at Top */}
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
         margin: '2rem 0 1.5rem 0',
       }}>
         <div style={{ fontSize: 18, fontWeight: 600, color: '#6b7280', marginBottom: 4, letterSpacing: 1 }}>Rank</div>
@@ -865,6 +854,8 @@ export default function BadgesPage() {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

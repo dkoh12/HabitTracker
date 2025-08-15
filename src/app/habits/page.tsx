@@ -16,7 +16,7 @@ export default function Habits() {
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
   const [editingHabit, setEditingHabit] = useState<HabitWithEntries | null>(null)
-  const [loading, setLoading] = useState(false) // Start with false - no loading screen
+  const [loading, setLoading] = useState(true) // Start with true - loading initially
   const [selectedHabitDetails, setSelectedHabitDetails] = useState<HabitWithEntries | null>(null)
 
   const fetchHabits = useCallback(async () => {
@@ -28,8 +28,9 @@ export default function Habits() {
       }
     } catch (error) {
       console.error('Error fetching habits:', error)
+    } finally {
+      setLoading(false) // Set loading to false when done
     }
-    // No finally block needed - we don't use loading state anymore
   }, [])
 
   // Use unified auth validation
@@ -464,15 +465,15 @@ export default function Habits() {
     )
   }
 
-  // Remove loading screen - page renders immediately
-  if (!session) return null
-
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
     }}>
       <Navigation />
+      
+      {/* Show content only when session is available and not loading */}
+      {(!session || loading) ? null : (
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
@@ -837,10 +838,11 @@ export default function Habits() {
             </CardContent>
           </Card>
         )}
-      </div>
       
       {/* Detailed Habit View Modal */}
       {renderDetailedHabitView()}
+      </div>
+      )}
       
       <style jsx>{`
         @keyframes spin {
