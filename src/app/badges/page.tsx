@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
@@ -27,6 +28,9 @@ import {
 } from 'lucide-react'
 
 export default function BadgesPage() {
+  // Add unified auth validation (no data fetching needed since this page uses static data)
+  const { session, status } = useAuthValidation()
+  
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showMoreEarned, setShowMoreEarned] = useState(false)
   const [showMoreNotEarned, setShowMoreNotEarned] = useState(false)

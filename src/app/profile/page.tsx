@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,7 +59,14 @@ export default function Profile() {
   }
   const currentTier = tiers[tierIndex] || tiers[tiers.length - 1];
   const currentNumeral = numerals[numeralIndex] || numerals[2];
-  const { data: session, status, update } = useSession()
+  
+  // Use unified auth validation
+  const { session, status } = useAuthValidation({
+    onValidationSuccess: () => {
+      fetchProfile()
+    }
+  })
+  const { update } = useSession() // Still need update function for session updates
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(false) // Start with false - no loading screen
@@ -84,14 +92,15 @@ export default function Profile() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deletingAccount, setDeletingAccount] = useState(false)
 
-  useEffect(() => {
-    if (status === 'loading') return
-    if (!session) {
-      router.push('/auth/signin')
-      return
-    }
-    fetchProfile()
-  }, [session, status, router])
+  // Remove manual auth check since useAuthValidation handles it
+  // useEffect(() => {
+  //   if (status === 'loading') return
+  //   if (!session) {
+  //     router.push('/auth/signin')
+  //     return
+  //   }
+  //   fetchProfile()
+  // }, [session, status, router])
 
   const fetchProfile = async () => {
     try {
