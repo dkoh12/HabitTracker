@@ -297,6 +297,7 @@ async function main() {
   console.log('- Click on spreadsheet cells to mark progress')
   console.log('- View group progress over time with 8 members')
   console.log('- Test member list pagination and sorting')
+  console.log('\n💡 Note: Run "npx tsx prisma/seed-badges.ts" to seed production badges')
 }
 
 main()

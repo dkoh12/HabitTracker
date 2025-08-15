@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,19 +28,42 @@ import {
 } from 'lucide-react'
 
 export default function BadgesPage() {
-  // Add unified auth validation (no data fetching needed since this page uses static data)
-  const { session, status } = useAuthValidation()
-  
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showMoreEarned, setShowMoreEarned] = useState(false)
   const [showMoreNotEarned, setShowMoreNotEarned] = useState(false)
-  const [userStats] = useState({
-    totalPoints: 850,
-    badgesEarned: 8,
-    currentStreak: 15,
-    habitsCompleted: 127
+  const [badges, setBadges] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [userStats, setUserStats] = useState({
+    totalPoints: 0,
+    badgesEarned: 0,
+    currentStreak: 0,
+    habitsCompleted: 0
   })
 
+  // Fetch badges from API
+  const fetchBadgesFromAPI = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/badges')
+      if (response.ok) {
+        const data = await response.json()
+        setBadges(data.badges)
+        setUserStats(data.userStats)
+      } else {
+        console.error('Failed to fetch badges')
+      }
+    } catch (error) {
+      console.error('Error fetching badges:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Add unified auth validation and fetch badges from API
+  const { session, status } = useAuthValidation({
+    onValidationSuccess: fetchBadgesFromAPI
+  })
+  
   // Tiered system: BRONZE, SILVER, GOLD, DIAMOND, PLATINUM with III, II, I
   const tiers = [
     { name: 'BRONZE', color: '#cd7f32' },
@@ -74,334 +97,6 @@ export default function BadgesPage() {
     ((nextThreshold - tierThresholds[tierIndex * 3 + numeralIndex]) || 1) * 100;
   const currentTier = tiers[tierIndex] || tiers[tiers.length - 1];
   const currentNumeral = numerals[numeralIndex] || numerals[2];
-
-  // Badge definitions with categories and requirements
-  const badges = [
-    // Beginner badges
-    {
-      id: 'first_habit',
-      name: 'First Steps',
-      description: 'Create your very first habit',
-      category: 'beginner',
-      icon: CheckCircle2,
-      color: '#10b981',
-      points: 10,
-      rarity: 'common',
-      requirement: 'Create 1 habit',
-      earned: true,
-      earnedDate: '2025-08-01'
-    },
-    {
-      id: 'habit_starter',
-      name: 'Habit Starter',
-      description: 'Complete your first habit entry',
-      category: 'beginner',
-      icon: Star,
-      color: '#f59e0b',
-      points: 25,
-      rarity: 'common',
-      requirement: 'Complete 1 habit entry',
-      earned: true,
-      earnedDate: '2025-08-02'
-    },
-    {
-      id: 'three_day_streak',
-      name: 'Getting Started',
-      description: 'Maintain a 3-day streak',
-      category: 'beginner',
-      icon: Flame,
-      color: '#ef4444',
-      points: 50,
-      rarity: 'common',
-      requirement: 'Complete 3 days in a row',
-      earned: true,
-      earnedDate: '2025-08-04'
-    },
-
-    // Streak badges
-    {
-      id: 'week_warrior',
-      name: 'Week Warrior',
-      description: 'Maintain a 7-day streak',
-      category: 'streak',
-      icon: Flame,
-      color: '#f59e0b',
-      points: 100,
-      rarity: 'uncommon',
-      requirement: 'Complete 7 days in a row',
-      earned: true,
-      earnedDate: '2025-08-08'
-    },
-    {
-      id: 'two_week_champion',
-      name: 'Two Week Champion',
-      description: 'Maintain a 14-day streak',
-      category: 'streak',
-      icon: Trophy,
-      color: '#8b5cf6',
-      points: 200,
-      rarity: 'rare',
-      requirement: 'Complete 14 days in a row',
-      earned: true,
-      earnedDate: '2025-08-15'
-    },
-    {
-      id: 'month_master',
-      name: 'Month Master',
-      description: 'Achieve a 30-day streak',
-      category: 'streak',
-      icon: Crown,
-      color: '#dc2626',
-      points: 500,
-      rarity: 'epic',
-      requirement: 'Complete 30 days in a row',
-      earned: false
-    },
-
-    // Consistency badges
-    {
-      id: 'consistent_performer',
-      name: 'Consistent Performer',
-      description: 'Achieve 70% completion rate over 2 weeks',
-      category: 'consistency',
-      icon: Target,
-      color: '#3b82f6',
-      points: 150,
-      rarity: 'uncommon',
-      requirement: '70% completion for 14 days',
-      earned: true,
-      earnedDate: '2025-08-10'
-    },
-    {
-      id: 'reliability_master',
-      name: 'Reliability Master',
-      description: 'Achieve 85% completion rate over a month',
-      category: 'consistency',
-      icon: Award,
-      color: '#06b6d4',
-      points: 300,
-      rarity: 'rare',
-      requirement: '85% completion for 30 days',
-      earned: false
-    },
-
-    // Achievement badges
-    {
-      id: 'century_club',
-      name: 'Century Club',
-      description: 'Complete 100 habit entries',
-      category: 'achievement',
-      icon: TrendingUp,
-      color: '#84cc16',
-      points: 250,
-      rarity: 'rare',
-      requirement: 'Complete 100 total entries',
-      earned: true,
-      earnedDate: '2025-08-12'
-    },
-    {
-      id: 'habit_collector',
-      name: 'Habit Collector',
-      description: 'Track 10 different habits',
-      category: 'achievement',
-      icon: BookOpen,
-      color: '#ec4899',
-      points: 200,
-      rarity: 'uncommon',
-      requirement: 'Create 10 different habits',
-      earned: false
-    },
-
-    // Special badges
-    {
-      id: 'early_bird',
-      name: 'Early Bird',
-      description: 'Complete habits before 8 AM for 7 days',
-      category: 'special',
-      icon: Clock,
-      color: '#f97316',
-      points: 150,
-      rarity: 'uncommon',
-      requirement: 'Complete before 8 AM for 7 days',
-      earned: true,
-      earnedDate: '2025-08-07'
-    },
-    {
-      id: 'perfectionist',
-      name: 'Perfectionist',
-      description: 'Achieve 100% completion for a full week',
-      category: 'special',
-      icon: Heart,
-      color: '#e11d48',
-      points: 300,
-      rarity: 'rare',
-      requirement: '100% completion for 7 days',
-      earned: false
-    },
-
-    // Additional Achievement Badges
-    {
-      id: 'habit_collector_v2',
-      name: 'Habit Collector',
-      description: 'Create 10 different habits',
-      category: 'achievement',
-      icon: BookOpen,
-      color: '#3b82f6',
-      points: 150,
-      rarity: 'uncommon',
-      requirement: 'Create 10 habits',
-      earned: false
-    },
-    {
-      id: 'early_bird_v2',
-      name: 'Early Bird',
-      description: 'Complete morning habits for 7 days',
-      category: 'special',
-      icon: Clock,
-      color: '#f59e0b',
-      points: 200,
-      rarity: 'rare',
-      requirement: 'Complete morning habits for 7 days',
-      earned: false
-    },
-    {
-      id: 'night_owl',
-      name: 'Night Owl',
-      description: 'Complete evening habits for 7 days',
-      category: 'special',
-      icon: Moon,
-      color: '#6366f1',
-      points: 200,
-      rarity: 'rare',
-      requirement: 'Complete evening habits for 7 days',
-      earned: false
-    },
-
-    // Group Activity Badges
-    {
-      id: 'social_butterfly',
-      name: 'Social Butterfly',
-      description: 'Join your first group',
-      category: 'group',
-      icon: Users,
-      color: '#10b981',
-      points: 100,
-      rarity: 'common',
-      requirement: 'Join a group',
-      earned: true,
-      earnedDate: '2025-08-05'
-    },
-    {
-      id: 'team_player',
-      name: 'Team Player',
-      description: 'Complete 10 group habits',
-      category: 'group',
-      icon: UserCheck,
-      color: '#8b5cf6',
-      points: 250,
-      rarity: 'uncommon',
-      requirement: 'Complete 10 group habits',
-      earned: false
-    },
-    {
-      id: 'group_leader',
-      name: 'Group Leader',
-      description: 'Create and manage a group',
-      category: 'group',
-      icon: Crown,
-      color: '#dc2626',
-      points: 300,
-      rarity: 'rare',
-      requirement: 'Create a group',
-      earned: false
-    },
-    {
-      id: 'motivator',
-      name: 'Motivator',
-      description: 'Invite 5 friends to join groups',
-      category: 'group',
-      icon: UserPlus,
-      color: '#f59e0b',
-      points: 200,
-      rarity: 'uncommon',
-      requirement: 'Invite 5 friends',
-      earned: false
-    },
-    {
-      id: 'group_streak',
-      name: 'Group Streak Master',
-      description: 'Maintain a 14-day streak in group habits',
-      category: 'group',
-      icon: Flame,
-      color: '#ef4444',
-      points: 400,
-      rarity: 'epic',
-      requirement: 'Complete group habits for 14 days straight',
-      earned: false
-    },
-    {
-      id: 'community_champion',
-      name: 'Community Champion',
-      description: 'Be active in 3 different groups',
-      category: 'group',
-      icon: Shield,
-      color: '#7c3aed',
-      points: 500,
-      rarity: 'epic',
-      requirement: 'Active in 3 groups',
-      earned: false
-    },
-
-    // More Special Badges
-    {
-      id: 'weekend_warrior',
-      name: 'Weekend Warrior',
-      description: 'Complete habits on weekends for 4 weeks',
-      category: 'special',
-      icon: Zap,
-      color: '#059669',
-      points: 250,
-      rarity: 'rare',
-      requirement: 'Weekend completion for 4 weeks',
-      earned: false
-    },
-    {
-      id: 'comeback_kid',
-      name: 'Comeback Kid',
-      description: 'Restart a habit after a break',
-      category: 'special',
-      icon: Target,
-      color: '#dc2626',
-      points: 150,
-      rarity: 'uncommon',
-      requirement: 'Restart after missing 3+ days',
-      earned: false
-    },
-    {
-      id: 'diversity_master',
-      name: 'Diversity Master',
-      description: 'Complete habits in 5 different categories',
-      category: 'achievement',
-      icon: Star,
-      color: '#8b5cf6',
-      points: 300,
-      rarity: 'rare',
-      requirement: 'Complete habits in 5 categories',
-      earned: false
-    },
-    {
-      id: 'lightning_fast',
-      name: 'Lightning Fast',
-      description: 'Complete all daily habits in under 1 hour',
-      category: 'special',
-      icon: Zap,
-      color: '#fbbf24',
-      points: 200,
-      rarity: 'uncommon',
-      requirement: 'Complete all habits within 1 hour',
-      earned: false
-    }
-  ]
 
   const categories = [
     { id: 'all', name: 'All Badges', icon: Shield },
@@ -449,6 +144,47 @@ export default function BadgesPage() {
 
   const earnedBadges = badges.filter(badge => badge.earned)
   const totalPoints = earnedBadges.reduce((sum, badge) => sum + badge.points, 0)
+
+  // Icon mapping for dynamic icon rendering
+  const iconMap: { [key: string]: any } = {
+    CheckCircle2,
+    Star,
+    Flame,
+    Trophy,
+    Crown,
+    Target,
+    Award,
+    TrendingUp,
+    BookOpen,
+    Clock,
+    Heart,
+    Moon,
+    Users,
+    UserCheck,
+    UserPlus,
+    Shield,
+    Zap
+  }
+
+  // Helper function to get icon component from string
+  const getIconComponent = (iconName: string) => {
+    return iconMap[iconName] || Shield // fallback to Shield if icon not found
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <Navigation />
+        <div style={{ fontSize: '1.5rem', color: '#6b7280' }}>Loading badges...</div>
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -774,7 +510,7 @@ export default function BadgesPage() {
               .sort((a, b) => getRarityWeight(a.rarity) - getRarityWeight(b.rarity))
               .slice(0, showMoreEarned ? undefined : 3)
               .map(badge => {
-                const IconComponent = badge.icon
+                const IconComponent = getIconComponent(badge.icon)
                 return (
                   <Card
                     key={badge.id}
@@ -970,7 +706,7 @@ export default function BadgesPage() {
               .sort((a, b) => getRarityWeight(a.rarity) - getRarityWeight(b.rarity))
               .slice(0, showMoreNotEarned ? undefined : 3)
               .map(badge => {
-                const IconComponent = badge.icon
+                const IconComponent = getIconComponent(badge.icon)
                 return (
                   <Card
                     key={badge.id}

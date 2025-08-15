@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
@@ -60,12 +60,6 @@ export default function Profile() {
   const currentTier = tiers[tierIndex] || tiers[tiers.length - 1];
   const currentNumeral = numerals[numeralIndex] || numerals[2];
   
-  // Use unified auth validation
-  const { session, status } = useAuthValidation({
-    onValidationSuccess: () => {
-      fetchProfile()
-    }
-  })
   const { update } = useSession() // Still need update function for session updates
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -102,7 +96,7 @@ export default function Profile() {
   //   fetchProfile()
   // }, [session, status, router])
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch('/api/profile')
       if (response.ok) {
@@ -114,7 +108,12 @@ export default function Profile() {
       console.error('Error fetching profile:', error)
     }
     // No finally block needed - we don't use loading state anymore
-  }
+  }, [])
+
+  // Use unified auth validation
+  const { session, status } = useAuthValidation({
+    onValidationSuccess: fetchProfile
+  })
 
   const handleSave = async () => {
     if (!editName.trim()) return

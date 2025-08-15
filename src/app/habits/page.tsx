@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { HabitForm } from '@/components/habit-form'
@@ -12,12 +12,6 @@ import { HabitWithEntries, HabitFormData } from '@/types'
 import { Plus, Edit3, Trash2, Calendar, Star, TrendingUp, Target, Activity } from 'lucide-react'
 
 export default function Habits() {
-  // Use unified auth validation
-  const { session, status } = useAuthValidation({
-    onValidationSuccess: () => {
-      fetchHabits()
-    }
-  })
   const router = useRouter()
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
@@ -25,17 +19,7 @@ export default function Habits() {
   const [loading, setLoading] = useState(false) // Start with false - no loading screen
   const [selectedHabitDetails, setSelectedHabitDetails] = useState<HabitWithEntries | null>(null)
 
-  // Remove manual auth check since useAuthValidation handles it
-  // useEffect(() => {
-  //   if (status === 'loading') return
-  //   if (!session) {
-  //     router.push('/auth/signin')
-  //     return
-  //   }
-  //   fetchHabits()
-  // }, [session, status, router])
-
-  const fetchHabits = async () => {
+  const fetchHabits = useCallback(async () => {
     try {
       const response = await fetch('/api/habits')
       if (response.ok) {
@@ -46,7 +30,12 @@ export default function Habits() {
       console.error('Error fetching habits:', error)
     }
     // No finally block needed - we don't use loading state anymore
-  }
+  }, [])
+
+  // Use unified auth validation
+  const { session, status } = useAuthValidation({
+    onValidationSuccess: fetchHabits
+  })
 
   const createHabit = async (habitData: HabitFormData) => {
     try {

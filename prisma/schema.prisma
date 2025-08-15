@@ -23,6 +23,7 @@ model User {
   habitEntries        HabitEntry[]
   createdSharedHabits SharedGroupHabit[]
   sharedHabitEntries  SharedGroupHabitEntry[]
+  userBadges          UserBadge[]
 }
 
 model Habit {
@@ -146,4 +147,31 @@ model CustomActivity {
 enum GroupRole {
   Member
   Admin
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  category    String
+  icon        String
+  color       String
+  points      Int
+  rarity      String
+  requirement String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  earned    Boolean  @default(true)
+  earnedAt  DateTime @default(now())
+  userId    String
+  badgeId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
 }
