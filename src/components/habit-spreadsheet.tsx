@@ -61,23 +61,27 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   }
 
   const handleCellClick = (habitId: string, date: string) => {
+    const habit = habits.find(h => h.id === habitId)
+    if (!habit) return
+    
     const currentValue = getEntryValue(habitId, date)
-    let newValue: number
-
-    // Simple rotation: 0 → 3 → 2 → 1 → 0
-    // 0 = none, 1 = red (failed), 2 = yellow (partial), 3 = green (completed)
-    if (currentValue === 0) {
-      newValue = 3 // none → green
-    } else if (currentValue === 3) {
-      newValue = 2 // green → yellow
-    } else if (currentValue === 2) {
-      newValue = 1 // yellow → red
-    } else if (currentValue === 1) {
-      newValue = 0 // red → none
-    } else {
-      newValue = 3 // fallback → green
+    const target = habit.target
+    
+    // Prompt user for custom input
+    const inputValue = prompt(
+      `Enter value for ${habit.name} on ${formatDate(date)}:\n(Target: ${target}${habit.unit ? ` ${habit.unit}` : ''})`,
+      currentValue.toString()
+    )
+    
+    // If user cancels or enters invalid input, don't update
+    if (inputValue === null) return
+    
+    const newValue = parseFloat(inputValue)
+    if (isNaN(newValue) || newValue < 0) {
+      alert('Please enter a valid number (0 or greater)')
+      return
     }
-
+    
     onUpdateEntry(habitId, date, newValue)
   }
 
@@ -128,20 +132,19 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
   }
 
   const getCompletionIcon = (value: number, target: number, habitId: string, date: string) => {
-    // Simple value-based system: 0=none, 1=red, 2=yellow, 3=green
     if (value === 0) {
       // No entry - gray circle
       return <Circle style={{ width: '20px', height: '20px', color: '#d1d5db' }} />
-    } else if (value === 3) {
-      // Completed - green checkmark
+    } else if (value >= target) {
+      // Completed (value equals or exceeds target) - green checkmark
       return <CheckCircle2 style={{ 
         width: '20px', 
         height: '20px', 
         color: '#10b981',
         filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.4))'
       }} />
-    } else if (value === 2) {
-      // Partial progress - yellow circle with dot
+    } else if (value >= target * 0.5) {
+      // Partial progress (value is at least 50% of target) - yellow circle with dot
       return (
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <Circle style={{ width: '20px', height: '20px', color: '#f59e0b' }} />
@@ -161,12 +164,9 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
           </div>
         </div>
       )
-    } else if (value === 1) {
-      // Failed attempt - red X
-      return <XCircle style={{ width: '20px', height: '20px', color: '#ef4444' }} />
     } else {
-      // Fallback - gray circle
-      return <Circle style={{ width: '20px', height: '20px', color: '#d1d5db' }} />
+      // Some progress but less than 50% of target - red X
+      return <XCircle style={{ width: '20px', height: '20px', color: '#ef4444' }} />
     }
   }
 
@@ -528,7 +528,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                             e.currentTarget.style.zIndex = 'auto'
                             e.currentTarget.style.transform = 'scale(1)'
                           }}
-                          title={`${habit.name} on ${formatDate(date)}: ${value}${habit.unit || ''} (Target: ${target}${habit.unit || ''}) - Click to cycle: Green → Yellow → Red → None`}
+                          title={value === 0 ? 'No entry' : `${value}/${target}${habit.unit ? ` ${habit.unit}` : ''} (${Math.round((value / target) * 100)}%)`}
                           >
                             {getCompletionIcon(value, target, habit.id, date)}
                           </td>
@@ -567,7 +567,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
               gap: '0.5rem'
             }}>
               <Circle style={{ width: '16px', height: '16px', color: '#d1d5db' }} />
-              <span style={{ color: '#6b7280' }}>No entry</span>
+              <span style={{ color: '#6b7280' }}>No Entry</span>
             </div>
             <div style={{
               display: 'flex',
@@ -575,7 +575,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
               gap: '0.5rem'
             }}>
               <CheckCircle2 style={{ width: '16px', height: '16px', color: '#10b981' }} />
-              <span style={{ color: '#166534' }}>Target reached</span>
+              <span style={{ color: '#166534' }}>Completed</span>
             </div>
             <div style={{
               display: 'flex',
@@ -599,7 +599,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                   }}></div>
                 </div>
               </div>
-              <span style={{ color: '#92400e' }}>Partial progress</span>
+              <span style={{ color: '#92400e' }}>Partial Progress</span>
             </div>
             <div style={{
               display: 'flex',
@@ -607,7 +607,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
               gap: '0.5rem'
             }}>
               <XCircle style={{ width: '16px', height: '16px', color: '#ef4444' }} />
-              <span style={{ color: '#dc2626' }}>Attempted but failed</span>
+              <span style={{ color: '#dc2626' }}>Not Started</span>
             </div>
           </div>
         )}

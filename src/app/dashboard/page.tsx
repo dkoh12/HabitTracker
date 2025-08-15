@@ -24,6 +24,10 @@ export default function Dashboard() {
   const [visibleHabitsDaily, setVisibleHabitsDaily] = useState<string[]>([])
   const [visibleHabitsWeekly, setVisibleHabitsWeekly] = useState<string[]>([])
   
+  // Time range state for charts
+  const [dailyTimeRange, setDailyTimeRange] = useState<7 | 14 | 30 | 60 | 90>(30)
+  const [weeklyTimeRange, setWeeklyTimeRange] = useState<4 | 8 | 12 | 24 | 52>(12)
+  
   const fetchHabits = useCallback(async () => {
     console.log('🔄 fetchHabits called')
     try {
@@ -164,12 +168,14 @@ export default function Dashboard() {
     const last7Days = subDays(new Date(), 6)
     
     const week1Entries = habit.habitEntries.filter(entry => {
-      const entryDate = parseISO(entry.date.toString())
+      const entryDateStr = entry.date.toString().substring(0, 10)
+      const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
       return entryDate >= last14Days && entryDate < last7Days
     })
     
     const week2Entries = habit.habitEntries.filter(entry => {
-      const entryDate = parseISO(entry.date.toString())
+      const entryDateStr = entry.date.toString().substring(0, 10)
+      const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
       return entryDate >= last7Days
     })
     
@@ -239,7 +245,8 @@ export default function Dashboard() {
     
     return habits.map(habit => {
       const weekEntries = habit.habitEntries.filter(entry => {
-        const entryDate = parseISO(entry.date.toString())
+        const entryDateStr = entry.date.toString().substring(0, 10)
+        const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
         return entryDate >= weekStart && entryDate <= weekEnd
       })
       
@@ -258,24 +265,32 @@ export default function Dashboard() {
 
   // Chart data preparation functions
   const getProgressChartData = () => {
-    const last30Days = []
-    for (let i = 29; i >= 0; i--) {
+    const days = []
+    for (let i = dailyTimeRange - 1; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
-      const dateStr = format(date, 'MMM dd')
+      // Set to noon to avoid timezone issues, same as habit spreadsheet
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)
+      const dateStr = format(localDate, 'MMM dd')
+      const dateForComparison = format(localDate, 'yyyy-MM-dd')
       
-      const dayData: any = { date: dateStr, day: format(date, 'yyyy-MM-dd') }
+      const dayData: any = { date: dateStr, day: dateForComparison }
       
       habits.forEach(habit => {
-        const entry = habit.habitEntries.find(e => 
-          format(parseISO(e.date.toString()), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-        )
-        dayData[habit.name] = entry?.value || 0
+        const entry = habit.habitEntries.find(e => {
+          // Simple string comparison like habit spreadsheet - just compare first 10 characters (YYYY-MM-DD)
+          const entryDateStr = e.date.toString().substring(0, 10)
+          return entryDateStr === dateForComparison
+        })
+        // Normalize to percentage of target (0-100%)
+        const rawValue = entry?.value || 0
+        const percentage = habit.target > 0 ? Math.min((rawValue / habit.target) * 100, 100) : 0
+        dayData[habit.name] = Math.round(percentage)
       })
       
-      last30Days.push(dayData)
+      days.push(dayData)
     }
-    return last30Days
+    return days
   }
 
   const getSuccessRateData = () => {
@@ -305,16 +320,18 @@ export default function Dashboard() {
 
   const getWeeklyTrendData = () => {
     const weeks = []
-    for (let i = 11; i >= 0; i--) {
+    for (let i = weeklyTimeRange - 1; i >= 0; i--) {
       const weekStart = subWeeks(startOfWeek(new Date()), i)
       const weekEnd = endOfWeek(weekStart)
-      const weekLabel = `Week ${12 - i} (${format(weekStart, 'MMM dd')})`
+      const weekLabel = `Week ${weeklyTimeRange - i} (${format(weekStart, 'MMM dd')})`
       
       const weekData: any = { week: weekLabel }
       
       habits.forEach(habit => {
         const weekEntries = habit.habitEntries.filter(entry => {
-          const entryDate = parseISO(entry.date.toString())
+          // Simple string comparison like habit spreadsheet
+          const entryDateStr = entry.date.toString().substring(0, 10)
+          const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
           return entryDate >= weekStart && entryDate <= weekEnd
         })
         const successRate = weekEntries.length > 0 ? 
@@ -488,13 +505,13 @@ export default function Dashboard() {
             <div style={{
               background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
               borderRadius: '24px',
-              padding: '3rem',
+              padding: '1.5rem 3rem 3rem 3rem',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.08)',
               border: '1px solid #f1f5f9'
             }}>
               <div style={{
                 textAlign: 'center',
-                marginBottom: '3rem'
+                marginBottom: '2rem'
               }}>
                 <h2 style={{
                   fontSize: '2.5rem',
@@ -502,7 +519,7 @@ export default function Dashboard() {
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  marginBottom: '1rem'
+                  marginBottom: '0.5rem'
                 }}>Progress Analytics Dashboard</h2>
                 <p style={{
                   fontSize: '1.1rem',
@@ -528,14 +545,43 @@ export default function Dashboard() {
                   border: '1px solid #e5e7eb',
                   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
                 }}>
-                  <CardHeader>
-                    <CardTitle style={{
-                      fontSize: '1.25rem',
-                      fontWeight: '600',
-                      color: '#1f2937'
+                  <CardHeader style={{ padding: '1.5rem 2rem 1.5rem 2rem' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '1rem',
+                      margin: '0 1rem'
                     }}>
-                      Daily Progress (Last 30 Days)
-                    </CardTitle>
+                      <CardTitle style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: '#1f2937'
+                      }}>
+                        Daily Progress (Last {dailyTimeRange} Days)
+                      </CardTitle>
+                      <select
+                        value={dailyTimeRange}
+                        onChange={(e) => setDailyTimeRange(Number(e.target.value) as 7 | 14 | 30 | 60 | 90)}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          border: '2px solid #e5e7eb',
+                          background: 'white',
+                          color: '#374151',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value={7}>7 days</option>
+                        <option value={14}>14 days</option>
+                        <option value={30}>30 days</option>
+                        <option value={60}>60 days</option>
+                        <option value={90}>90 days</option>
+                      </select>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={400}>
@@ -551,8 +597,9 @@ export default function Dashboard() {
                           stroke="#6b7280"
                           fontSize={12}
                           tick={{ fill: '#6b7280' }}
+                          domain={[0, 100]}
                           label={{ 
-                            value: 'Habit Value', 
+                            value: 'Target Completion (%)', 
                             angle: -90, 
                             position: 'insideLeft',
                             style: { textAnchor: 'middle', fill: '#6b7280', fontSize: '12px' }
@@ -566,7 +613,7 @@ export default function Dashboard() {
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                           }}
                           formatter={(value: any, name: string) => [
-                            `${value} ${value === 1 ? '(completed)' : value === 0 ? '(not done)' : '(value logged)'}`,
+                            `${value}% of target`,
                             name
                           ]}
                         />
@@ -602,14 +649,43 @@ export default function Dashboard() {
                   border: '1px solid #e5e7eb',
                   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
                 }}>
-                  <CardHeader>
-                    <CardTitle style={{
-                      fontSize: '1.25rem',
-                      fontWeight: '600',
-                      color: '#1f2937'
+                  <CardHeader style={{ padding: '1.5rem 2rem 1.5rem 2rem' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '1rem',
+                      margin: '0 1rem'
                     }}>
-                      Weekly Success Trends (12 Weeks)
-                    </CardTitle>
+                      <CardTitle style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: '#1f2937'
+                      }}>
+                        Weekly Success Trends ({weeklyTimeRange} Weeks)
+                      </CardTitle>
+                      <select
+                        value={weeklyTimeRange}
+                        onChange={(e) => setWeeklyTimeRange(Number(e.target.value) as 4 | 8 | 12 | 24 | 52)}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          border: '2px solid #e5e7eb',
+                          background: 'white',
+                          color: '#374151',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value={4}>4 weeks</option>
+                        <option value={8}>8 weeks</option>
+                        <option value={12}>12 weeks</option>
+                        <option value={24}>24 weeks</option>
+                        <option value={52}>1 year</option>
+                      </select>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={400}>
@@ -655,10 +731,9 @@ export default function Dashboard() {
                             key={habit.id}
                             type="monotone"
                             dataKey={habit.name}
-                            stackId="1"
                             stroke={habit.color}
                             fill={habit.color}
-                            fillOpacity={0.3}
+                            fillOpacity={0.2}
                             hide={!visibleHabitsWeekly.includes(habit.name)}
                           />
                         ))}
@@ -783,9 +858,13 @@ export default function Dashboard() {
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                           }}
                         />
-                        <Legend />
+                        <Legend 
+                          wrapperStyle={{ color: '#000000' }}
+                          iconType="rect"
+                          formatter={(value) => <span style={{ color: '#000000' }}>{value}</span>}
+                        />
                         <Bar dataKey="currentStreak" fill="#3b82f6" name="Current Streak" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="bestStreak" fill="#e5e7eb" name="Best Streak" radius={[2, 2, 0, 0]} />
+                        <Bar dataKey="bestStreak" fill="#8b5cf6" name="Best Streak" radius={[2, 2, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
