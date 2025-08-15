@@ -7,7 +7,7 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { User, Calendar, TrendingUp, Edit3, Save, X, Camera, Trash2, Grid, Upload, Lock, AlertTriangle } from 'lucide-react'
+import { User, Calendar, TrendingUp, Edit3, Save, X, Camera, Trash2, Grid, Upload, Lock, AlertTriangle, Shield } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -27,6 +27,37 @@ interface DefaultAvatar {
 }
 
 export default function Profile() {
+  // --- Rank Calculation Logic (reuse from badges page) ---
+  // You may want to fetch the user's total points from the backend in a real app
+  // For demo, we'll use a hardcoded value or you can replace with real data
+  const userPoints = 850; // TODO: Replace with real user points if available
+  const tiers = [
+    { name: 'BRONZE', color: '#cd7f32' },
+    { name: 'SILVER', color: '#c0c0c0' },
+    { name: 'GOLD', color: '#ffd700' },
+    { name: 'DIAMOND', color: '#4f8ff7' },
+    { name: 'PLATINUM', color: '#9333ea' }
+  ];
+  const numerals = ['III', 'II', 'I'];
+  const tierThresholds = [
+    0, 100, 250,   // BRONZE III, II, I
+    500, 900, 1400, // SILVER III, II, I
+    2000, 2700, 3500, // GOLD III, II, I
+    4400, 5400, 6500, // DIAMOND III, II, I
+    7700, 9000, 10400 // PLATINUM III, II, I
+  ];
+  let tierIndex = 0;
+  let numeralIndex = 0;
+  let nextThreshold = tierThresholds[tierThresholds.length - 1];
+  for (let i = 0; i < tierThresholds.length; i++) {
+    if (userPoints >= tierThresholds[i]) {
+      tierIndex = Math.floor(i / 3);
+      numeralIndex = i % 3;
+      nextThreshold = tierThresholds[i + 1] || tierThresholds[i];
+    }
+  }
+  const currentTier = tiers[tierIndex] || tiers[tiers.length - 1];
+  const currentNumeral = numerals[numeralIndex] || numerals[2];
   const { data: session, status, update } = useSession()
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -359,11 +390,11 @@ export default function Profile() {
             gap: '1rem'
           }}>
             <div style={{
-              width: '80px',
-              height: '80px',
+              width: '100px',
+              height: '100px',
               borderRadius: '50%',
               background: '#e5e7eb',
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              animation: 'pulse 2s infinite'
             }} />
             <div>
               <div style={{
@@ -372,15 +403,15 @@ export default function Profile() {
                 background: '#e5e7eb',
                 borderRadius: '8px',
                 marginBottom: '8px',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-              }} />
+                animation: 'pulse 2s infinite'
+              }}></div>
               <div style={{
                 width: '300px',
                 height: '16px',
                 background: '#e5e7eb',
                 borderRadius: '8px',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-              }} />
+                animation: 'pulse 2s infinite'
+              }}></div>
             </div>
           </div>
           <div style={{
@@ -396,7 +427,7 @@ export default function Profile() {
                 border: '1px solid #e5e7eb',
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
                 padding: '1.5rem',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                animation: 'pulse 2s infinite'
               }}>
                 <div style={{
                   width: '150px',
@@ -404,19 +435,19 @@ export default function Profile() {
                   background: '#e5e7eb',
                   borderRadius: '8px',
                   marginBottom: '1rem'
-                }} />
+                }}></div>
                 <div style={{
                   width: '100%',
                   height: '60px',
                   background: '#f3f4f6',
                   borderRadius: '8px'
-                }} />
+                }}></div>
               </div>
             ))}
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   const memberSince = new Date(profile.createdAt).toLocaleDateString('en-US', {
@@ -436,11 +467,16 @@ export default function Profile() {
         margin: '0 auto',
         padding: '2rem 1rem'
       }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        padding: '2rem 1rem'
+      }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           marginBottom: '2rem',
-          gap: '1rem'
+          gap: '1.5rem'
         }}>
           <div style={{ position: 'relative' }}>
             <div style={{
@@ -532,6 +568,19 @@ export default function Profile() {
             />
           </div>
           <div>
+            {uploadingAvatar && (
+              <p style={{
+                fontSize: '0.875rem',
+                color: '#667eea',
+                margin: '0.5rem 0 0 0',
+                fontWeight: '500'
+              }}>
+                {profile.avatar ? 'Removing...' : 'Uploading...'} ⏳
+              </p>
+            )}
+          </div>
+          {/* My Profile Text */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             <h1 style={{
               fontSize: '2rem',
               fontWeight: '700',
@@ -549,16 +598,46 @@ export default function Profile() {
             }}>
               Manage your account settings and preferences
             </p>
-            {uploadingAvatar && (
-              <p style={{
-                fontSize: '0.875rem',
-                color: '#667eea',
-                margin: '0.5rem 0 0 0',
-                fontWeight: '500'
-              }}>
-                {profile.avatar ? 'Removing...' : 'Uploading...'} ⏳
-              </p>
-            )}
+          </div>
+          {/* Rank Shield Badge */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#6b7280', marginBottom: 4, letterSpacing: 1 }}>Rank</div>
+            <div style={{ position: 'relative', width: 54, height: 54, marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Shield
+                size={54}
+                style={{
+                  color: currentTier.color,
+                  filter: `drop-shadow(0 2px 8px ${currentTier.color}55)`
+                }}
+                strokeWidth={2.2}
+                fill={`url(#shield-gradient-${currentTier.name})`}
+              />
+              {/* SVG gradient for shield fill */}
+              <svg width="0" height="0">
+                <defs>
+                  <linearGradient id={`shield-gradient-${currentTier.name}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor={currentTier.color} stopOpacity="1" />
+                    <stop offset="100%" stopColor={currentTier.color} stopOpacity="0.7" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -54%)',
+                color: '#fff',
+                fontWeight: 900,
+                fontSize: 22,
+                letterSpacing: 1,
+                textShadow: '0 2px 8px #0007',
+                userSelect: 'none',
+                pointerEvents: 'none',
+              }}>{currentNumeral}</span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: currentTier.color, letterSpacing: 1, textShadow: '0 1px 4px #0002', textAlign: 'center' }}>
+              {currentTier.name}
+            </div>
           </div>
         </div>
 
@@ -1340,5 +1419,6 @@ export default function Profile() {
         </div>
       )}
     </div>
-  )
+  </div>
+  );
 }
