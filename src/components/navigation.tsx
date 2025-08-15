@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Calendar, Users, Home, LogOut, User, ChevronDown, Mail } from 'lucide-react'
+import { Calendar, Users, Home, LogOut, User, ChevronDown, Mail, Shield } from 'lucide-react'
 
 export function Navigation() {
   const { data: session } = useSession()
@@ -168,6 +168,13 @@ export function Navigation() {
               >
                 <Users className="w-4 h-4" />
                 <span>Groups</span>
+              </Link>
+              <Link
+                href="/badges"
+                style={getLinkStyle('/badges')}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Badges</span>
               </Link>
               <Link
                 href="/contact"
