@@ -227,7 +227,16 @@ async function main() {
 
   console.log('✅ Created test group with members')
 
-  // Create some personal habits for testing
+  // Create some personal habits for testing (delete any existing ones first to prevent duplicates)
+  await prisma.habit.deleteMany({
+    where: {
+      userId: user1.id,
+      name: {
+        in: ['Morning Exercise', 'Reading 20 Pages']
+      }
+    }
+  })
+
   await prisma.habit.create({
     data: {
       name: 'Morning Exercise',
@@ -240,11 +249,30 @@ async function main() {
     }
   })
 
-  console.log('✅ Created personal habit')
-
-  // Create shared group habits for the Book Club
-  const sharedHabit1 = await prisma.sharedGroupHabit.create({
+  await prisma.habit.create({
     data: {
+      name: 'Reading 20 Pages',
+      description: 'Read at least 20 pages of a book daily',
+      color: '#3B82F6',
+      frequency: 'daily',
+      target: 20,
+      unit: 'pages',
+      userId: user1.id
+    }
+  })
+
+  console.log('✅ Created personal habits')
+
+  // Create shared group habits for the Book Club using upsert
+  const sharedHabit1 = await prisma.sharedGroupHabit.upsert({
+    where: {
+      groupId_name: {
+        groupId: group.id,
+        name: 'Book Club Reading'
+      }
+    },
+    update: {},
+    create: {
       name: 'Book Club Reading',
       description: 'Read the monthly book club selection for at least 30 minutes',
       color: '#8B5CF6',
@@ -257,8 +285,15 @@ async function main() {
     }
   })
 
-  const sharedHabit2 = await prisma.sharedGroupHabit.create({
-    data: {
+  const sharedHabit2 = await prisma.sharedGroupHabit.upsert({
+    where: {
+      groupId_name: {
+        groupId: group.id,
+        name: 'Book Discussion Notes'
+      }
+    },
+    update: {},
+    create: {
       name: 'Book Discussion Notes',
       description: 'Write reflection notes about your reading',
       color: '#F59E0B',
