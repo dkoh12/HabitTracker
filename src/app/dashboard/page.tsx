@@ -29,16 +29,13 @@ export default function Dashboard() {
   const [weeklyTimeRange, setWeeklyTimeRange] = useState<4 | 8 | 12 | 24 | 52>(12)
   
   const fetchHabits = useCallback(async () => {
-    console.log('🔄 fetchHabits called')
     try {
       const response = await fetch('/api/habits')
       if (response.ok) {
         const data = await response.json()
-        console.log('📊 Habits fetched:', data.length, 'habits')
         setHabits(data)
       } else if (response.status === 401) {
         // Session is invalid (user no longer exists in database)
-        console.log('Session invalid, logging out user')
         await signOut({ callbackUrl: '/auth/signin' })
         return
       } else {
@@ -63,7 +60,6 @@ export default function Dashboard() {
   }, [habits])
 
   const updateHabitEntry = async (habitId: string, date: string, value: number) => {
-    console.log('🚀 updateHabitEntry called:', { habitId, date, value })
     try {
       const response = await fetch('/api/habit-entries', {
         method: 'POST',
@@ -72,11 +68,9 @@ export default function Dashboard() {
         },
         body: JSON.stringify({ habitId, date, value })
       })
-      console.log('📡 API response status:', response.status)
       
       if (response.ok) {
         const result = await response.json()
-        console.log('📊 API response data:', result)
         
         // Refresh habits data to update UI
         await fetchHabits()
@@ -90,8 +84,6 @@ export default function Dashboard() {
     } catch (error) {
       console.error('💥 updateHabitEntry error:', error)
     }
-    
-    console.log('✅ Entry updated successfully!')
   }
   const getDetailedHabitStats = (habit: HabitWithEntries) => {
     const entries = habit.habitEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())

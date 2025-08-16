@@ -305,39 +305,13 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   }
 
   const handleHabitEntryClick = async (habitId: string, date: string, memberId: string, currentEntry: any) => {
-    console.log('=== HABIT ENTRY CLICK DEBUG ===')
-    console.log('Parameters received:', { habitId, date, memberId, currentEntry })
-    console.log('Session user ID:', (session?.user as any)?.id)
-    console.log('Session user info:', { 
-      id: (session?.user as any)?.id, 
-      email: session?.user?.email,
-      name: session?.user?.name 
-    })
-    
     if (!groupId || !session?.user) return
 
     // Only allow users to update their own entries
     const currentUserId = (session.user as any).id
-    console.log('Current user ID:', currentUserId, 'Member ID:', memberId)
     if (memberId !== currentUserId) {
-      console.log('Not current user, skipping click')
       return // Don't allow clicking on other users' cells
     }
-
-    console.log('Click handler called with:', { 
-      habitId, 
-      date, 
-      memberId, 
-      currentEntry,
-      currentEntryDetails: currentEntry ? {
-        id: currentEntry.id,
-        value: currentEntry.value,
-        completed: currentEntry.completed,
-        userId: currentEntry.userId,
-        habitId: currentEntry.habitId
-      } : null,
-      targetValue: spreadsheetData?.habits.find(h => h.id === habitId)?.target
-    })
 
     try {
       const habit = spreadsheetData?.habits.find(h => h.id === habitId)
@@ -410,12 +384,9 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         })
 
         if (response.ok) {
-          console.log('API request successful, refreshing data')
           // Refresh spreadsheet data to show the update immediately
           if (group) {
-            console.log('About to refresh spreadsheet data...')
             await fetchSpreadsheetData(group)
-            console.log('Spreadsheet data refresh completed')
           }
         } else {
           console.error('API request failed:', response.status, await response.text())
@@ -429,10 +400,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const formatDate = (dateString: string) => {
     // Parse UTC date from backend and display in local timezone
     const date = new Date(dateString + 'T00:00:00.000Z')
-    console.log('formatDate: input =', dateString, 'parsed UTC =', date.toISOString(), 'formatted local =', date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    }))
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
@@ -440,15 +407,11 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   }
 
   const getCompletionIcon = (entry: HabitEntry | null, habit: GroupHabitData) => {
-    console.log('getCompletionIcon called with:', { entry, habit: { name: habit.name, target: habit.target } })
-    
     if (!entry) {
-      console.log('No entry - showing gray circle')
       return <Circle style={{ width: '28px', height: '28px', color: '#d1d5db' }} />
     }
     
     if (entry.completed || entry.value >= habit.target) {
-      console.log('Completed - showing green checkmark')
       return <CheckCircle2 style={{ 
         width: '28px', 
         height: '28px', 
@@ -458,7 +421,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     } else if (entry.value > 0) {
       const percentage = (entry.value / habit.target) * 100
       if (percentage >= 50) {
-        console.log('Partial progress (>=50%) - showing yellow circle')
         return (
           <div style={{ position: 'relative' }}>
             <Circle style={{ width: '28px', height: '28px', color: '#f59e0b' }} />
@@ -479,7 +441,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
           </div>
         )
       } else {
-        console.log('Getting started (<50%) - showing yellow triangle')
         return (
           <div style={{
             width: '28px',
@@ -500,7 +461,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       }
     } else {
       // Entry exists but value is 0 - show red X
-      console.log('Not started - showing red X')
       return <XCircle style={{ width: '28px', height: '28px', color: '#ef4444' }} />
     }
   }

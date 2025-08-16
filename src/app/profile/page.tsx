@@ -28,10 +28,16 @@ interface DefaultAvatar {
 }
 
 export default function Profile() {
+  // --- User Stats for Badge Calculation ---
+  const [userStats, setUserStats] = useState({
+    totalPoints: 0,
+    badgesEarned: 0,
+    currentStreak: 0,
+    habitsCompleted: 0
+  })
+
   // --- Rank Calculation Logic (reuse from badges page) ---
-  // You may want to fetch the user's total points from the backend in a real app
-  // For demo, we'll use a hardcoded value or you can replace with real data
-  const userPoints = 850; // TODO: Replace with real user points if available
+  const userPoints = userStats.totalPoints; // Use real user points from API
   const tiers = [
     { name: 'BRONZE', color: '#cd7f32' },
     { name: 'SILVER', color: '#c0c0c0' },
@@ -110,9 +116,27 @@ export default function Profile() {
     // No finally block needed - we don't use loading state anymore
   }, [])
 
+  // Fetch user stats for badge calculation (same as badges page)
+  const fetchUserStats = useCallback(async () => {
+    try {
+      const response = await fetch('/api/badges')
+      if (response.ok) {
+        const data = await response.json()
+        setUserStats(data.userStats)
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error)
+    }
+  }, [])
+
+  // Combined function to fetch both profile and user stats
+  const fetchAllData = useCallback(async () => {
+    await Promise.all([fetchProfile(), fetchUserStats()])
+  }, [fetchProfile, fetchUserStats])
+
   // Use unified auth validation
   const { session, status } = useAuthValidation({
-    onValidationSuccess: fetchProfile
+    onValidationSuccess: fetchAllData
   })
 
   const handleSave = async () => {

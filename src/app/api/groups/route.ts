@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateInviteCode } from '@/lib/utils'
 import { withAuth } from '@/lib/withAuth'
+import { GroupRole } from '@prisma/client'
 
 export const GET = withAuth(async (request, { user }) => {
   try {
@@ -68,7 +69,7 @@ export const POST = withAuth(async (request, { user }) => {
         members: {
           create: {
             userId: user.id,
-            role: 'Owner'
+            role: GroupRole.Owner
           }
         }
       },

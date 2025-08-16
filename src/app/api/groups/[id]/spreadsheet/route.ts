@@ -121,16 +121,6 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
       }
     })
 
-    console.log('Spreadsheet API - Fetched entries:', sharedHabitEntries.map(e => ({
-      id: e.id,
-      userId: e.userId,
-      date: e.date.toISOString().split('T')[0],
-      value: e.value,
-      completed: e.completed,
-      sharedHabitId: e.sharedHabitId,
-      updatedAt: e.updatedAt
-    })))
-
     // Organize entries by date -> userId -> habitId (only keep most recent for each combination)
     const entriesMap: Record<string, Record<string, Record<string, any>>> = {}
     

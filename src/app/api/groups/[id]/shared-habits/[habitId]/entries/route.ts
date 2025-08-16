@@ -47,11 +47,6 @@ export const POST = withAuthAndParams(async (request, { user }, { params }) => {
     const serverOffset = new Date().getTimezoneOffset()
     const localDateOnServer = new Date(date + 'T00:00:00')
     
-    console.log('API: Received date:', date, 'Parsed as UTC:', entryDate.toISOString())
-    console.log('API: Server timezone:', serverTimezone, 'Offset (minutes):', serverOffset)
-    console.log('API: Same date in server local timezone:', localDateOnServer.toISOString())
-    console.log('API: Upserting entry with userId:', user.id, 'habitId:', habitId, 'value:', value, 'completed:', completed)
-
     // Upsert the entry
     const entry = await prisma.sharedGroupHabitEntry.upsert({
       where: {
@@ -210,9 +205,6 @@ export const DELETE = withAuthAndParams(async (request, { user }, { params }) =>
     const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
     const serverOffset = new Date().getTimezoneOffset()
     
-    console.log('API DELETE: Received date:', date, 'Parsed as UTC:', entryDate.toISOString())
-    console.log('API DELETE: Server timezone:', serverTimezone, 'Offset (minutes):', serverOffset)
-
     // Delete ALL entries for this user/habit/date combination (to handle any duplicates)
     const deletedEntry = await prisma.sharedGroupHabitEntry.deleteMany({
       where: {
@@ -221,8 +213,6 @@ export const DELETE = withAuthAndParams(async (request, { user }, { params }) =>
         date: entryDate
       }
     })
-
-    console.log('API DELETE: Deleted', deletedEntry.count, 'entries for date:', date)
 
     return NextResponse.json({ deleted: deletedEntry.count > 0 })
   } catch (error) {
