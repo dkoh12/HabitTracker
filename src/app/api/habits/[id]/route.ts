@@ -4,6 +4,9 @@ import { withAuthAndParams } from '@/lib/withAuth'
 
 export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
   try {
+    // Await params before using
+    const { id } = await params
+    
     const { 
       name, 
       description, 
@@ -30,7 +33,7 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
     // Check if habit exists and belongs to user
     const existingHabit = await prisma.habit.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: user.id,
         isActive: true
       }
@@ -65,7 +68,7 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
 
     const habit = await prisma.habit.update({
       where: {
-        id: params.id
+        id
       },
       data: {
         name,
@@ -89,10 +92,13 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
 
 export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
+    // Await params before using
+    const { id } = await params
+    
     // Check if habit exists and belongs to user
     const existingHabit = await prisma.habit.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: user.id,
         isActive: true
       }
@@ -108,7 +114,7 @@ export const DELETE = withAuthAndParams(async (request, { user }, { params }) =>
     // Soft delete by setting isActive to false
     await prisma.habit.update({
       where: {
-        id: params.id
+        id
       },
       data: {
         isActive: false

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers, GroupFormData } from '@/types'
-import { Users, Plus, Copy, UserPlus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, Plus, Copy, UserPlus, ChevronDown, ChevronUp, LogOut } from 'lucide-react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 export default function Groups() {
@@ -86,6 +86,45 @@ export default function Groups() {
   const copyInviteCode = (code: string) => {
     navigator.clipboard.writeText(code)
     alert('Invite code copied to clipboard!')
+  }
+
+  const leaveGroup = async (groupId: string, groupName: string) => {
+    if (!confirm(`Are you sure you want to leave "${groupName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/groups/${groupId}/leave`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.groupDeleted) {
+          alert('You have left the group. Since you were the last member, the group has been deleted.')
+        } else {
+          alert('Successfully left the group.')
+        }
+        fetchGroups()
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to leave group')
+      }
+    } catch (error) {
+      console.error('Error leaving group:', error)
+      alert('Failed to leave group')
+    }
+  }
+
+  // Helper function to determine if user can leave a group
+  const canLeaveGroup = (group: GroupWithMembers, userId: string) => {
+    const isOwner = group.ownerId === userId
+    const isOnlyPersonInGroup = group.members.length === 1
+    
+    // Can leave if:
+    // 1. Not the owner (regular member or admin), OR
+    // 2. Owner but is the only person in the group
+    return !isOwner || isOnlyPersonInGroup
   }
 
   // Don't show loading screen for session loading - let page render immediately
@@ -499,36 +538,32 @@ export default function Groups() {
                       alignItems: 'center',
                       gap: '0.5rem'
                     }}>
-                      👥 Members ({group.members.length + 1})
+                      👥 Members ({group.members.length})
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {(() => {
                         const currentUserId = (session?.user as any)?.id
                         
-                        // Create combined list: owner + members
-                        const allMembers = [
-                          { 
-                            ...group.owner, 
-                            role: 'OWNER',
-                            memberUserId: group.owner.id,
-                            user: group.owner
-                          },
-                          ...group.members.map(member => ({
-                            ...member,
-                            memberUserId: member.userId
-                          }))
-                        ]
+                        // Use only the members list (owner is now included as a member with Owner role)
+                        const allMembers = group.members.map(member => ({
+                          ...member,
+                          memberUserId: member.userId
+                        }))
                         
-                        // Sort: current user first, then others
+                        // Sort: current user first, then owners, then admins, then members
                         const sortedMembers = allMembers.sort((a, b) => {
                           if (a.memberUserId === currentUserId) return -1
                           if (b.memberUserId === currentUserId) return 1
+                          if ((a.role as string) === 'Owner' && (b.role as string) !== 'Owner') return -1
+                          if ((b.role as string) === 'Owner' && (a.role as string) !== 'Owner') return 1
+                          if ((a.role as string) === 'Admin' && (b.role as string) === 'Member') return -1
+                          if ((b.role as string) === 'Admin' && (a.role as string) === 'Member') return 1
                           return 0
                         })
                         
                         return sortedMembers.slice(0, expandedMembers[group.id] ? sortedMembers.length : 5).map(member => {
                           const isCurrentUser = member.memberUserId === currentUserId
-                          const isOwnerEntry = member.role === 'OWNER'
+                          const isOwnerEntry = (member.role as string) === 'Owner'
                           const isCurrentUserOwner = isCurrentUser && isOwnerEntry
                           
                           return (
@@ -608,9 +643,9 @@ export default function Groups() {
                               </div>
                               <span style={{
                                 fontSize: '0.75rem',
-                                background: member.role === 'OWNER'
+                                background: (member.role as string) === 'Owner'
                                   ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                                  : member.role === 'Admin'
+                                  : (member.role as string) === 'Admin'
                                   ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
                                   : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
                                 color: 'white',
@@ -619,7 +654,7 @@ export default function Groups() {
                                 fontWeight: '600',
                                 textTransform: 'capitalize'
                               }}>
-                                {member.role === 'OWNER' ? 'Owner' : member.role}
+                                {member.role}
                               </span>
                             </div>
                           )
@@ -627,7 +662,7 @@ export default function Groups() {
                       })()}
                       {(() => {
                         const currentUserId = (session?.user as any)?.id
-                        const totalMembers = group.members.length + 1 // +1 for owner
+                        const totalMembers = group.members.length // owner is now included in members
                         
                         return totalMembers > 5 && (
                           <button
@@ -784,6 +819,53 @@ export default function Groups() {
                           Copy
                         </Button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Leave Group Button - show if user can leave */}
+                  {canLeaveGroup(group, (session.user as any)?.id) && (
+                    <div style={{
+                      paddingTop: '1rem',
+                      borderTop: '1px solid #f3f4f6',
+                      marginTop: group.ownerId === (session.user as any)?.id ? '0' : '1rem'
+                    }}>
+                      <Button
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          leaveGroup(group.id, group.name)
+                        }}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          border: '1px solid #fca5a5',
+                          background: 'white',
+                          color: '#dc2626',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontSize: '0.85rem',
+                          width: '100%',
+                          justifyContent: 'center'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#fef2f2'
+                          e.currentTarget.style.borderColor = '#f87171'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'white'
+                          e.currentTarget.style.borderColor = '#fca5a5'
+                        }}
+                      >
+                        <LogOut style={{
+                          width: '16px',
+                          height: '16px'
+                        }} />
+                        Leave Group
+                        {group.members.length === 1 && ' (Will delete group)'}
+                      </Button>
                     </div>
                   )}
                 </div>

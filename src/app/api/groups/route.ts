@@ -63,7 +63,14 @@ export const POST = withAuth(async (request, { user }) => {
         name,
         description,
         inviteCode: generateInviteCode(),
-        ownerId: user.id
+        ownerId: user.id,
+        // Automatically add the owner as an Owner member
+        members: {
+          create: {
+            userId: user.id,
+            role: 'Owner'
+          }
+        }
       },
       include: {
         owner: true,

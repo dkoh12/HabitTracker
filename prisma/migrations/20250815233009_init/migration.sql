@@ -36,8 +36,8 @@ CREATE TABLE "HabitEntry" (
     "updatedAt" DATETIME NOT NULL,
     "userId" TEXT NOT NULL,
     "habitId" TEXT NOT NULL,
-    CONSTRAINT "HabitEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "HabitEntry_habitId_fkey" FOREIGN KEY ("habitId") REFERENCES "Habit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "HabitEntry_habitId_fkey" FOREIGN KEY ("habitId") REFERENCES "Habit" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "HabitEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -55,12 +55,12 @@ CREATE TABLE "Group" (
 -- CreateTable
 CREATE TABLE "GroupMember" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "role" TEXT NOT NULL DEFAULT 'member',
+    "role" TEXT NOT NULL DEFAULT 'Member',
     "joinedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "userId" TEXT NOT NULL,
     "groupId" TEXT NOT NULL,
-    CONSTRAINT "GroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "GroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "GroupMember_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "GroupMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -69,8 +69,8 @@ CREATE TABLE "GroupHabit" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "groupId" TEXT NOT NULL,
     "habitId" TEXT NOT NULL,
-    CONSTRAINT "GroupHabit_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "GroupHabit_habitId_fkey" FOREIGN KEY ("habitId") REFERENCES "Habit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "GroupHabit_habitId_fkey" FOREIGN KEY ("habitId") REFERENCES "Habit" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "GroupHabit_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -87,8 +87,8 @@ CREATE TABLE "SharedGroupHabit" (
     "updatedAt" DATETIME NOT NULL,
     "groupId" TEXT NOT NULL,
     "createdById" TEXT NOT NULL,
-    CONSTRAINT "SharedGroupHabit_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "SharedGroupHabit_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "SharedGroupHabit_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "SharedGroupHabit_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -102,8 +102,46 @@ CREATE TABLE "SharedGroupHabitEntry" (
     "updatedAt" DATETIME NOT NULL,
     "userId" TEXT NOT NULL,
     "sharedHabitId" TEXT NOT NULL,
-    CONSTRAINT "SharedGroupHabitEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "SharedGroupHabitEntry_sharedHabitId_fkey" FOREIGN KEY ("sharedHabitId") REFERENCES "SharedGroupHabit" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "SharedGroupHabitEntry_sharedHabitId_fkey" FOREIGN KEY ("sharedHabitId") REFERENCES "SharedGroupHabit" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "SharedGroupHabitEntry_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "CustomActivity" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "text" TEXT NOT NULL,
+    "color" TEXT NOT NULL,
+    "date" DATETIME NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "userId" TEXT NOT NULL,
+    CONSTRAINT "CustomActivity_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Badge" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
+    "color" TEXT NOT NULL,
+    "points" INTEGER NOT NULL,
+    "rarity" TEXT NOT NULL,
+    "requirement" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "UserBadge" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "earned" BOOLEAN NOT NULL DEFAULT true,
+    "earnedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" TEXT NOT NULL,
+    "badgeId" TEXT NOT NULL,
+    CONSTRAINT "UserBadge_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "UserBadge_badgeId_fkey" FOREIGN KEY ("badgeId") REFERENCES "Badge" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -125,4 +163,16 @@ CREATE UNIQUE INDEX "GroupMember_userId_groupId_key" ON "GroupMember"("userId", 
 CREATE UNIQUE INDEX "GroupHabit_groupId_habitId_key" ON "GroupHabit"("groupId", "habitId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "SharedGroupHabit_groupId_name_key" ON "SharedGroupHabit"("groupId", "name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "SharedGroupHabitEntry_userId_sharedHabitId_date_key" ON "SharedGroupHabitEntry"("userId", "sharedHabitId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CustomActivity_userId_date_text_key" ON "CustomActivity"("userId", "date", "text");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Badge_name_key" ON "Badge"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserBadge_userId_badgeId_key" ON "UserBadge"("userId", "badgeId");

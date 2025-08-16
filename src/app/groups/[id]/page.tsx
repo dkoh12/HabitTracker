@@ -1142,15 +1142,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       {(() => {
                         const currentUserId = (session?.user as any)?.id
                         
-                        // Create combined list: owner + members (same as members management section)
-                        const allMembers = [
-                          { 
-                            ...group.owner, 
-                            role: 'OWNER',
-                            id: group.owner.id  // Ensure consistent id field
-                          },
-                          ...spreadsheetData.members.filter(member => member.id !== group.owner.id) // Avoid duplicates
-                        ]
+                        // Use only group.members since owner is now included there
+                        const allMembers = group.members
                         
                         // Sort members: current user first, then others
                         const sortedMembers = allMembers.sort((a, b) => {
@@ -1165,9 +1158,9 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                             padding: '1rem',
                             textAlign: 'center',
                             minWidth: '120px',
-                            background: member.id === currentUserId
+                            background: member.userId === currentUserId
                               ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
-                              : member.role === 'OWNER'
+                              : member.role === 'Owner'
                               ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
                               : 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
                           }}>
@@ -1177,17 +1170,17 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               alignItems: 'center',
                               gap: '0.5rem'
                             }}>
-                              {member.avatar ? (
+                              {member.user.avatar ? (
                                 <img
-                                  src={member.avatar}
-                                  alt={member.name || member.email}
+                                  src={member.user.avatar}
+                                  alt={member.user.name || member.user.email}
                                   style={{
                                     width: '32px',
                                     height: '32px',
                                     borderRadius: '50%',
-                                    border: member.id === currentUserId 
+                                    border: member.userId === currentUserId 
                                       ? '2px solid #3b82f6' 
-                                      : member.role === 'OWNER'
+                                      : member.role === 'Owner'
                                       ? '2px solid #f59e0b'
                                       : '2px solid #e5e7eb'
                                   }}
@@ -1197,17 +1190,17 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                   width: '32px',
                                   height: '32px',
                                   borderRadius: '50%',
-                                  background: member.id === currentUserId
+                                  background: member.userId === currentUserId
                                     ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-                                    : member.role === 'OWNER'
+                                    : member.role === 'Owner'
                                     ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
                                     : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  border: member.id === currentUserId 
+                                  border: member.userId === currentUserId 
                                     ? '2px solid #3b82f6' 
-                                    : member.role === 'OWNER'
+                                    : member.role === 'Owner'
                                     ? '2px solid #f59e0b'
                                     : '2px solid #e5e7eb'
                                 }}>
@@ -1216,16 +1209,16 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                     fontSize: '0.875rem',
                                     fontWeight: '600'
                                   }}>
-                                    {(member.name || member.email).charAt(0).toUpperCase()}
+                                    {(member.user.name || member.user.email).charAt(0).toUpperCase()}
                                   </span>
                                 </div>
                               )}
                               <span style={{
                                 fontSize: '0.875rem',
                                 fontWeight: '500',
-                                color: member.id === currentUserId 
+                                color: member.userId === currentUserId 
                                   ? '#1e40af' 
-                                  : member.role === 'OWNER'
+                                  : member.role === 'Owner'
                                   ? '#92400e'
                                   : '#374151',
                                 textOverflow: 'ellipsis',
@@ -1233,8 +1226,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                 whiteSpace: 'nowrap',
                                 maxWidth: '100px'
                               }}>
-                                {member.name || member.email.split('@')[0]}
-                                {member.id === currentUserId && (
+                                {member.user.name || member.user.email.split('@')[0]}
+                                {member.userId === currentUserId && (
                                   <span style={{
                                     display: 'block',
                                     fontSize: '0.75rem',
@@ -1363,26 +1356,19 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                           {(() => {
                             const currentUserId = (session?.user as any)?.id
                             
-                            // Create combined list: owner + members (same as header and members management)
-                            const allMembers = [
-                              { 
-                                ...group.owner, 
-                                role: 'OWNER',
-                                id: group.owner.id  // Ensure consistent id field
-                              },
-                              ...spreadsheetData.members.filter(member => member.id !== group.owner.id) // Avoid duplicates
-                            ]
+                            // Use only group.members since owner is now included there
+                            const allMembers = group.members
                             
                             // Sort members: current user first, then others (same as header)
                             const sortedMembers = allMembers.sort((a, b) => {
-                              if (a.id === currentUserId) return -1
-                              if (b.id === currentUserId) return 1
+                              if (a.userId === currentUserId) return -1
+                              if (b.userId === currentUserId) return 1
                               return 0
                             })
                             
                             return sortedMembers.map(member => {
-                              const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id]
-                              const isCurrentUser = member.id === currentUserId
+                              const entry = spreadsheetData.entries[date]?.[member.userId]?.[habit.id]
+                              const isCurrentUser = member.userId === currentUserId
                               
                               return (
                                 <td 
@@ -1411,7 +1397,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                       }
                                     }, 150)
                                     
-                                    handleHabitEntryClick(habit.id, date, member.id, entry)
+                                    handleHabitEntryClick(habit.id, date, member.userId, entry)
                                   }}
                                   onMouseEnter={(e) => {
                                     if (isCurrentUser) {
@@ -1618,14 +1604,8 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 const currentUserId = (session?.user as any)?.id;
                 
                 // Prepare data for statistics
-                const allMembers = [
-                  { 
-                    ...group.owner, 
-                    role: 'OWNER',
-                    id: group.owner.id
-                  },
-                  ...spreadsheetData.members.filter(member => member.id !== group.owner.id)
-                ];
+                // Use only group.members since owner is now included there
+                const allMembers = group.members;
 
                 // Calculate overall completion statistics
                 const totalPossibleEntries = spreadsheetData.dates.length * spreadsheetData.habits.length * allMembers.length;
@@ -1642,7 +1622,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
                   spreadsheetData.dates.forEach(date => {
                     spreadsheetData.habits.forEach(habit => {
-                      const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                      const entry = spreadsheetData.entries[date]?.[member.userId]?.[habit.id];
                       if (entry && entry.value > 0) {
                         memberEntries++;
                         totalEntries++;
@@ -1683,7 +1663,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
                   spreadsheetData.dates.forEach(date => {
                     allMembers.forEach(member => {
-                      const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                      const entry = spreadsheetData.entries[date]?.[member.userId]?.[habit.id];
                       if (entry && entry.value > 0) {
                         habitEntries++;
                         
@@ -1721,7 +1701,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
                   allMembers.forEach(member => {
                     spreadsheetData.habits.forEach(habit => {
-                      const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                      const entry = spreadsheetData.entries[date]?.[member.userId]?.[habit.id];
                       if (entry && entry.value > 0) {
                         dayEntries++;
                         
@@ -1871,7 +1851,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               // Overall stats (existing logic)
                               spreadsheetData.dates.forEach(date => {
                                 spreadsheetData.habits.forEach(habit => {
-                                  const entry = spreadsheetData.entries[date]?.[member.id]?.[habit.id];
+                                  const entry = spreadsheetData.entries[date]?.[member.userId]?.[habit.id];
                                   if (entry && entry.value > 0) {
                                     memberEntries++;
                                     const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
@@ -1891,7 +1871,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               const selectedHabit = spreadsheetData.habits.find(h => h.id === selectedLeaderboardHabit);
                               if (selectedHabit) {
                                 spreadsheetData.dates.forEach(date => {
-                                  const entry = spreadsheetData.entries[date]?.[member.id]?.[selectedHabit.id];
+                                  const entry = spreadsheetData.entries[date]?.[member.userId]?.[selectedHabit.id];
                                   if (entry && entry.value > 0) {
                                     memberEntries++;
                                     const normalizedPercentage = Math.min((entry.value / selectedHabit.target) * 100, 100);
@@ -1922,7 +1902,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                           return filteredMemberStats
                             .sort((a, b) => b.completionRate - a.completionRate)
                             .map((member, index) => {
-                              const isCurrentUser = member.id === currentUserId;
+                              const isCurrentUser = member.userId === currentUserId;
                               const isTopThree = index < 3;
                               
                               // Medal colors for top 3
@@ -2007,10 +1987,10 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                   </div>
                                   
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '180px' }}>
-                                    {member.avatar ? (
+                                    {member.user.avatar ? (
                                       <img
-                                        src={member.avatar}
-                                        alt={member.name || member.email}
+                                        src={member.user.avatar}
+                                        alt={member.user.name || member.user.email}
                                         style={{
                                           width: '32px',
                                           height: '32px',
@@ -2032,7 +2012,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                         border: isCurrentUser ? '2px solid #3b82f6' : '2px solid #e5e7eb'
                                       }}>
                                         <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: '600' }}>
-                                          {(member.name || member.email).charAt(0).toUpperCase()}
+                                          {(member.user.name || member.user.email).charAt(0).toUpperCase()}
                                         </span>
                                       </div>
                                     )}
@@ -2042,7 +2022,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                         fontWeight: isCurrentUser ? '700' : '500', 
                                         color: isTopThree ? '#1f2937' : (isCurrentUser ? '#1e40af' : '#1f2937')
                                       }}>
-                                        {member.name || member.email.split('@')[0]}
+                                        {member.user.name || member.user.email.split('@')[0]}
                                         {isCurrentUser && <span style={{ color: isTopThree ? '#1f2937' : '#3b82f6', marginLeft: '0.25rem' }}>(You)</span>}
                                       </span>
                                     </div>
@@ -2093,7 +2073,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         You vs Group Performance
                       </h3>
                       {(() => {
-                        const currentUserStats = memberStats.find(m => m.id === currentUserId);
+                        const currentUserStats = memberStats.find(m => m.userId === currentUserId);
                         if (!currentUserStats) return null;
                         
                         const groupAverage = Math.round(memberStats.reduce((sum, m) => sum + m.completionRate, 0) / memberStats.length);
@@ -2401,7 +2381,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                       let dayEntries = 0;
 
                                       allMembers.forEach(member => {
-                                        const entry = spreadsheetData.entries[day.date]?.[member.id]?.[selectedHabitData.id];
+                                        const entry = spreadsheetData.entries[day.date]?.[member.userId]?.[selectedHabitData.id];
                                         if (entry && entry.value > 0) {
                                           dayEntries++;
                                           const normalizedPercentage = Math.min((entry.value / selectedHabitData.target) * 100, 100);
@@ -2538,7 +2518,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
               onClick={() => setShowAllMembers(!showAllMembers)}
               >
                 <Users style={{ width: '20px', height: '20px' }} />
-                Group Members ({group.members.length + 1})
+                Group Members ({group.members.length})
                 {showAllMembers ? (
                   <ChevronUp style={{ width: '16px', height: '16px', marginLeft: 'auto' }} />
                 ) : (
@@ -2552,19 +2532,11 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                 {(() => {
                   const currentUserId = (session?.user as any)?.id
                   
-                  // Create combined list: owner + members (no sorting in detail page)
-                  const allMembers = [
-                    { 
-                      ...group.owner, 
-                      role: 'OWNER',
-                      memberUserId: group.owner.id,
-                      user: group.owner
-                    },
-                    ...group.members.map(member => ({
-                      ...member,
-                      memberUserId: member.userId
-                    }))
-                  ]
+                  // Use only group.members since owner is now included there
+                  const allMembers = group.members.map(member => ({
+                    ...member,
+                    memberUserId: member.userId
+                  }))
                   
                   return allMembers.map(member => {
                     const isOwner = group.owner.id === currentUserId
@@ -2572,7 +2544,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     const isCurrentUserAdmin = currentUserMembership?.role === 'Admin'
                     const canManageRoles = isOwner || isCurrentUserAdmin
                     const isCurrentMember = member.memberUserId === currentUserId
-                    const isOwnerEntry = member.role === 'OWNER'
+                    const isOwnerEntry = member.role === 'Owner'
 
                     return (
                       <div key={member.id} style={{
@@ -2686,7 +2658,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                             fontWeight: '600',
                             padding: '4px 8px',
                             borderRadius: '6px',
-                            background: member.role === 'OWNER'
+                            background: member.role === 'Owner'
                               ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
                               : member.role === 'Admin'
                               ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
@@ -2695,7 +2667,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                             textTransform: 'uppercase',
                             letterSpacing: '0.025em'
                           }}>
-                            {member.role === 'OWNER' ? 'Owner' : member.role === 'Admin' ? 'Admin' : 'Member'}
+                            {member.role === 'Owner' ? 'Owner' : member.role === 'Admin' ? 'Admin' : 'Member'}
                           </span>
                           
                           {canManageRoles && !isOwnerEntry && (

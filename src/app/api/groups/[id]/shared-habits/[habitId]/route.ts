@@ -51,7 +51,7 @@ export async function PATCH(
     }
 
     const isOwner = group.ownerId === user.id
-    const isAdmin = membership?.role === 'Admin'
+    const isAdmin = membership?.role === 'Admin' || membership?.role === 'Owner'
     const isMember = !!membership || isOwner
 
     if (!isMember) {
@@ -152,7 +152,7 @@ export async function DELETE(
     }
 
     const isOwner = group.ownerId === user.id
-    const isAdmin = membership?.role === 'Admin'
+    const isAdmin = membership?.role === 'Admin' || membership?.role === 'Owner'
     const isMember = !!membership || isOwner
 
     if (!isMember) {

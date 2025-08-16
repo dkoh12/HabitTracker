@@ -119,6 +119,22 @@ async function main() {
     }
   })
 
+  // Add the owner to the group members table first
+  await prisma.groupMember.upsert({
+    where: {
+      userId_groupId: {
+        userId: user1.id,
+        groupId: group.id
+      }
+    },
+    update: {},
+    create: {
+      userId: user1.id,
+      groupId: group.id,
+      role: 'Owner'
+    }
+  })
+
   // Add members to the group using upsert
   await prisma.groupMember.upsert({
     where: {

@@ -10,7 +10,7 @@ export const PATCH = withAuthAndParams(async (request, { user }, { params }) => 
     const currentUserId = user.id
 
     // Validate role
-    if (!['Member', 'Admin'].includes(role)) {
+    if (!['Member', 'Admin', 'Owner'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
 
@@ -32,7 +32,7 @@ export const PATCH = withAuthAndParams(async (request, { user }, { params }) => 
 
     const isOwner = group.ownerId === currentUserId
     const currentUserMembership = group.members.find(m => m.userId === currentUserId)
-    const isAdmin = currentUserMembership?.role === 'Admin'
+    const isAdmin = currentUserMembership?.role === 'Admin' || currentUserMembership?.role === 'Owner'
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: 'Only owners and admins can change roles' }, { status: 403 })
@@ -44,16 +44,16 @@ export const PATCH = withAuthAndParams(async (request, { user }, { params }) => 
       return NextResponse.json({ error: 'Member not found' }, { status: 404 })
     }
 
-    // Prevent owner from being demoted
-    if (targetMember.userId === group.ownerId && role === 'Member') {
-      return NextResponse.json({ error: 'Cannot demote group owner' }, { status: 400 })
+    // Prevent owner from being demoted from Owner role
+    if (targetMember.userId === group.ownerId && role !== 'Owner') {
+      return NextResponse.json({ error: 'Cannot change group owner role' }, { status: 400 })
     }
 
-    // If demoting self from admin to member, ensure there's at least one other admin
-    if (targetMember.userId === currentUserId && role === 'Member' && targetMember.role === 'Admin') {
+    // If demoting self from admin/owner to member, ensure there's at least one other admin or owner
+    if (targetMember.userId === currentUserId && role === 'Member' && (targetMember.role === 'Admin' || targetMember.role === 'Owner')) {
       const otherAdmins = group.members.filter(m => 
         m.userId !== currentUserId && 
-        (m.role === 'Admin' || m.userId === group.ownerId)
+        (m.role === 'Admin' || m.role === 'Owner' || m.userId === group.ownerId)
       )
       
       if (otherAdmins.length === 0) {

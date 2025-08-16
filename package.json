@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "seed": "npx tsx prisma/seed.ts",
     "seed:badges": "npx tsx prisma/seed-badges.ts"
   },
   "dependencies": {
@@ -36,8 +37,5 @@
     "tailwindcss": "^4",
     "tsx": "^4.20.3",
     "typescript": "^5"
-  },
-  "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
   }
 }
