@@ -5,7 +5,7 @@ import { format, startOfWeek, endOfWeek, addDays, subWeeks, addWeeks } from 'dat
 import { HabitWithEntries } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronLeft, ChevronRight, Table as TableIcon, CheckCircle2, XCircle, Circle, Triangle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Table as TableIcon, CheckCircle2, Circle, Triangle } from 'lucide-react'
 
 interface HabitSpreadsheetProps {
   habits: HabitWithEntries[]
@@ -131,7 +131,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
     }
   }
 
-  const getCompletionIcon = (value: number, target: number, habitId: string, date: string) => {
+  const getCompletionIcon = (value: number, target: number) => {
     if (value === 0) {
       // No entry - gray circle
       return <Circle style={{ width: '20px', height: '20px', color: '#d1d5db' }} />
@@ -175,20 +175,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
     }
   }
 
-  const getCellColor = (value: number, target: number, habitId: string, date: string) => {
-    // Match the logic from getCompletionIcon to keep background consistent with icon
-    if (value === 0) {
-      return '#ffffff' // white for no entry
-    } else if (value >= target) {
-      return '#dcfce7' // light green for completed (target met or exceeded)
-    } else if (value >= target * 0.5) {
-      return '#fef3c7' // light yellow for partial progress (50%+ of target)
-    } else {
-      return '#fecaca' // light red for minimal progress (less than 50% of target)
-    }
-  }
-
-  const getCellTextColor = (value: number, target: number, habitId: string, date: string) => {
+  const getCellTextColor = (value: number, target: number) => {
     // Match the logic from getCompletionIcon to keep text color consistent with icon
     if (value === 0) {
       return '#9ca3af' // gray for no entry
@@ -499,7 +486,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                       {habits.map(habit => {
                         const value = getEntryValue(habit.id, date)
                         const target = habit.target || 1
-                        const textColor = getCellTextColor(value, target, habit.id, date)
+                        const textColor = getCellTextColor(value, target)
                         
                         return (
                           <td key={habit.id} style={{
@@ -534,7 +521,7 @@ export function HabitSpreadsheet({ habits, onUpdateEntry }: HabitSpreadsheetProp
                               alignItems: 'center',
                               gap: '0.25rem'
                             }}>
-                              {getCompletionIcon(value, target, habit.id, date)}
+                              {getCompletionIcon(value, target)}
                               {value > 0 && (
                                 <span style={{
                                   fontSize: '0.75rem',

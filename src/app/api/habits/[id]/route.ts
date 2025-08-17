@@ -5,7 +5,7 @@ import { withAuthAndParams } from '@/lib/withAuth'
 export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
   try {
     // Await params before using
-    const { id } = await params
+    const { id } = await params as { id: string }
     
     const { 
       name, 
@@ -15,10 +15,6 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
       unit,
       scheduleType,
       selectedDays,
-      monthlyType,
-      monthlyDate,
-      monthlyWeekday,
-      monthlyWeek,
       customInterval,
       customUnit
     } = await request.json()
@@ -93,7 +89,7 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
 export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
     // Await params before using
-    const { id } = await params
+    const { id } = await params as { id: string }
     
     // Check if habit exists and belongs to user
     const existingHabit = await prisma.habit.findFirst({

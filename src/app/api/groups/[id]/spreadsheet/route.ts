@@ -6,7 +6,7 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
     const { searchParams } = new URL(request.url)
     const days = parseInt(searchParams.get('days') || '30')
-    const { id } = await params
+    const { id } = await params as { id: string }
 
     // Verify user access to group
     const group = await prisma.group.findUnique({
@@ -122,11 +122,17 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
     })
 
     // Organize entries by date -> userId -> habitId (only keep most recent for each combination)
-    const entriesMap: Record<string, Record<string, Record<string, any>>> = {}
+    const entriesMap: Record<string, Record<string, Record<string, { 
+      id: string; 
+      habitId: string; 
+      userId: string; 
+      date: string; 
+      value: number; 
+      completed: boolean;
+    }>>> = {}
     
     sharedHabitEntries.forEach(entry => {
       const dateStr = entry.date.toISOString().split('T')[0]
-      const entryKey = `${dateStr}-${entry.userId}-${entry.sharedHabitId}`
       
       if (!entriesMap[dateStr]) entriesMap[dateStr] = {}
       if (!entriesMap[dateStr][entry.userId]) entriesMap[dateStr][entry.userId] = {}

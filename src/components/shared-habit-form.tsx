@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { HabitFormData } from '@/types'
+import { Habit } from '@prisma/client'
 import { UnifiedHabitForm } from './unified-habit-form'
 
 interface SharedHabitFormProps {
   groupId: string
   onClose: () => void
-  onSuccess: (habit: any) => void
+  onSuccess: (habit: Habit) => void
 }
 
 export function SharedHabitForm({ groupId, onClose, onSuccess }: SharedHabitFormProps) {

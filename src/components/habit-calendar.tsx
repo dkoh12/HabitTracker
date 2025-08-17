@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, startOfDay } from 'date-fns'
+import { useState, useEffect, useCallback } from 'react'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns'
 import { HabitWithEntries } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +9,6 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Calendar1, Calenda
 
 interface HabitCalendarProps {
   habits: HabitWithEntries[]
-  onUpdateEntry: (habitId: string, date: string, value: number) => void
 }
 
 interface CustomActivity {
@@ -22,14 +21,13 @@ interface CustomActivity {
   userId: string
 }
 
-export function HabitCalendar({ habits, onUpdateEntry }: HabitCalendarProps) {
+export function HabitCalendar({ habits }: HabitCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedHabit, setSelectedHabit] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week')
   const [customActivities, setCustomActivities] = useState<CustomActivity[]>([])
   const [editingActivity, setEditingActivity] = useState<{ date: string; activity?: CustomActivity } | null>(null)
   const [activityText, setActivityText] = useState('')
-  const [isLoadingActivities, setIsLoadingActivities] = useState(false)
   // Removed hover and optimistic update state since toggle functionality is removed
 
   // Predefined colors for custom activities (different from typical habit colors)
@@ -47,7 +45,7 @@ export function HabitCalendar({ habits, onUpdateEntry }: HabitCalendarProps) {
   ]
 
   // Calculate date ranges based on view mode
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     if (viewMode === 'week') {
       const weekStart = startOfWeek(currentDate)
       const weekEnd = endOfWeek(currentDate)
@@ -59,15 +57,14 @@ export function HabitCalendar({ habits, onUpdateEntry }: HabitCalendarProps) {
       const end = endOfWeek(monthEnd)
       return { start, end }
     }
-  }
+  }, [currentDate, viewMode])
 
   const getRandomActivityColor = () => {
     return activityColors[Math.floor(Math.random() * activityColors.length)]
   }
 
   // API functions for custom activities
-  const loadCustomActivities = async (startDate: Date, endDate: Date) => {
-    setIsLoadingActivities(true)
+  const loadCustomActivities = useCallback(async (startDate: Date, endDate: Date) => {
     try {
       const params = new URLSearchParams({
         startDate: format(startDate, 'yyyy-MM-dd'),
@@ -84,10 +81,8 @@ export function HabitCalendar({ habits, onUpdateEntry }: HabitCalendarProps) {
       }
     } catch (error) {
       console.error('Error loading custom activities:', error)
-    } finally {
-      setIsLoadingActivities(false)
     }
-  }
+  }, [])
 
   const createCustomActivity = async (date: string, text: string) => {
     try {
@@ -174,7 +169,7 @@ export function HabitCalendar({ habits, onUpdateEntry }: HabitCalendarProps) {
     const { start: startDate, end: endDate } = getDateRange()
     console.log('Loading custom activities for date range:', format(startDate, 'yyyy-MM-dd'), 'to', format(endDate, 'yyyy-MM-dd'))
     loadCustomActivities(startDate, endDate)
-  }, [currentDate, viewMode])
+  }, [currentDate, viewMode, getDateRange, loadCustomActivities])
 
   const addCustomActivity = async (date: string, text: string) => {
     await createCustomActivity(date, text)

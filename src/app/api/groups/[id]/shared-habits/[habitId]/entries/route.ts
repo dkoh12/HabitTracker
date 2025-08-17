@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withAuthAndParams } from '@/lib/withAuth'
 
 // POST /api/groups/[id]/shared-habits/[habitId]/entries - Create or update entry for shared habit
 export const POST = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId, habitId } = await params
+    const { id: groupId, habitId } = await params as { id: string; habitId: string }
     const { date, value, notes, completed } = await request.json()
 
     // Verify user is a member of the group
@@ -41,11 +41,6 @@ export const POST = withAuthAndParams(async (request, { user }, { params }) => {
 
     // Parse the date string in UTC for consistent storage
     const entryDate = new Date(date + 'T00:00:00.000Z')
-    
-    // Backend timezone info (server's timezone, not client's)
-    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    const serverOffset = new Date().getTimezoneOffset()
-    const localDateOnServer = new Date(date + 'T00:00:00')
     
     // Upsert the entry
     const entry = await prisma.sharedGroupHabitEntry.upsert({
@@ -102,7 +97,7 @@ export const POST = withAuthAndParams(async (request, { user }, { params }) => {
 // GET /api/groups/[id]/shared-habits/[habitId]/entries - Get entries for a shared habit
 export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId, habitId } = await params
+    const { id: groupId, habitId } = await params as { id: string; habitId: string }
     const { searchParams } = new URL(request.url)
     const days = parseInt(searchParams.get('days') || '30')
 
@@ -164,7 +159,7 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
 // DELETE /api/groups/[id]/shared-habits/[habitId]/entries - Delete entry for shared habit
 export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId, habitId } = await params
+    const { id: groupId, habitId } = await params as { id: string; habitId: string }
     const { date } = await request.json()
 
     // Verify user is a member of the group
@@ -200,10 +195,6 @@ export const DELETE = withAuthAndParams(async (request, { user }, { params }) =>
 
     // Parse the date string in UTC for consistent storage
     const entryDate = new Date(date + 'T00:00:00.000Z')
-    
-    // Backend timezone info
-    const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    const serverOffset = new Date().getTimezoneOffset()
     
     // Delete ALL entries for this user/habit/date combination (to handle any duplicates)
     const deletedEntry = await prisma.sharedGroupHabitEntry.deleteMany({

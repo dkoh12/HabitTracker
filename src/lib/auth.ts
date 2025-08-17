@@ -3,6 +3,29 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
+// Extended user type for NextAuth
+interface ExtendedUser {
+  id: string;
+  email: string;
+  name: string | null;
+  username: string;
+  avatar: string | null;
+}
+
+// Extended JWT token type
+interface ExtendedToken {
+  sub?: string;
+  name?: string | null;
+  username?: string;
+  avatar?: string | null;
+}
+
+// Extended session type
+interface ExtendedSession {
+  name?: string;
+  avatar?: string;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -48,17 +71,18 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.username = (user as any).username
-        token.avatar = (user as any).avatar
+        token.username = (user as ExtendedUser).username
+        token.avatar = (user as ExtendedUser).avatar
       }
       
       // Handle session updates (like when profile name or avatar changes)
       if (trigger === 'update') {
-        if (session?.name) {
-          token.name = session.name
+        const updateSession = session as ExtendedSession
+        if (updateSession?.name) {
+          token.name = updateSession.name
         }
-        if (session?.avatar !== undefined) {
-          token.avatar = session.avatar
+        if (updateSession?.avatar !== undefined) {
+          token.avatar = updateSession.avatar
         }
       }
       
@@ -66,12 +90,13 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.sub
-        ;(session.user as any).username = token.username
-        ;(session.user as any).avatar = token.avatar
+        const extendedToken = token as ExtendedToken
+        ;(session.user as ExtendedUser).id = extendedToken.sub || ''
+        ;(session.user as ExtendedUser).username = extendedToken.username || ''
+        ;(session.user as ExtendedUser).avatar = extendedToken.avatar || null
         // Make sure the updated name from token is reflected in session
-        if (token.name) {
-          session.user.name = token.name
+        if (extendedToken.name) {
+          session.user.name = extendedToken.name
         }
       }
       return session

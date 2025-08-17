@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+// Types for the extended session user (matches what we set in auth.ts)
+interface SessionUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  username: string;
+  avatar: string | null;
+}
+
 // Types for the authenticated user
 export interface AuthenticatedUser {
   id: string
@@ -18,7 +27,7 @@ export interface AuthContext {
 }
 
 // Type for route handlers that require authentication
-export type AuthenticatedHandler<T = any> = (
+export type AuthenticatedHandler<T = unknown> = (
   request: NextRequest,
   context: AuthContext,
   routeParams?: T
@@ -34,7 +43,7 @@ export type AuthenticatedHandler<T = any> = (
  *   return NextResponse.json(habits)
  * })
  */
-export function withAuth<T = any>(handler: AuthenticatedHandler<T>) {
+export function withAuth<T = unknown>(handler: AuthenticatedHandler<T>) {
   return async function authenticatedRoute(
     request: NextRequest,
     routeParams?: T
@@ -51,12 +60,13 @@ export function withAuth<T = any>(handler: AuthenticatedHandler<T>) {
       }
 
       // 2. Create authenticated user object with proper typing
+      const sessionUser = session.user as SessionUser
       const authenticatedUser: AuthenticatedUser = {
-        id: (session.user as any).id,
-        email: session.user.email!,
-        name: session.user.name,
-        username: (session.user as any).username,
-        avatar: (session.user as any).avatar
+        id: sessionUser.id,
+        email: sessionUser.email,
+        name: sessionUser.name || null,
+        username: sessionUser.username || null,
+        avatar: sessionUser.avatar
       }
 
       // 3. Create context object
@@ -107,7 +117,7 @@ export function withAuth<T = any>(handler: AuthenticatedHandler<T>) {
  *   // Your logic here
  * })
  */
-export function withAuthAndParams<T = any>(
+export function withAuthAndParams<T = unknown>(
   handler: (
     request: NextRequest,
     context: AuthContext,

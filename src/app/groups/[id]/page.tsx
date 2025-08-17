@@ -2,12 +2,13 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useEffect, useState, useCallback } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers } from '@/types'
-import { ArrowLeft, Users, Calendar, TrendingUp, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp, Edit3, Trash2, Eye } from 'lucide-react'
+import { ArrowLeft, Users, CheckCircle2, XCircle, Circle, BookOpen, ChevronDown, ChevronUp, Edit3, Trash2, Eye } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 
@@ -60,7 +61,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
   const router = useRouter()
   const [group, setGroup] = useState<GroupWithMembers | null>(null)
   const [spreadsheetData, setSpreadsheetData] = useState<GroupSpreadsheetData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState(30) // Last 30 days
   const [selectedLeaderboardHabit, setSelectedLeaderboardHabit] = useState('overall') // Filter for leaderboard
   const [selectedChartHabit, setSelectedChartHabit] = useState('overall') // Filter for daily progress chart
@@ -88,7 +88,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     resolveParams()
   }, [params])
 
-  const fetchSpreadsheetData = useCallback(async (groupData: GroupWithMembers) => {
+  const fetchSpreadsheetData = useCallback(async () => {
     if (!groupId) return
     
     try {
@@ -111,14 +111,12 @@ export default function GroupDetail({ params }: GroupDetailProps) {
       if (response.ok) {
         const groupData = await response.json()
         setGroup(groupData)
-        await fetchSpreadsheetData(groupData)
+        await fetchSpreadsheetData()
       } else if (response.status === 404) {
         router.push('/groups')
       }
     } catch (error) {
       console.error('Error fetching group detail:', error)
-    } finally {
-      setLoading(false)
     }
   }, [groupId, fetchSpreadsheetData, router])
 
@@ -141,16 +139,9 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
   useEffect(() => {
     if (group && groupId) {
-      fetchSpreadsheetData(group)
+      fetchSpreadsheetData()
     }
   }, [dateRange, group, groupId, fetchSpreadsheetData])
-
-  const handleCreateSharedHabit = useCallback((newHabit: any) => {
-    // Refresh the spreadsheet data to include the new shared habit
-    if (group) {
-      fetchSpreadsheetData(group)
-    }
-  }, [group, fetchSpreadsheetData])
 
   const handleViewHabit = (habit: GroupHabitData) => {
     setSelectedHabit(habit)
@@ -191,7 +182,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         setSelectedHabit(null)
         // Refresh the data
         if (group) {
-          await fetchSpreadsheetData(group)
+          await fetchSpreadsheetData()
         }
       } else {
         const error = await response.json()
@@ -220,7 +211,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         setSelectedHabit(null)
         // Refresh the data
         if (group) {
-          await fetchSpreadsheetData(group)
+          await fetchSpreadsheetData()
         }
       } else {
         const error = await response.json()
@@ -236,7 +227,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     if (!groupId || !session?.user) return
 
     // Check if user is the group owner
-    const currentUserId = (session.user as any).id
+    const currentUserId = (session.user as { id: string }).id
     const isOwner = group?.owner.id === currentUserId
     
     if (isOwner) {
@@ -292,7 +283,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         await fetchGroupDetail()
         // Also refresh spreadsheet data to update member roles
         if (group) {
-          await fetchSpreadsheetData(group)
+          await fetchSpreadsheetData()
         }
       } else {
         const error = await response.json()
@@ -304,11 +295,11 @@ export default function GroupDetail({ params }: GroupDetailProps) {
     }
   }
 
-  const handleHabitEntryClick = async (habitId: string, date: string, memberId: string, currentEntry: any) => {
+  const handleHabitEntryClick = async (habitId: string, date: string, memberId: string, currentEntry: HabitEntry | null) => {
     if (!groupId || !session?.user) return
 
     // Only allow users to update their own entries
-    const currentUserId = (session.user as any).id
+    const currentUserId = (session.user as { id: string }).id
     if (memberId !== currentUserId) {
       return // Don't allow clicking on other users' cells
     }
@@ -363,7 +354,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
           // Refresh spreadsheet data to show the update immediately
           if (group) {
             console.log('About to refresh spreadsheet data after deletion...')
-            await fetchSpreadsheetData(group)
+            await fetchSpreadsheetData()
             console.log('Spreadsheet data refresh completed after deletion')
           }
         } else {
@@ -386,7 +377,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
         if (response.ok) {
           // Refresh spreadsheet data to show the update immediately
           if (group) {
-            await fetchSpreadsheetData(group)
+            await fetchSpreadsheetData()
           }
         } else {
           console.error('API request failed:', response.status, await response.text())
@@ -574,7 +565,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
             {/* Show Leave Group button only if user is not the owner */}
             {(() => {
               const hasSession = !!session?.user
-              const sessionUserId = (session?.user as any)?.id
+              const sessionUserId = (session?.user as { id: string })?.id
               const groupOwnerId = group?.owner.id
               const isOwner = sessionUserId === groupOwnerId
               const shouldShowButton = hasSession && !isOwner
@@ -731,7 +722,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                   </thead>
                   <tbody>
                     {spreadsheetData.habits.map((habit, index) => {
-                      const currentUserId = (session?.user as any)?.id
+                      const currentUserId = (session?.user as { id: string })?.id
                       const isGroupOwner = group?.owner.id === currentUserId
                       const membership = group?.members.find(m => m.userId === currentUserId)
                       const isAdmin = membership?.role === 'Admin'
@@ -811,12 +802,12 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               gap: '0.5rem'
                             }}>
                               {habit.user.avatar ? (
-                                <img
+                                <Image
                                   src={habit.user.avatar}
                                   alt={habit.user.name || habit.user.email}
+                                  width={24}
+                                  height={24}
                                   style={{
-                                    width: '24px',
-                                    height: '24px',
                                     borderRadius: '50%',
                                     border: '1px solid #d1d5db'
                                   }}
@@ -1100,7 +1091,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                         Habit
                       </th>
                       {(() => {
-                        const currentUserId = (session?.user as any)?.id
+                        const currentUserId = (session?.user as { id: string })?.id
                         
                         // Use only group.members since owner is now included there
                         const allMembers = group.members
@@ -1131,12 +1122,12 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               gap: '0.5rem'
                             }}>
                               {member.user.avatar ? (
-                                <img
+                                <Image
                                   src={member.user.avatar}
                                   alt={member.user.name || member.user.email}
+                                  width={32}
+                                  height={32}
                                   style={{
-                                    width: '32px',
-                                    height: '32px',
                                     borderRadius: '50%',
                                     border: member.userId === currentUserId 
                                       ? '2px solid #3b82f6' 
@@ -1314,7 +1305,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                           
                           {/* Member Progress Columns */}
                           {(() => {
-                            const currentUserId = (session?.user as any)?.id
+                            const currentUserId = (session?.user as { id: string })?.id
                             
                             // Use only group.members since owner is now included there
                             const allMembers = group.members
@@ -1561,7 +1552,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
             </CardHeader>
             <CardContent style={{ padding: '1.5rem' }}>
               {(() => {
-                const currentUserId = (session?.user as any)?.id;
+                const currentUserId = (session?.user as { id: string })?.id;
                 
                 // Prepare data for statistics
                 // Use only group.members since owner is now included there
@@ -1569,7 +1560,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
 
                 // Calculate overall completion statistics
                 const totalPossibleEntries = spreadsheetData.dates.length * spreadsheetData.habits.length * allMembers.length;
-                let totalEntries = 0;
                 let totalCompleted = 0;
                 let totalPartial = 0;
 
@@ -1585,7 +1575,6 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       const entry = spreadsheetData.entries[date]?.[member.userId]?.[habit.id];
                       if (entry && entry.value > 0) {
                         memberEntries++;
-                        totalEntries++;
                         
                         // Calculate normalized percentage for this entry
                         const normalizedPercentage = Math.min((entry.value / habit.target) * 100, 100);
@@ -1876,7 +1865,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                               let cardStyle;
                               if (isTopThree && isCurrentUser) {
                                 // Current user in top 3: medal color with special glow effect
-                                const medalColor = (medalColors as any)[index];
+                                const medalColor = medalColors[index as keyof typeof medalColors];
                                 cardStyle = {
                                   background: medalColor.bg,
                                   border: index === 0 
@@ -1890,7 +1879,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                 };
                               } else if (isTopThree) {
                                 // Other users in top 3: medal colors
-                                const medalColor = (medalColors as any)[index];
+                                const medalColor = medalColors[index as keyof typeof medalColors];
                                 cardStyle = {
                                   background: medalColor.bg,
                                   border: index === 0 
@@ -1938,22 +1927,22 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                     height: '40px',
                                     borderRadius: '50%',
                                     background: isTopThree ? 'rgba(255, 255, 255, 0.9)' : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-                                    border: isTopThree ? `2px solid ${(medalColors as any)[index]?.border || '#d1d5db'}` : '2px solid #d1d5db',
+                                    border: isTopThree ? `2px solid ${medalColors[index as keyof typeof medalColors]?.border || '#d1d5db'}` : '2px solid #d1d5db',
                                     fontSize: '1rem',
                                     fontWeight: 'bold',
-                                    color: isTopThree ? (medalColors as any)[index]?.text || '#6b7280' : '#6b7280'
+                                    color: isTopThree ? medalColors[index as keyof typeof medalColors]?.text || '#6b7280' : '#6b7280'
                                   }}>
                                     {index < 3 ? ['🥇', '🥈', '🥉'][index] : `#${index + 1}`}
                                   </div>
                                   
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '180px' }}>
                                     {member.user.avatar ? (
-                                      <img
+                                      <Image
                                         src={member.user.avatar}
                                         alt={member.user.name || member.user.email}
+                                        width={32}
+                                        height={32}
                                         style={{
-                                          width: '32px',
-                                          height: '32px',
                                           borderRadius: '50%',
                                           border: isCurrentUser ? '2px solid #3b82f6' : '2px solid #e5e7eb'
                                         }}
@@ -2338,12 +2327,10 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                                     const selectedHabitData = spreadsheetData.habits.find(h => h.id === selectedChartHabit);
                                     if (selectedHabitData) {
                                       let totalPercentagePoints = 0;
-                                      let dayEntries = 0;
 
                                       allMembers.forEach(member => {
                                         const entry = spreadsheetData.entries[day.date]?.[member.userId]?.[selectedHabitData.id];
                                         if (entry && entry.value > 0) {
-                                          dayEntries++;
                                           const normalizedPercentage = Math.min((entry.value / selectedHabitData.target) * 100, 100);
                                           totalPercentagePoints += normalizedPercentage;
                                         }
@@ -2490,7 +2477,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
               {showAllMembers && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(() => {
-                  const currentUserId = (session?.user as any)?.id
+                  const currentUserId = (session?.user as { id: string })?.id
                   
                   // Use only group.members since owner is now included there
                   const allMembers = group.members.map(member => ({
@@ -2526,12 +2513,12 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           {member.user.avatar ? (
-                            <img
+                            <Image
                               src={member.user.avatar}
                               alt={member.user.name || member.user.email}
+                              width={40}
+                              height={40}
                               style={{
-                                width: '40px',
-                                height: '40px',
                                 borderRadius: '50%',
                                 border: isOwnerEntry
                                   ? '2px solid #f59e0b'
@@ -2999,7 +2986,7 @@ export default function GroupDetail({ params }: GroupDetailProps) {
                     marginBottom: '1.5rem',
                     lineHeight: '1.5'
                   }}>
-                    This action cannot be undone. All progress data for "{selectedHabit.name}" will be permanently deleted for all group members.
+                    This action cannot be undone. All progress data for &quot;{selectedHabit.name}&quot; will be permanently deleted for all group members.
                   </p>
                 </div>
               )}

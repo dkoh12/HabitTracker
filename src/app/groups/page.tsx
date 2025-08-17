@@ -2,12 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GroupWithMembers, GroupFormData } from '@/types'
-import { Users, Plus, Copy, UserPlus, ChevronDown, ChevronUp, LogOut } from 'lucide-react'
+import { Users, Copy, ChevronDown, ChevronUp, LogOut } from 'lucide-react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 
 export default function Groups() {
@@ -34,7 +35,7 @@ export default function Groups() {
     }
   }, [])
 
-  const { session, status } = useAuthValidation({
+  const { session } = useAuthValidation({
     onValidationSuccess: fetchGroups
   })
 
@@ -542,7 +543,7 @@ export default function Groups() {
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {(() => {
-                        const currentUserId = (session?.user as any)?.id
+                        const currentUserId = (session?.user as { id: string })?.id
                         
                         // Use only the members list (owner is now included as a member with Owner role)
                         const allMembers = group.members.map(member => ({
@@ -563,8 +564,6 @@ export default function Groups() {
                         
                         return sortedMembers.slice(0, expandedMembers[group.id] ? sortedMembers.length : 5).map(member => {
                           const isCurrentUser = member.memberUserId === currentUserId
-                          const isOwnerEntry = (member.role as string) === 'Owner'
-                          const isCurrentUserOwner = isCurrentUser && isOwnerEntry
                           
                           return (
                             <div key={member.id} style={{
@@ -591,9 +590,11 @@ export default function Groups() {
                                 fontWeight: '500' 
                               }}>
                                 {member.user.avatar ? (
-                                  <img
+                                  <Image
                                     src={member.user.avatar}
                                     alt={member.user.name || member.user.email}
+                                    width={24}
+                                    height={24}
                                     style={{
                                       width: '24px',
                                       height: '24px',
@@ -661,7 +662,6 @@ export default function Groups() {
                         })
                       })()}
                       {(() => {
-                        const currentUserId = (session?.user as any)?.id
                         const totalMembers = group.members.length // owner is now included in members
                         
                         return totalMembers > 5 && (
@@ -768,7 +768,7 @@ export default function Groups() {
                     </div>
                   )}
 
-                  {group.ownerId === (session.user as any)?.id && (
+                  {group.ownerId === (session.user as { id: string })?.id && (
                     <div style={{
                       paddingTop: '1rem',
                       borderTop: '1px solid #f3f4f6'
@@ -823,11 +823,11 @@ export default function Groups() {
                   )}
 
                   {/* Leave Group Button - show if user can leave */}
-                  {canLeaveGroup(group, (session.user as any)?.id) && (
+                  {canLeaveGroup(group, (session.user as { id: string })?.id) && (
                     <div style={{
                       paddingTop: '1rem',
                       borderTop: '1px solid #f3f4f6',
-                      marginTop: group.ownerId === (session.user as any)?.id ? '0' : '1rem'
+                      marginTop: group.ownerId === (session.user as { id: string })?.id ? '0' : '1rem'
                     }}>
                       <Button
                         variant="outline"

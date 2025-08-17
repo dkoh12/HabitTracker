@@ -3,16 +3,14 @@
 import React, { useState, useCallback } from 'react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { 
   Shield, 
   Star, 
   Flame, 
   Target, 
-  Calendar,
   TrendingUp, 
   Crown, 
-  Medal, 
   CheckCircle2,
   Trophy,
   Award,
@@ -27,12 +25,29 @@ import {
   ChevronDown
 } from 'lucide-react'
 
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  type: string;
+  threshold?: number;
+  isEarned?: boolean;
+  earnedAt?: string;
+  earned?: boolean;
+  rarity: string;
+  color: string;
+  points: number;
+  requirement?: string;
+  earnedDate?: string;
+}
+
 export default function BadgesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showMoreEarned, setShowMoreEarned] = useState(false)
   const [showMoreNotEarned, setShowMoreNotEarned] = useState(false)
-  const [badges, setBadges] = useState<any[]>([])
-  const [loading, setLoading] = useState(false) // Start with false - no loading screen
+  const [badges, setBadges] = useState<Badge[]>([])
   const [dataLoaded, setDataLoaded] = useState(false) // Track if data has been loaded
   const [userStats, setUserStats] = useState({
     totalPoints: 0,
@@ -60,7 +75,7 @@ export default function BadgesPage() {
   }, [])
 
   // Add unified auth validation and fetch badges from API
-  const { session, status } = useAuthValidation({
+  const { session } = useAuthValidation({
     onValidationSuccess: fetchBadgesFromAPI
   })
   
@@ -146,7 +161,7 @@ export default function BadgesPage() {
   const totalPoints = earnedBadges.reduce((sum, badge) => sum + badge.points, 0)
 
   // Icon mapping for dynamic icon rendering
-  const iconMap: { [key: string]: any } = {
+  const iconMap: { [key: string]: React.ComponentType<{ size?: number; style?: React.CSSProperties }> } = {
     CheckCircle2,
     Star,
     Flame,

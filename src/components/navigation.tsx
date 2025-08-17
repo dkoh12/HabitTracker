@@ -217,9 +217,9 @@ export function Navigation() {
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  ...((session.user as any)?.avatar 
+                  ...((session.user as { avatar?: string })?.avatar 
                     ? {
-                        backgroundImage: `url(${(session.user as any).avatar})`,
+                        backgroundImage: `url(${(session.user as { avatar?: string }).avatar})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat'
@@ -235,7 +235,7 @@ export function Navigation() {
                   fontSize: '0.875rem',
                   fontWeight: '600'
                 }}>
-                  {!(session.user as any)?.avatar && (session.user?.name || session.user?.email || 'U').charAt(0).toUpperCase()}
+                  {!(session.user as { avatar?: string })?.avatar && (session.user?.name || session.user?.email || 'U').charAt(0).toUpperCase()}
                 </div>
                 <span>Welcome, {session.user?.name || session.user?.email}</span>
                 <ChevronDown className="w-4 h-4" style={{

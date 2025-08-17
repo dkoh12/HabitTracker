@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { withAuthAndParams } from '@/lib/withAuth'
 
 export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
-  const { id } = await params
+  const { id } = await params as { id: string }
   const { text, color } = await request.json()
 
   if (!text) {
@@ -44,9 +44,9 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
     }
 
     return NextResponse.json(formattedActivity)
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle unique constraint violation
-    if (error.code === 'P2002') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(
         { error: 'An activity with this text already exists for this date' },
         { status: 409 }
@@ -62,7 +62,7 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
 })
 
 export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
-  const { id } = await params
+  const { id } = await params as { id: string }
 
   try {
     // Check if the activity exists and belongs to the user

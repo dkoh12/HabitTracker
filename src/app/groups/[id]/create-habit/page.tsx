@@ -441,7 +441,7 @@ export default function CreateHabitPage({ params }: CreateHabitPageProps) {
                       <button
                         key={type.key}
                         type="button"
-                        onClick={() => setFormData({ ...formData, scheduleType: type.key as any })}
+                        onClick={() => setFormData({ ...formData, scheduleType: type.key as 'weekly' | 'monthly' | 'custom' })}
                         style={{
                           padding: '0.75rem',
                           border: isSelected ? '2px solid #667eea' : '2px solid #e5e7eb',
@@ -631,7 +631,7 @@ export default function CreateHabitPage({ params }: CreateHabitPageProps) {
                           <button
                             key={type.key}
                             type="button"
-                            onClick={() => setFormData({ ...formData, monthlyType: type.key as any })}
+                            onClick={() => setFormData({ ...formData, monthlyType: type.key as 'date' | 'weekday' })}
                             style={{
                               flex: 1,
                               padding: '0.75rem',
@@ -700,7 +700,7 @@ export default function CreateHabitPage({ params }: CreateHabitPageProps) {
                           </label>
                           <select
                             value={formData.monthlyWeek}
-                            onChange={(e) => setFormData({ ...formData, monthlyWeek: e.target.value as any })}
+                            onChange={(e) => setFormData({ ...formData, monthlyWeek: e.target.value as 'first' | 'second' | 'third' | 'fourth' | 'last' })}
                             style={{
                               width: '100%',
                               padding: '0.75rem',
@@ -807,7 +807,7 @@ export default function CreateHabitPage({ params }: CreateHabitPageProps) {
                       </label>
                       <select
                         value={formData.customUnit}
-                        onChange={(e) => setFormData({ ...formData, customUnit: e.target.value as any })}
+                        onChange={(e) => setFormData({ ...formData, customUnit: e.target.value as 'days' | 'weeks' | 'months' })}
                         style={{
                           padding: '0.75rem',
                           border: '2px solid #e5e7eb',

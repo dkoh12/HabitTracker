@@ -5,20 +5,12 @@ import { HabitCalendar } from '@/components/habit-calendar'
 import { HabitSpreadsheet } from '@/components/habit-spreadsheet'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HabitWithEntries } from '@/types'
-import { Star, TrendingUp, Target, Activity, Calendar, BarChart3, Zap, Award, TrendingDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
-import { format, subDays, parseISO, startOfDay, differenceInDays, isToday, isYesterday, subWeeks, startOfWeek, endOfWeek } from 'date-fns'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
+import { format, subWeeks, startOfWeek, endOfWeek } from 'date-fns'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell, AreaChart, Area } from 'recharts'
 export default function Dashboard() {
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
-  const [loading, setLoading] = useState(true)
-  
-  // Statistics filtering and comparison state
-  const [selectedHabits, setSelectedHabits] = useState<string[]>([])
-  const [viewMode, setViewMode] = useState('combined') // 'combined', 'individual', 'comparison'
-  const [timeFilter, setTimeFilter] = useState('30') // '7', '30', '90', 'all'
-  const [sortBy, setSortBy] = useState('name') // 'name', 'success_rate', 'streak', 'days'
   
   // Chart filtering state
   const [visibleHabitsDaily, setVisibleHabitsDaily] = useState<string[]>([])
@@ -44,17 +36,14 @@ export default function Dashboard() {
     } catch (error) {
       console.error('💥 Error fetching habits:', error)
       // The auth validation hook will handle session validation errors
-    } finally {
-      setLoading(false)
     }
   }, [])
-  const { session, status } = useAuthValidation({
+  const { session } = useAuthValidation({
     onValidationSuccess: fetchHabits
   })
 
-  // Update selectedHabits when habits change
+  // Update chart visibility when habits change
   useEffect(() => {
-    setSelectedHabits(habits.map(h => h.id))
     setVisibleHabitsDaily(habits.map(h => h.name))
     setVisibleHabitsWeekly(habits.map(h => h.name))
   }, [habits])
@@ -70,7 +59,7 @@ export default function Dashboard() {
       })
       
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         
         // Refresh habits data to update UI
         await fetchHabits()
@@ -116,7 +105,7 @@ export default function Dashboard() {
     
     // Calculate current streak (from today backwards)
     const today = new Date()
-    let checkDate = new Date(today)
+    const checkDate = new Date(today)
     
     while (checkDate >= new Date(sortedEntries[0]?.date || today)) {
       const dateStr = checkDate.toISOString().split('T')[0]
@@ -154,107 +143,6 @@ export default function Dashboard() {
     }
   }
 
-  // Enhanced analytics functions
-  const getTrendAnalysis = (habit: HabitWithEntries) => {
-    const last14Days = subDays(new Date(), 13)
-    const last7Days = subDays(new Date(), 6)
-    
-    const week1Entries = habit.habitEntries.filter(entry => {
-      const entryDateStr = entry.date.toString().substring(0, 10)
-      const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
-      return entryDate >= last14Days && entryDate < last7Days
-    })
-    
-    const week2Entries = habit.habitEntries.filter(entry => {
-      const entryDateStr = entry.date.toString().substring(0, 10)
-      const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
-      return entryDate >= last7Days
-    })
-    
-    const week1Success = week1Entries.filter(e => e.value > 0).length / 7 * 100
-    const week2Success = week2Entries.filter(e => e.value > 0).length / 7 * 100
-    
-    const trend = week2Success - week1Success
-    
-    return {
-      trend,
-      improving: trend > 5,
-      declining: trend < -5,
-      stable: Math.abs(trend) <= 5,
-      week1Success: Math.round(week1Success),
-      week2Success: Math.round(week2Success)
-    }
-  }
-
-  const getMotivationalInsights = (habit: HabitWithEntries) => {
-    const stats = getDetailedHabitStats(habit)
-    const trend = getTrendAnalysis(habit)
-    
-    const insights = []
-    
-    if (stats.currentStreak >= 7) {
-      insights.push({
-        type: 'achievement',
-        icon: Award,
-        message: `Amazing! ${stats.currentStreak} day streak!`,
-        color: 'text-yellow-600'
-      })
-    }
-    
-    if (trend.improving) {
-      insights.push({
-        type: 'trending',
-        icon: TrendingUp,
-        message: `You're improving! +${trend.trend.toFixed(0)}% this week`,
-        color: 'text-green-600'
-      })
-    }
-    
-    if (stats.successRate >= 90) {
-      insights.push({
-        type: 'mastery',
-        icon: Star,
-        message: `Master level: ${stats.successRate}% success rate!`,
-        color: 'text-purple-600'
-      })
-    }
-    
-    if (stats.currentStreak === 0 && stats.successRate > 50) {
-      insights.push({
-        type: 'motivation',
-        icon: Zap,
-        message: "Time to restart your streak!",
-        color: 'text-blue-600'
-      })
-    }
-    
-    return insights
-  }
-
-  const getWeeklyProgress = () => {
-    const weekStart = startOfWeek(new Date())
-    const weekEnd = endOfWeek(new Date())
-    
-    return habits.map(habit => {
-      const weekEntries = habit.habitEntries.filter(entry => {
-        const entryDateStr = entry.date.toString().substring(0, 10)
-        const entryDate = new Date(entryDateStr + 'T12:00:00') // Parse as local date at noon
-        return entryDate >= weekStart && entryDate <= weekEnd
-      })
-      
-      const completedDays = weekEntries.filter(e => e.value > 0).length
-      const percentage = (completedDays / 7) * 100
-      
-      return {
-        habit,
-        completedDays,
-        totalDays: 7,
-        percentage: Math.round(percentage),
-        trend: getTrendAnalysis(habit)
-      }
-    }).sort((a, b) => b.percentage - a.percentage)
-  }
-
   // Chart data preparation functions
   const getProgressChartData = () => {
     const days = []
@@ -266,7 +154,7 @@ export default function Dashboard() {
       const dateStr = format(localDate, 'MMM dd')
       const dateForComparison = format(localDate, 'yyyy-MM-dd')
       
-      const dayData: any = { date: dateStr, day: dateForComparison }
+      const dayData: { date: string; day: string; [habitName: string]: string | number } = { date: dateStr, day: dateForComparison }
       
       habits.forEach(habit => {
         const entry = habit.habitEntries.find(e => {
@@ -317,7 +205,7 @@ export default function Dashboard() {
       const weekEnd = endOfWeek(weekStart)
       const weekLabel = `Week ${weeklyTimeRange - i} (${format(weekStart, 'MMM dd')})`
       
-      const weekData: any = { week: weekLabel }
+      const weekData: { week: string; [habitName: string]: string | number } = { week: weekLabel }
       
       habits.forEach(habit => {
         const weekEntries = habit.habitEntries.filter(entry => {
@@ -604,7 +492,7 @@ export default function Dashboard() {
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                           }}
-                          formatter={(value: any, name: string) => [
+                          formatter={(value: number, name: string) => [
                             `${value}% of target`,
                             name
                           ]}
@@ -617,7 +505,7 @@ export default function Dashboard() {
                           }}
                           wrapperStyle={{ cursor: 'pointer' }}
                         />
-                        {habits.map((habit, index) => (
+                        {habits.map((habit) => (
                           <Line 
                             key={habit.id}
                             type="monotone" 
@@ -718,7 +606,7 @@ export default function Dashboard() {
                           }}
                           wrapperStyle={{ cursor: 'pointer' }}
                         />
-                        {habits.map((habit, index) => (
+                        {habits.map((habit) => (
                           <Area
                             key={habit.id}
                             type="monotone"
@@ -964,7 +852,6 @@ export default function Dashboard() {
           {/* HabitCalendar moved to bottom */}
           <HabitCalendar
             habits={habits}
-            onUpdateEntry={updateHabitEntry}
           />
         </div>
       </div>

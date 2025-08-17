@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withAuthAndParams } from '@/lib/withAuth'
 
 // PATCH /api/groups/[id]/members/[memberId]/role - Update member role
 export const PATCH = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId, memberId } = await params
+    const { id: groupId, memberId } = await params as { id: string; memberId: string }
     const { role } = await request.json()
     const currentUserId = user.id
 

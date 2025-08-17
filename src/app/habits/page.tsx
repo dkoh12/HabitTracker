@@ -1,8 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { HabitForm } from '@/components/habit-form'
@@ -12,7 +10,6 @@ import { HabitWithEntries, HabitFormData } from '@/types'
 import { Plus, Edit3, Trash2, Calendar, Star, TrendingUp, Target, Activity } from 'lucide-react'
 
 export default function Habits() {
-  const router = useRouter()
   const [habits, setHabits] = useState<HabitWithEntries[]>([])
   const [showHabitForm, setShowHabitForm] = useState(false)
   const [editingHabit, setEditingHabit] = useState<HabitWithEntries | null>(null)
@@ -34,7 +31,7 @@ export default function Habits() {
   }, [])
 
   // Use unified auth validation
-  const { session, status } = useAuthValidation({
+  const { session } = useAuthValidation({
     onValidationSuccess: fetchHabits
   })
 
@@ -123,7 +120,7 @@ export default function Habits() {
     
     // Calculate current streak from today backwards
     const today = new Date()
-    let checkDate = new Date(today)
+    const checkDate = new Date(today)
     
     for (let i = 0; i < 30; i++) { // Check last 30 days
       const dateStr = checkDate.toISOString().split('T')[0]
@@ -358,7 +355,7 @@ export default function Habits() {
                 fontSize: '0.875rem',
                 margin: 0
               }}>
-                🎉 You've earned {stats.successfulDays} golden star{stats.successfulDays !== 1 ? 's' : ''} for completing this habit!
+                🎉 You&apos;ve earned {stats.successfulDays} golden star{stats.successfulDays !== 1 ? 's' : ''} for completing this habit!
               </p>
             </div>
             

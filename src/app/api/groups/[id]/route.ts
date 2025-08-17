@@ -4,7 +4,7 @@ import { withAuthAndParams } from '@/lib/withAuth'
 
 export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id } = await params
+    const { id } = await params as { id: string }
 
     const group = await prisma.group.findUnique({
       where: {

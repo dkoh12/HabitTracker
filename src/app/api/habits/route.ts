@@ -33,10 +33,6 @@ export const POST = withAuth(async (request, { user }) => {
     unit,
     scheduleType,
     selectedDays,
-    monthlyType,
-    monthlyDate,
-    monthlyWeekday,
-    monthlyWeek,
     customInterval,
     customUnit
   } = await request.json()

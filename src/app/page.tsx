@@ -6,15 +6,11 @@ import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
-  Target, 
-  TrendingUp, 
-  Users, 
-  Calendar,
   BookOpen,
   Dumbbell,
   Brain,
-  Award,
   ArrowRight
 } from 'lucide-react'
 
@@ -79,7 +75,7 @@ export default function Home() {
           justifyContent: 'center',
         }}>
           {/* Connection lines from center to each image */}
-          {imagePositions.map((img, idx) => {
+          {imagePositions.map((img) => {
             return (
               <div key={`line-${img.alt}`}>
                 {/* Connection line */}
@@ -115,10 +111,11 @@ export default function Home() {
                   zIndex: 3,
                   willChange: 'transform'
                 }}>
-                  <img
+                  <Image
                     src={img.src}
                     alt={img.alt}
-                    loading="lazy"
+                    width={120}
+                    height={120}
                     style={{ 
                       width: '100%', 
                       height: '100%', 
@@ -428,7 +425,7 @@ export default function Home() {
               margin: '0 auto',
               lineHeight: '1.6'
             }}>
-              These aren't your typical habits. These are the challenging, transformative 
+              These aren&apos;t your typical habits. These are the challenging, transformative 
               practices that build mental strength, physical excellence, and intellectual power.
             </p>
           </div>
@@ -455,9 +452,11 @@ export default function Home() {
                 height: '200px',
                 overflow: 'hidden'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                   alt="Person reading and studying"
+                  width={800}
+                  height={200}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -513,9 +512,11 @@ export default function Home() {
                 height: '200px',
                 overflow: 'hidden'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                   alt="Person exercising and staying fit"
+                  width={800}
+                  height={200}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -571,9 +572,11 @@ export default function Home() {
                 height: '200px',
                 overflow: 'hidden'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                   alt="Person meditating and practicing mindfulness"
+                  width={800}
+                  height={200}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -642,9 +645,11 @@ export default function Home() {
                 boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
                 border: '1px solid #e2e8f0'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                   alt="Person learning new skills"
+                  width={600}
+                  height={180}
                   style={{
                     width: '100%',
                     height: '180px',
@@ -663,7 +668,7 @@ export default function Home() {
                     fontSize: '0.95rem',
                     lineHeight: '1.5'
                   }}>
-                    "30 minutes of daily learning transformed my career in just 6 months."
+                    &ldquo;30 minutes of daily learning transformed my career in just 6 months.&rdquo;
                   </p>
                 </div>
               </div>
@@ -676,9 +681,11 @@ export default function Home() {
                 boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
                 border: '1px solid #e2e8f0'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                   alt="Person running and staying healthy"
+                  width={600}
+                  height={180}
                   style={{
                     width: '100%',
                     height: '180px',
@@ -697,7 +704,7 @@ export default function Home() {
                     fontSize: '0.95rem',
                     lineHeight: '1.5'
                   }}>
-                    "Daily exercise habit gave me energy I never thought possible."
+                    &ldquo;Daily exercise habit gave me energy I never thought possible.&rdquo;
                   </p>
                 </div>
               </div>
@@ -710,9 +717,11 @@ export default function Home() {
                 boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
                 border: '1px solid #e2e8f0'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                   alt="Person reading and developing knowledge"
+                  width={600}
+                  height={180}
                   style={{
                     width: '100%',
                     height: '180px',
@@ -731,7 +740,7 @@ export default function Home() {
                     fontSize: '0.95rem',
                     lineHeight: '1.5'
                   }}>
-                    "Reading daily opened my mind to new possibilities and opportunities."
+                    &ldquo;Reading daily opened my mind to new possibilities and opportunities.&rdquo;
                   </p>
                 </div>
               </div>
@@ -744,9 +753,11 @@ export default function Home() {
                 boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
                 border: '1px solid #e2e8f0'
               }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                   alt="Team working together and growing"
+                  width={600}
+                  height={180}
                   style={{
                     width: '100%',
                     height: '180px',
@@ -765,7 +776,7 @@ export default function Home() {
                     fontSize: '0.95rem',
                     lineHeight: '1.5'
                   }}>
-                    "Building habits with others created accountability and lasting change."
+                    &ldquo;Building habits with others created accountability and lasting change.&rdquo;
                   </p>
                 </div>
               </div>

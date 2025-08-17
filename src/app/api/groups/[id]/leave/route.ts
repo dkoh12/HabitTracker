@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withAuthAndParams } from '@/lib/withAuth'
 
 // DELETE /api/groups/[id]/leave - Leave a group
 export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId } = await params
+    const { id: groupId } = await params as { id: string }
     const userId = user.id
 
     // Get group information and member count

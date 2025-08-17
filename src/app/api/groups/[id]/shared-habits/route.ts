@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { withAuthAndParams } from '@/lib/withAuth'
 
 // GET /api/groups/[id]/shared-habits - Get all shared habits for a group
 export const GET = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId } = await params
+    const { id: groupId } = await params as { id: string }
 
     // Verify user is a member of the group
     const membership = await prisma.groupMember.findFirst({
@@ -76,7 +76,7 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
 // POST /api/groups/[id]/shared-habits - Create a new shared habit for the group
 export const POST = withAuthAndParams(async (request, { user }, { params }) => {
   try {
-    const { id: groupId } = await params
+    const { id: groupId } = await params as { id: string }
     const { name, description, color, frequency, target, unit } = await request.json()
 
     // Verify user is a member of the group or the owner

@@ -374,7 +374,7 @@ export function UnifiedHabitForm({
                   <button
                     key={type.key}
                     type="button"
-                    onClick={() => setFormData({ ...formData, scheduleType: type.key as any })}
+                    onClick={() => setFormData({ ...formData, scheduleType: type.key as 'weekly' | 'monthly' | 'custom' })}
                     style={{
                       padding: '0.75rem',
                       border: isSelected ? '2px solid #667eea' : '2px solid #e5e7eb',

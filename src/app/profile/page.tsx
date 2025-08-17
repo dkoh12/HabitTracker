@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuthValidation } from '@/hooks/useAuthValidation'
 import { Navigation } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
@@ -55,12 +55,10 @@ export default function Profile() {
   ];
   let tierIndex = 0;
   let numeralIndex = 0;
-  let nextThreshold = tierThresholds[tierThresholds.length - 1];
   for (let i = 0; i < tierThresholds.length; i++) {
     if (userPoints >= tierThresholds[i]) {
       tierIndex = Math.floor(i / 3);
       numeralIndex = i % 3;
-      nextThreshold = tierThresholds[i + 1] || tierThresholds[i];
     }
   }
   const currentTier = tiers[tierIndex] || tiers[tiers.length - 1];
@@ -69,7 +67,6 @@ export default function Profile() {
   const { update } = useSession() // Still need update function for session updates
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(false) // Start with false - no loading screen
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -135,7 +132,7 @@ export default function Profile() {
   }, [fetchProfile, fetchUserStats])
 
   // Use unified auth validation
-  const { session, status } = useAuthValidation({
+  const { session } = useAuthValidation({
     onValidationSuccess: fetchAllData
   })
 

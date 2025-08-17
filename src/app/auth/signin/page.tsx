@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Mail, Lock, ArrowRight, Calendar, Users, TrendingUp } from 'lucide-react'
 
 export default function SignIn() {
@@ -65,7 +64,7 @@ export default function SignIn() {
         
         router.push('/')
       }
-    } catch (error) {
+    } catch {
       setError('Something went wrong')
     } finally {
       setLoading(false)
@@ -386,7 +385,7 @@ export default function SignIn() {
 
                 <div style={{ marginTop: '24px', textAlign: 'center' }}>
                   <p style={{ color: '#6b7280', margin: 0, lineHeight: '1.6' }}>
-                    Don't have an account?
+                    Don&apos;t have an account?
                   </p>
                   <Link 
                     href="/auth/signup" 

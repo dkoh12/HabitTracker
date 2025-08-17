@@ -85,7 +85,14 @@ export const GET = withAuth(async (request, { user }) => {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    const where: any = {
+    const where: {
+      userId: string;
+      habitId?: string;
+      date?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = {
       userId: user.id
     }
 
