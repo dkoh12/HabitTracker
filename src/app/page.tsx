@@ -253,7 +253,9 @@ export default function Home() {
           ) : (
             <>
               <Link href="/auth/signup">
-                <Button style={{
+                <Button 
+                  className="start-excellence-btn"
+                  style={{
                   background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                   color: 'white',
                   border: 'none',
@@ -270,24 +272,6 @@ export default function Home() {
                   overflow: 'hidden'
                 }}>
                   Start Building Excellence
-                </Button>
-              </Link>
-              <Link href="/auth/signin">
-                <Button style={{
-                  background: 'transparent',
-                  color: 'white',
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
-                  padding: '1.5rem 3rem',
-                  borderRadius: '12px',
-                  fontSize: '1.2rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  Sign In
                 </Button>
               </Link>
             </>
@@ -840,6 +824,26 @@ export default function Home() {
         }
 
         .continue-journey-btn:hover::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: shine 2s ease-in-out infinite;
+        }
+
+        .start-excellence-btn:hover {
+          transform: scale(1.15) !important;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #60a5fa 100%) !important;
+          background-size: 200% 100% !important;
+          animation: shine 1.5s ease-in-out infinite, magicalGlow 3s ease-in-out infinite !important;
+          border: 3px solid #3b82f6 !important;
+          filter: brightness(1.1) !important;
+        }
+
+        .start-excellence-btn:hover::before {
           content: '';
           position: absolute;
           top: 0;
