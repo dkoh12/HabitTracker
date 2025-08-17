@@ -54,6 +54,20 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Database Development Workflow
 
+### Environment Switching
+```bash
+# Switch to local Docker PostgreSQL (development)
+npm run env:docker
+
+# Switch to Neon development branch (testing)
+npm run env:neon
+```
+
+**Environment Files:**
+- `.env.local.docker` - Local Docker PostgreSQL
+- `.env.local.neon` - Neon development branch  
+- `.env.local` - Active environment (copied from above)
+
 ### Docker Commands
 ```bash
 # Start PostgreSQL container
@@ -91,6 +105,13 @@ npm run seed
 
 # Seed badges
 npm run seed:badges
+
+# Deploy migrations (production-safe)
+npm run db:deploy
+
+# Environment switching
+npm run env:docker       # Switch to Docker PostgreSQL
+npm run env:neon         # Switch to Neon dev branch
 ```
 
 ### Database Info
@@ -142,6 +163,36 @@ npm run seed:badges  # Seed badges
 - **Development**: Docker for PostgreSQL, TypeScript
 
 ## Production Deployment
+
+## Production Deployment
+
+### Safe Schema Migration Workflow
+
+1. **Develop locally** (Docker PostgreSQL)
+   ```bash
+   npm run env:docker       # Switch to Docker
+   npm run db:migrate       # Test schema changes locally
+   ```
+
+2. **Test on Neon development branch** (optional)
+   ```bash
+   npm run env:neon         # Switch to Neon dev
+   npm run db:deploy        # Apply migrations safely
+   ```
+
+3. **Deploy to production** (Vercel + Neon)
+   ```bash
+   git push origin main     # Triggers Vercel deployment
+   # Vercel automatically runs: prisma generate && prisma migrate deploy && next build
+   ```
+
+### Vercel Environment Variables
+Set these in your Vercel dashboard:
+```bash
+DATABASE_URL=postgresql://...  # Your Neon PRODUCTION branch URL
+NEXTAUTH_SECRET=...            # Production secret (different from dev)
+NEXTAUTH_URL=https://your-domain.com
+```
 
 This project is designed to work with:
 - **Frontend**: Vercel
