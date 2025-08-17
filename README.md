@@ -1,36 +1,159 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HabitTracker
+
+A modern habit tracking application built with Next.js, Prisma, and PostgreSQL.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+ 
+- Docker & Docker Compose
+- npm or yarn
+
+### Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd HabitTracker
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the PostgreSQL database**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Set up the database**
+   ```bash
+   # Generate Prisma client
+   npx prisma generate
+   
+   # Run migrations
+   npm run db:migrate
+   
+   # Seed with test data
+   npm run seed
+   npm run seed:badges
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Test Account
+- **Email**: `david@io`
+- **Password**: `david`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database Development Workflow
+
+### Docker Commands
+```bash
+# Start PostgreSQL container
+docker-compose up -d
+
+# Stop PostgreSQL container
+docker-compose down
+
+# Stop and remove all data (complete reset)
+docker-compose down -v
+
+# View container status
+docker ps
+
+# View container logs
+docker logs habittracker_postgres
+```
+
+### Database Commands
+```bash
+# Run migrations (apply schema changes)
+npm run db:migrate
+
+# Reset database (wipe everything & reseed)
+npm run db:reset
+
+# Push schema changes without migrations
+npm run db:push
+
+# Open Prisma Studio (database GUI)
+npm run db:studio
+
+# Seed database with test data
+npm run seed
+
+# Seed badges
+npm run seed:badges
+```
+
+### Database Info
+- **Database**: PostgreSQL 17
+- **Connection**: `postgresql://postgres:password@localhost:5432/habittracker_dev`
+- **Container Name**: `habittracker_postgres`
+- **Port**: `5432`
+
+## Project Structure
+
+```
+├── prisma/              # Database schema & migrations
+│   ├── schema.prisma    # Database schema
+│   ├── seed.ts          # Test data seeding
+│   └── migrations/      # Database migrations
+├── src/
+│   ├── app/             # Next.js app router
+│   ├── components/      # React components
+│   ├── lib/             # Utilities & configurations
+│   └── types/           # TypeScript types
+├── docker-compose.yml   # PostgreSQL container setup
+└── package.json         # Dependencies & scripts
+```
+
+## Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Database scripts
+npm run db:migrate   # Apply database migrations
+npm run db:reset     # Reset database completely
+npm run db:push      # Push schema without migrations
+npm run db:studio    # Open Prisma Studio
+npm run seed         # Seed test data
+npm run seed:badges  # Seed badges
+```
+
+## Tech Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Database**: PostgreSQL 17 with Prisma ORM
+- **Authentication**: NextAuth.js
+- **Styling**: Tailwind CSS
+- **UI Components**: Custom components with Lucide icons
+- **Development**: Docker for PostgreSQL, TypeScript
+
+## Production Deployment
+
+This project is designed to work with:
+- **Frontend**: Vercel
+- **Database**: Neon (PostgreSQL)
+
+The development environment uses Docker PostgreSQL which perfectly matches the production Neon PostgreSQL setup.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Docker Documentation](https://docs.docker.com/)
