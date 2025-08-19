@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withMobileAuth } from '@/lib/withMobileAuth';
 
@@ -77,7 +77,14 @@ export const GET = withMobileAuth(async (request, { user }) => {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const where: any = {
+    const where: {
+      userId: string;
+      habitId?: string;
+      date?: {
+        gte: Date;
+        lte: Date;
+      };
+    } = {
       userId: user.id,
     };
 

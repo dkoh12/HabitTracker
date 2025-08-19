@@ -42,7 +42,7 @@ export async function verifyJWT(request: NextRequest): Promise<AuthenticatedUser
   }
 }
 
-export function withMobileAuth<T extends any[]>(
+export function withMobileAuth<T extends unknown[]>(
   handler: (request: NextRequest, context: { user: AuthenticatedUser }, ...args: T) => Promise<Response>
 ) {
   return async (request: NextRequest, ...args: T): Promise<Response> => {

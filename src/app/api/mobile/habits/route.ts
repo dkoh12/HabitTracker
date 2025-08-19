@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withMobileAuth } from '@/lib/withMobileAuth';
 
-export const GET = withMobileAuth(async (request, { user }) => {
+export const GET = withMobileAuth(async (_request, { user }) => {
   try {
     const habits = await prisma.habit.findMany({
       where: {
