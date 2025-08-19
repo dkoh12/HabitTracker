@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withMobileAuth } from '@/lib/withMobileAuth';
+import { withMobileAuthAndParams } from '@/lib/withMobileAuth';
 
-export const PUT = withMobileAuth(async (request, { user }, { params }: { params: { id: string } }) => {
+export const PUT = withMobileAuthAndParams(async (request, { user }, { params }) => {
   try {
+    const { id } = await params as { id: string };
     const { value, notes } = await request.json();
 
     const entry = await prisma.habitEntry.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id
       }
     });
@@ -21,7 +22,7 @@ export const PUT = withMobileAuth(async (request, { user }, { params }: { params
     }
 
     const updatedEntry = await prisma.habitEntry.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(value !== undefined && { value }),
         ...(notes !== undefined && { notes }),
@@ -38,11 +39,12 @@ export const PUT = withMobileAuth(async (request, { user }, { params }: { params
   }
 });
 
-export const DELETE = withMobileAuth(async (request, { user }, { params }: { params: { id: string } }) => {
+export const DELETE = withMobileAuthAndParams(async (request, { user }, { params }) => {
   try {
+    const { id } = await params as { id: string };
     const entry = await prisma.habitEntry.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: user.id
       }
     });
@@ -55,7 +57,7 @@ export const DELETE = withMobileAuth(async (request, { user }, { params }: { par
     }
 
     await prisma.habitEntry.delete({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     return NextResponse.json({ message: 'Habit entry deleted successfully' });

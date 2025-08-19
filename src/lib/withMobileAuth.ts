@@ -61,3 +61,24 @@ export function withMobileAuth<T extends unknown[]>(
     return handler(request, { user }, ...args);
   };
 }
+
+// Separate wrapper for dynamic routes that need params
+export function withMobileAuthAndParams(
+  handler: (request: NextRequest, context: { user: AuthenticatedUser }, routeContext: { params: Promise<{ id: string }> }) => Promise<Response>
+) {
+  return async (request: NextRequest, routeContext: { params: Promise<{ id: string }> }): Promise<Response> => {
+    const user = await verifyJWT(request);
+    
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    return handler(request, { user }, routeContext);
+  };
+}
