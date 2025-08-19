@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuthAndParams } from '@/lib/withAuth'
+import { requireAuthAndParams } from '@/lib/unifiedAuth'
 
 // POST /api/groups/[id]/shared-habits/[habitId]/entries - Create or update entry for shared habit
-export const POST = withAuthAndParams(async (request, { user }, { params }) => {
+export const POST = requireAuthAndParams(async (request, { user }, { params }) => {
   try {
     const { id: groupId, habitId } = await params as { id: string; habitId: string }
     const { date, value, notes, completed } = await request.json()
@@ -95,7 +95,7 @@ export const POST = withAuthAndParams(async (request, { user }, { params }) => {
 })
 
 // GET /api/groups/[id]/shared-habits/[habitId]/entries - Get entries for a shared habit
-export const GET = withAuthAndParams(async (request, { user }, { params }) => {
+export const GET = requireAuthAndParams(async (request, { user }, { params }) => {
   try {
     const { id: groupId, habitId } = await params as { id: string; habitId: string }
     const { searchParams } = new URL(request.url)
@@ -157,7 +157,7 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
 })
 
 // DELETE /api/groups/[id]/shared-habits/[habitId]/entries - Delete entry for shared habit
-export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
+export const DELETE = requireAuthAndParams(async (request, { user }, { params }) => {
   try {
     const { id: groupId, habitId } = await params as { id: string; habitId: string }
     const { date } = await request.json()

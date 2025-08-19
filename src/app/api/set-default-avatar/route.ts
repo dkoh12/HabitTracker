@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, auth) => {
   try {
     const { avatarUrl } = await request.json()
 
@@ -17,7 +17,7 @@ export const POST = withAuth(async (request, { user }) => {
 
     // Update user's avatar in database
     const updatedUser = await prisma.user.update({
-      where: { id: user.id },
+      where: { id: auth.user.id },
       data: { avatar: avatarUrl },
       include: {
         _count: {

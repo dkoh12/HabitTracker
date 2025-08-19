@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, { user }) => {
   const { searchParams } = new URL(request.url)
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
@@ -41,7 +41,7 @@ export const GET = withAuth(async (request, { user }) => {
   return NextResponse.json(formattedActivities)
 })
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, { user }) => {
   const { text, color, date } = await request.json()
 
   if (!text || !color || !date) {

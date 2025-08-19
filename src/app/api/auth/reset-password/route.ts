@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { hash, compare } from 'bcryptjs'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 import { prisma } from '@/lib/prisma'
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, { user }) => {
   try {
     const body = await request.json()
     const { currentPassword, newPassword } = body

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, auth) => {
   try {
     // Check if the user still exists in the database
     const userData = await prisma.user.findUnique({
       where: {
-        id: user.id
+        id: auth.user.id
       },
       select: {
         id: true,

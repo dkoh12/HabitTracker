@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateInviteCode } from '@/lib/utils'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 import { GroupRole } from '@prisma/client'
 
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, auth) => {
   try {
     const groups = await prisma.group.findMany({
       where: {
         OR: [
-          { ownerId: user.id },
+          { ownerId: auth.user.id },
           {
             members: {
               some: {
-                userId: user.id
+                userId: auth.user.id
               }
             }
           }
@@ -48,7 +48,7 @@ export const GET = withAuth(async (request, { user }) => {
   }
 })
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, auth) => {
   try {
     const { name, description } = await request.json()
 
@@ -64,11 +64,11 @@ export const POST = withAuth(async (request, { user }) => {
         name,
         description,
         inviteCode: generateInviteCode(),
-        ownerId: user.id,
+        ownerId: auth.user.id,
         // Automatically add the owner as an Owner member
         members: {
           create: {
-            userId: user.id,
+            userId: auth.user.id,
             role: GroupRole.Owner
           }
         }

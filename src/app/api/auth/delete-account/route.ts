@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 import { prisma } from '@/lib/prisma'
 
-export const DELETE = withAuth(async (request, { user }) => {
+export const DELETE = requireAuth(async (request, { user }) => {
   try {
     // Start a transaction to ensure all related data is deleted
     await prisma.$transaction(async (tx) => {

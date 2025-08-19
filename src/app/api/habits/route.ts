@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, auth) => {
   const habits = await prisma.habit.findMany({
     where: {
-      userId: user.id,
+      userId: auth.user.id,
       isActive: true
     },
     include: {
@@ -24,7 +24,7 @@ export const GET = withAuth(async (request, { user }) => {
   return NextResponse.json(habits)
 })
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, auth) => {
   const { 
     name, 
     description, 
@@ -72,7 +72,7 @@ export const POST = withAuth(async (request, { user }) => {
       frequency: frequency || 'daily',
       target: target || 1,
       unit,
-      userId: user.id
+      userId: auth.user.id
     }
   })
 

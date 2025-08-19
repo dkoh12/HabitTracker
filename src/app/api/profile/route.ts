@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, auth) => {
   try {
     const userData = await prisma.user.findUnique({
       where: {
-        id: user.id
+        id: auth.user.id
       },
       select: {
         id: true,
@@ -40,7 +40,7 @@ export const GET = withAuth(async (request, { user }) => {
   }
 })
 
-export const PUT = withAuth(async (request, { user }) => {
+export const PUT = requireAuth(async (request, auth) => {
   try {
     const { name } = await request.json()
 
@@ -53,7 +53,7 @@ export const PUT = withAuth(async (request, { user }) => {
 
     const userData = await prisma.user.update({
       where: {
-        id: user.id
+        id: auth.user.id
       },
       data: {
         name: name.trim()

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, { user }) => {
   try {
     const { habitId, date, value, notes } = await request.json()
 
@@ -78,7 +78,7 @@ export const POST = withAuth(async (request, { user }) => {
   }
 })
 
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, { user }) => {
   try {
     const { searchParams } = new URL(request.url)
     const habitId = searchParams.get('habitId')

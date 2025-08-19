@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuthAndParams } from '@/lib/withAuth'
+import { requireAuthAndParams } from '@/lib/unifiedAuth'
 
-export const GET = withAuthAndParams(async (request, { user }, { params }) => {
+export const GET = requireAuthAndParams(async (request, auth, { params }) => {
   try {
     const { id } = await params as { id: string }
 
@@ -34,8 +34,8 @@ export const GET = withAuthAndParams(async (request, { user }, { params }) => {
     }
 
     // Check if user is a member or owner
-    const isOwner = group.ownerId === user.id
-    const isMember = group.members.some(member => member.userId === user.id)
+    const isOwner = group.ownerId === auth.user.id
+    const isMember = group.members.some(member => member.userId === auth.user.id)
 
     if (!isOwner && !isMember) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })

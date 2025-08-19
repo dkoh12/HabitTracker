@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, { user }) => {
   try {
     const formData = await request.formData()
     const file = formData.get('avatar') as File
@@ -91,7 +91,7 @@ export const POST = withAuth(async (request, { user }) => {
   }
 })
 
-export const DELETE = withAuth(async (request, { user }) => {
+export const DELETE = requireAuth(async (request, { user }) => {
   try {
     // Update user to remove avatar
     const updatedUser = await prisma.user.update({

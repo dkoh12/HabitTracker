@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuthAndParams } from '@/lib/withAuth'
+import { requireAuthAndParams } from '@/lib/unifiedAuth'
 
-export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
+export const PUT = requireAuthAndParams(async (request, { user }, { params }) => {
   const { id } = await params as { id: string }
   const { text, color } = await request.json()
 
@@ -61,7 +61,7 @@ export const PUT = withAuthAndParams(async (request, { user }, { params }) => {
   }
 })
 
-export const DELETE = withAuthAndParams(async (request, { user }, { params }) => {
+export const DELETE = requireAuthAndParams(async (request, { user }, { params }) => {
   const { id } = await params as { id: string }
 
   try {

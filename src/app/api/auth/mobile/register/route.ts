@@ -16,22 +16,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate username from email (before @ symbol)
-    const username = email.split('@')[0];
-
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username }
-        ]
-      },
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists with this email or username' },
+        { error: 'User already exists with this email' },
         { status: 409 }
       );
     }
@@ -39,12 +31,12 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new user
+    // Create user
     const user = await prisma.user.create({
       data: {
         email,
-        username,
         name,
+        username: email, // Use email as username for now
         password: hashedPassword,
       },
       select: {

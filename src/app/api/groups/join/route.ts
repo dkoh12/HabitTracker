@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, { user }) => {
   try {
     const { inviteCode } = await request.json()
 

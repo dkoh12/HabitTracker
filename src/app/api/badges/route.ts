@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { withAuth } from '@/lib/withAuth'
+import { requireAuth } from '@/lib/unifiedAuth'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/badges - Get all badges with user's earned status
-export const GET = withAuth(async (request, { user }) => {
+export const GET = requireAuth(async (request, auth) => {
   try {
     // Get all badges
     const allBadges = await prisma.badge.findMany({
@@ -12,7 +12,7 @@ export const GET = withAuth(async (request, { user }) => {
 
     // Get user's earned badges
     const userBadges = await prisma.userBadge.findMany({
-      where: { userId: user.id },
+      where: { userId: auth.user.id },
       include: { badge: true }
     })
 
@@ -60,7 +60,7 @@ export const GET = withAuth(async (request, { user }) => {
 })
 
 // POST /api/badges - Award a badge to a user (for testing or manual awarding)
-export const POST = withAuth(async (request, { user }) => {
+export const POST = requireAuth(async (request, auth) => {
   try {
     const { badgeId } = await request.json()
 
@@ -87,7 +87,7 @@ export const POST = withAuth(async (request, { user }) => {
     const existingUserBadge = await prisma.userBadge.findUnique({
       where: {
         userId_badgeId: {
-          userId: user.id,
+          userId: auth.user.id,
           badgeId: badgeId
         }
       }
@@ -103,7 +103,7 @@ export const POST = withAuth(async (request, { user }) => {
     // Award the badge
     const userBadge = await prisma.userBadge.create({
       data: {
-        userId: user.id,
+        userId: auth.user.id,
         badgeId: badgeId
       },
       include: {
